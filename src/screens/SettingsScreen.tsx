@@ -1,11 +1,14 @@
 /**
- * Settings — the backup, and the three growing lists.
+ * Settings — sync, the three growing lists, and the manual backup.
  *
- * Until the sync lands in M2, the export here is the only safety net there is,
- * which is why Today nags about it and this screen says so plainly.
+ * Sync is the real safety net now: a repository somewhere else, kept
+ * current automatically. The manual export is what it was before M2 —
+ * one JSON file, and it still round-trips everything — but it is no longer
+ * the *only* copy, which is why it sits collapsed at the bottom rather than
+ * nagging at the top.
  */
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { buildBackup, BackupParseError, readBackupFile, shareBackup } from '~/data/backup'
 import { allVocabOf } from '~/data/selectors'
 import {
@@ -23,6 +26,7 @@ import { label, plural } from '~/lib/format'
 import { Banner } from '~/ui/Banner'
 import { Button, IconButton } from '~/ui/Button'
 import { Field, TextField } from '~/ui/fields'
+import { Icon } from '~/ui/Icon'
 import { Rows, ScreenHeader, SectionHeading } from '~/ui/primitives'
 import { Row } from '~/ui/rows'
 import { SyncStatusPill } from '~/ui/SyncStatusPill'
@@ -32,8 +36,8 @@ export function SettingsScreen() {
     <div className="flex flex-col gap-10">
       <ScreenHeader title="Settings" />
       <SyncSection />
-      <BackupSection />
       <ListsSection />
+      <BackupSection />
     </div>
   )
 }
@@ -69,6 +73,21 @@ function SyncSection() {
   const [tokenInput, setTokenInput] = useState('')
   const [replacingToken, setReplacingToken] = useState(!config)
   const [error, setError] = useState<string | null>(null)
+
+  // On a cold page load, `config` is still `null` at this first render — it
+  // only finishes reading from IndexedDB moments later. Without this, a
+  // reload with sync already set up would show empty fields even though
+  // sync itself keeps working fine in the background. The repository field
+  // below is deliberately uncontrolled (`defaultValue`, like the vocab
+  // rename fields), so `configLoaded` doubles as a `key` to force it to
+  // remount with the now-known value once loading catches up.
+  const [configLoaded, setConfigLoaded] = useState(!!config)
+  useEffect(() => {
+    if (configLoaded || !config) return
+    setRepoInput(`${config.owner}/${config.repo}`)
+    setReplacingToken(false)
+    setConfigLoaded(true)
+  }, [config, configLoaded])
 
   const saveRepo = async (value: string) => {
     const trimmed = value.trim()
@@ -114,6 +133,7 @@ function SyncSection() {
       <SyncStatusPill status={status} variant="detailed" />
 
       <TextField
+        key={configLoaded ? 'loaded' : 'loading'}
         label="Private repository"
         placeholder="owner/repo"
         defaultValue={repoInput}
@@ -173,10 +193,12 @@ function SyncSection() {
 
 function BackupSection() {
   const state = useStore()
+  const syncStatus = useSyncStatus()
   const fileInput = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const synced = syncStatus.kind !== 'unconfigured'
   const days = state.lastBackupAt === null ? null : daysSince(state.lastBackupAt)
 
   const exportNow = async () => {
@@ -219,22 +241,36 @@ function BackupSection() {
   }
 
   return (
-    <section className="flex flex-col gap-3">
-      <SectionHeading>Backup</SectionHeading>
+    <details className="group flex flex-col gap-3">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 [&::-webkit-details-marker]:hidden">
+        <h2 className="text-label uppercase text-ink-muted">Backup</h2>
+        <Icon
+          name="chevronDown"
+          size={16}
+          className="text-ink-muted transition-transform group-open:rotate-180"
+        />
+      </summary>
 
-      <Banner tone={days === null || days >= 14 ? 'warning' : 'info'} icon="clock">
-        {state.lastBackupAt === null
-          ? 'Never backed up. Your collection lives only in this browser.'
-          : `Last backup ${formatDate(state.lastBackupAt)} · ${plural(days ?? 0, 'day')} ago`}
-      </Banner>
+      {synced ? (
+        <Banner tone="info" icon="check">
+          Sync keeps a copy of everything in your private repository — that is the real safety net
+          now. This export is an optional extra, not the only copy.
+        </Banner>
+      ) : (
+        <Banner tone={days === null || days >= 14 ? 'warning' : 'info'} icon="clock">
+          {state.lastBackupAt === null
+            ? 'Never backed up. Your collection lives only in this browser.'
+            : `Last backup ${formatDate(state.lastBackupAt)} · ${plural(days ?? 0, 'day')} ago`}
+        </Banner>
+      )}
 
       <p className="max-w-prose text-[0.9375rem] leading-6 text-ink-muted text-pretty">
-        One JSON file with every plant, every logged event and the three lists below. On iPhone the
+        One JSON file with every plant, every logged event and the three lists above. On iPhone the
         share sheet offers &ldquo;Save to Files&rdquo;, which is how it reaches iCloud Drive.
       </p>
 
       <div className="flex flex-wrap gap-3">
-        <Button variant="accent" disabled={busy} onClick={exportNow}>
+        <Button variant={synced ? 'outline' : 'accent'} disabled={busy} onClick={exportNow}>
           Export everything
         </Button>
         <Button variant="outline" disabled={busy} onClick={() => fileInput.current?.click()}>
@@ -258,7 +294,7 @@ function BackupSection() {
         Importing replaces everything here with what is in the file. Safari also clears storage for
         sites left untouched for seven days, so a long holiday is exactly when this matters.
       </p>
-    </section>
+    </details>
   )
 }
 

@@ -11,14 +11,14 @@
  * the asset URLs straight out of it, and store those. No build-time manifest to
  * keep in step with the bundler — the shell is the manifest.
  *
- * The one cache-first exception is fonts. Google serves them from immutable,
- * hashed URLs, so re-fetching them every load buys nothing and costs a round
- * trip on the path between tapping a sticker and logging a watering.
+ * The one cache-first exception is fonts. They are vendored and built with a
+ * content hash in the filename (same as every other asset Vite emits), so a
+ * given URL never changes — re-fetching it every load buys nothing and costs
+ * a round trip on the path between tapping a sticker and logging a watering.
  */
 
 const CACHE = 'florarithm-v1'
 const SHELL = new URL('./', self.location).toString()
-const FONT_ORIGINS = ['https://fonts.googleapis.com', 'https://fonts.gstatic.com']
 
 self.addEventListener('install', (event) => {
   event.waitUntil(precacheShell().then(() => self.skipWaiting()))
@@ -40,13 +40,12 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return
 
   const url = new URL(request.url)
+  if (url.origin !== self.location.origin) return
 
-  if (FONT_ORIGINS.includes(url.origin)) {
+  if (/\.woff2?$/.test(url.pathname)) {
     event.respondWith(cacheFirst(request))
     return
   }
-
-  if (url.origin !== self.location.origin) return
 
   event.respondWith(networkFirst(request))
 })
