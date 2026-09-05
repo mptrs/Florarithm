@@ -47,8 +47,11 @@ function headers(config: GitHubConfig, extra?: Record<string, string>): Record<s
 
 type Call = { method?: string; body?: string; headers?: Record<string, string> }
 
-async function call(config: GitHubConfig, path: string, init?: Call): Promise<Response> {
-  const url = `${API}/repos/${config.owner}/${config.repo}/contents/${path}`
+/** `path` is relative to `/repos/{owner}/{repo}` — `''` for the repo itself,
+ *  `contents/plants.json` for a file. */
+async function request(config: GitHubConfig, path: string, init?: Call): Promise<Response> {
+  const base = `${API}/repos/${config.owner}/${config.repo}`
+  const url = path ? `${base}/${path}` : base
 
   let response: Response
   try {
@@ -65,6 +68,26 @@ async function call(config: GitHubConfig, path: string, init?: Call): Promise<Re
   }
 
   return response
+}
+
+async function call(config: GitHubConfig, path: string, init?: Call): Promise<Response> {
+  return request(config, `contents/${path}`, init)
+}
+
+/**
+ * The branch to commit to. Needed explicitly rather than left to the API to
+ * infer: a `PUT contents` with no `branch` resolves against the repository's
+ * default ref, and a repo with zero commits has no ref yet to resolve — that
+ * PUT comes back 404 even though the repo and the token are both fine. A
+ * repo's `default_branch` is set at creation time, before any commit exists,
+ * so this is safe to call before the very first sync too.
+ */
+export async function getDefaultBranch(config: GitHubConfig): Promise<string> {
+  const response = await request(config, '')
+  if (!response.ok) throw new GitHubApiError('GET repo failed', response.status)
+
+  const body = (await response.json()) as { default_branch: string }
+  return body.default_branch
 }
 
 /** A 403 is either "no rate limit left" (transient, not an auth problem) or
@@ -92,6 +115,7 @@ export async function putFile(
   content: string,
   sha: string | null,
   message: string,
+  branch: string,
 ): Promise<{ sha: string }> {
   const response = await call(config, path, {
     method: 'PUT',
@@ -99,6 +123,7 @@ export async function putFile(
     body: JSON.stringify({
       message,
       content: utf8ToBase64(content),
+      branch,
       ...(sha ? { sha } : {}),
     }),
   })
