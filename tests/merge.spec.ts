@@ -26,13 +26,15 @@ import {
   parseRemoteMeta,
   RemoteParseError,
 } from '../src/data/remoteFormat'
-import type { Plant, PlantEvent, VocabItem } from '../src/data/types'
+import { BACKUP_VERSION, type Plant, type PlantEvent, type VocabItem } from '../src/data/types'
 
 function plant(code: string, updatedAt: string, extra: Partial<Plant> = {}): Plant {
   return {
     code,
     name: code,
+    genus: '',
     species: '',
+    cultivar: '',
     locationId: null,
     system: 'soil',
     potSize: null,
@@ -150,7 +152,11 @@ test.describe('remote file shapes', () => {
   })
 
   test('meta.json from before updatedAt existed falls back to createdAt', () => {
-    const legacy = { format: 'florarithm', version: 1, vocab: [{ id: 'x', kind: 'location', name: 'X', archived: false, createdAt: '2025-01-01' }] }
+    const legacy = {
+      format: 'florarithm',
+      version: BACKUP_VERSION,
+      vocab: [{ id: 'x', kind: 'location', name: 'X', archived: false, createdAt: '2025-01-01' }],
+    }
     const parsed = parseRemoteMeta(JSON.stringify(legacy))
     expect(parsed.vocab[0]?.updatedAt).toBe('2025-01-01')
   })
