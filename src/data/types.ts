@@ -55,7 +55,13 @@ export type Plant = {
   /** `MON-8F3A`. The primary key, and the thing printed on the sticker. */
   code: string
   name: string
+  /** Almost always present — it is what the plant code is drawn from. */
+  genus: string
+  /** The specific epithet alone, e.g. `deliciosa`. Often blank: not every
+   *  plant on a windowsill has been identified past its genus. */
   species: string
+  /** No quotes — those are added wherever this is displayed. */
+  cultivar: string
   locationId: Id | null
   system: System
   /** Diameter in cm. */
@@ -128,7 +134,7 @@ export type VocabItem = {
 /** The export file, and in M2 the shape that goes to the private repo. */
 export type Backup = {
   format: 'florarithm'
-  version: 1
+  version: 2
   exportedAt: string
   plants: Plant[]
   events: PlantEvent[]
@@ -136,4 +142,7 @@ export type Backup = {
 }
 
 export const BACKUP_FORMAT = 'florarithm' as const
-export const BACKUP_VERSION = 1 as const
+/** Bumped when a plant's shape changes in a way that would corrupt an old
+ *  file if it were read as the new shape — the genus/species/cultivar split
+ *  being the reason for 2. */
+export const BACKUP_VERSION = 2 as const

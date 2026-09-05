@@ -8,10 +8,13 @@
 
 import { expect, test, type Page } from '@playwright/test'
 
-/** Add a plant through the interface and hand back the code it was given. */
+/** Add a plant through the interface and hand back the code it was given.
+ *  `species` is "Genus epithet", split across the two fields. */
 async function addPlant(page: Page, species: string, name: string, place = 'Living room') {
   await page.goto('#new')
-  await page.getByLabel('Species').fill(species)
+  const [genus, ...rest] = species.split(' ')
+  await page.getByLabel('Genus').fill(genus ?? '')
+  await page.getByLabel('Species', { exact: true }).fill(rest.join(' '))
   await page.getByLabel('Name', { exact: true }).fill(name)
   await page.getByLabel('Place').fill(place)
   await page.getByRole('button', { name: 'Add to the collection' }).click()
@@ -103,7 +106,8 @@ test('deleting a history entry is undoable', async ({ page }) => {
 
 test('promoting a wish keeps its code, its name and its history', async ({ page }) => {
   await page.goto('#new/wish')
-  await page.getByLabel('Species').fill('Philodendron spiritus-sancti')
+  await page.getByLabel('Genus').fill('Philodendron')
+  await page.getByLabel('Species', { exact: true }).fill('spiritus-sancti')
   await page.getByLabel('Name', { exact: true }).fill('Ranker')
   await page.getByLabel('Note').fill('One day')
   await page.getByRole('button', { name: 'Add to the wishlist' }).click()

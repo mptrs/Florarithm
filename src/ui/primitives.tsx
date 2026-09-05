@@ -17,10 +17,14 @@ export function CodeBadge({
   code,
   tone = 'outline',
   className,
+  onClick,
+  label,
 }: {
   code: string
   tone?: 'outline' | 'quiet' | 'tinted'
   className?: string
+  onClick?: () => void
+  label?: string
 }) {
   const tones = {
     outline: 'border border-line-strong text-ink-muted',
@@ -28,17 +32,21 @@ export function CodeBadge({
     tinted: 'bg-leaf-tint text-leaf',
   } as const
 
-  return (
-    <span
-      className={cn(
-        'inline-flex shrink-0 items-center rounded-sm px-2.5 py-1 font-mono text-code',
-        tones[tone],
-        className,
-      )}
-    >
-      {code}
-    </span>
+  const shared = cn(
+    'inline-flex shrink-0 items-center rounded-sm px-2.5 py-1 font-mono text-code',
+    tones[tone],
+    className,
   )
+
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} aria-label={label} className={cn(shared, 'active:opacity-70')}>
+        {code}
+      </button>
+    )
+  }
+
+  return <span className={shared}>{code}</span>
 }
 
 /**

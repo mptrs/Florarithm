@@ -11,6 +11,7 @@
  */
 
 import { daysSince, yearOf } from '~/lib/date'
+import { formatSpecies } from '~/lib/format'
 import type { CollectionFilter } from '~/lib/router'
 import type { State } from './store'
 import type { EventType, Id, Plant, PlantEvent, VocabItem, VocabKind } from './types'
@@ -195,7 +196,7 @@ export function ownedPlants(state: State): Plant[] {
 export function wishlist(state: State): Plant[] {
   return state.plants
     .filter((plant) => plant.wish)
-    .sort((a, b) => (a.species || a.name).localeCompare(b.species || b.name))
+    .sort((a, b) => (formatSpecies(a) || a.name).localeCompare(formatSpecies(b) || b.name))
 }
 
 export function countOf(state: State, filter: CollectionFilter): number {
@@ -228,7 +229,7 @@ export function filterCollection(
     .filter((plant) => {
       if (!needle) return true
       const place = vocabName(state, plant.locationId)
-      return [plant.name, plant.species, plant.code, place]
+      return [plant.name, formatSpecies(plant), plant.code, place]
         .join(' ')
         .toLowerCase()
         .includes(needle)

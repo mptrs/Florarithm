@@ -11,7 +11,7 @@ import { collectionValue, countOf, filterCollection, vocabName } from '~/data/se
 import { useStore } from '~/data/store'
 import { daysSinceWater, lastWaterAt } from '~/data/selectors'
 import type { Plant } from '~/data/types'
-import { formatPrice, label, plural } from '~/lib/format'
+import { formatPrice, formatSpecies, label, plural } from '~/lib/format'
 import { COLLECTION_FILTERS, routes, type CollectionFilter } from '~/lib/router'
 import { Button } from '~/ui/Button'
 import { Chip, ChipStrip } from '~/ui/Chip'
@@ -129,6 +129,7 @@ function CollectionRows({ plants }: { plants: readonly Plant[] }) {
           const place = vocabName(state, plant.locationId)
           const days = daysSinceWater(state, plant.code)
           const last = lastWaterAt(state, plant.code)
+          const species = formatSpecies(plant)
 
           return (
             <RowLink key={plant.code} href={routes.plant(plant.code)}>
@@ -138,11 +139,11 @@ function CollectionRows({ plants }: { plants: readonly Plant[] }) {
 
               <RowName
                 name={plant.name}
-                secondary={[plant.species, place].filter((part) => part && part !== '—').join(' · ')}
+                secondary={[species, place].filter((part) => part && part !== '—').join(' · ')}
                 hideSecondaryFrom="lg"
               />
 
-              <Cell className="hidden w-56 lg:block">{plant.species}</Cell>
+              <Cell className="hidden w-56 lg:block">{species}</Cell>
               <Cell className="hidden w-44 lg:block">{place}</Cell>
               <Cell className="hidden w-24 lg:block">{label(plant.system)}</Cell>
               <Cell className="hidden w-16 lg:block" align="end" mono>
@@ -172,7 +173,7 @@ function WishlistRows({ plants }: { plants: readonly Plant[] }) {
         <Row key={plant.code} className="gap-3">
           <a href={routes.plant(plant.code)} className="flex min-w-0 flex-1 flex-col gap-0.5">
             <span className="truncate font-display text-[1.1875rem] leading-6 font-medium">
-              {plant.species || plant.name}
+              {formatSpecies(plant) || plant.name}
             </span>
             {plant.wishNote ? (
               <span className="truncate text-[0.8125rem] text-ink-muted">{plant.wishNote}</span>

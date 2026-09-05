@@ -14,7 +14,7 @@ import { useSyncExternalStore } from 'react'
 import type { UndoAction } from '~/data/store'
 import { Icon } from './Icon'
 
-const VISIBLE_MS = 6000
+const VISIBLE_MS = 3000
 
 type Pending = UndoAction & { id: number }
 

@@ -46,9 +46,18 @@ function Screen({ route }: { route: ReturnType<typeof useRoute> }) {
     case 'collection':
       return <CollectionScreen filter={route.filter} />
     case 'new':
-      return <PlantFormScreen startAsWish={route.wish} parentCode={route.parentCode} />
+      // Keyed on what makes it a fresh start: switching between plain "new",
+      // a wish, or a cutting from a different parent should never inherit
+      // the previous form's fields — a shared key with 'edit' would.
+      return (
+        <PlantFormScreen
+          key={`new:${String(route.wish)}:${route.parentCode ?? ''}`}
+          startAsWish={route.wish}
+          parentCode={route.parentCode}
+        />
+      )
     case 'edit':
-      return <PlantFormScreen code={route.code} promote={route.promote} />
+      return <PlantFormScreen key={`edit:${route.code}`} code={route.code} promote={route.promote} />
     case 'settings':
       return <SettingsScreen />
   }

@@ -23,7 +23,7 @@ import { describeEvent, logEvent, removeEvent, setTagWritten, useStore } from '~
 import { vocabOf } from '~/data/selectors'
 import type { Plant, PlantEvent } from '~/data/types'
 import { formatDate, formatDayMonth } from '~/lib/date'
-import { formatPotSize, formatPrice, label, plural } from '~/lib/format'
+import { formatPotSize, formatPrice, formatSpecies, label, plural } from '~/lib/format'
 import { plantUrl, routes } from '~/lib/router'
 import { Button, IconButton } from '~/ui/Button'
 import { Icon } from '~/ui/Icon'
@@ -36,7 +36,7 @@ import {
   SectionHeading,
 } from '~/ui/primitives'
 import { Row } from '~/ui/rows'
-import { offerUndo } from '~/ui/undo'
+import { offerUndo, withUndo } from '~/ui/undo'
 import { PlantActionsSheet } from './PlantActionsSheet'
 
 export function PlantScreen({ code }: { code: string }) {
@@ -60,15 +60,23 @@ export function PlantScreen({ code }: { code: string }) {
       <div className="flex flex-col gap-5 md:w-[32rem] md:shrink-0">
         <div className="flex items-center justify-between gap-4">
           <BackButton />
-          <CodeBadge code={plant.code} />
+          <CodeBadge
+            code={plant.code}
+            onClick={
+              plant.wish || !plant.tagWritten
+                ? undefined
+                : () => void withUndo(() => setTagWritten(plant.code, false))
+            }
+            label={plant.tagWritten ? 'Tag not written after all — tap to fix' : undefined}
+          />
         </div>
 
         <header className="flex flex-col gap-1">
           <h1 className="font-display text-[2.375rem] leading-[2.625rem] font-medium tracking-[-0.02em] md:text-[2.75rem] md:leading-[3rem]">
             {plant.name}
           </h1>
-          {plant.species ? (
-            <p className="text-[0.9375rem] text-ink-muted">{plant.species}</p>
+          {formatSpecies(plant) ? (
+            <p className="text-[0.9375rem] text-ink-muted">{formatSpecies(plant)}</p>
           ) : null}
           <p className="text-[0.8125rem] text-ink-faint">
             {[place, label(plant.system), formatPotSize(plant.potSize)]
@@ -247,7 +255,7 @@ function StickerBlock({ plant }: { plant: Plant }) {
         <Button variant="accent" icon={copied ? 'check' : 'link'} onClick={copy}>
           {copied ? 'Copied' : 'Copy link'}
         </Button>
-        <Button variant="outline" onClick={() => void setTagWritten(plant.code, true)}>
+        <Button variant="outline" onClick={() => void withUndo(() => setTagWritten(plant.code, true))}>
           Tag is written
         </Button>
       </div>

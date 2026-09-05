@@ -81,10 +81,33 @@ export async function load(): Promise<void> {
       db.readAll(),
       db.readMeta<string>(LAST_BACKUP_KEY),
     ])
-    commit({ ...snapshot, lastBackupAt: lastBackupAt ?? null, status: 'ready' })
+
+    const plants = snapshot.plants.map(migrateLegacySpecies)
+    const migrated = plants.filter((plant, index) => plant !== snapshot.plants[index])
+    if (migrated.length > 0) await Promise.all(migrated.map((plant) => db.putPlant(plant)))
+
+    commit({ ...snapshot, plants, lastBackupAt: lastBackupAt ?? null, status: 'ready' })
   } catch {
     commit({ status: 'error' })
   }
+}
+
+/**
+ * Plants written before the genus/species/cultivar split had one free-text
+ * `species` field, e.g. `Monstera deliciosa 'Thai Constellation'`. Split it
+ * once, on read, so the collection never needs a dedicated migration step —
+ * the corrected record is written straight back to IndexedDB.
+ */
+function migrateLegacySpecies(plant: Plant): Plant {
+  if (typeof (plant as unknown as Record<string, unknown>).genus === 'string') return plant
+
+  const legacy = String((plant as unknown as { species?: unknown }).species ?? '')
+  const cultivarMatch = legacy.match(/['"‘’“”]([^'"‘’“”]+)['"‘’“”]/)
+  const cultivar = cultivarMatch?.[1]?.trim() ?? ''
+  const withoutCultivar = (cultivarMatch ? legacy.slice(0, cultivarMatch.index) : legacy).trim()
+  const [genus = '', species = ''] = withoutCultivar.split(/\s+/)
+
+  return { ...plant, genus, species, cultivar }
 }
 
 // --- plants -----------------------------------------------------------------
@@ -93,7 +116,9 @@ export type PlantDraft = {
   /** Set when editing; absent means a code gets drawn on save. */
   code?: string
   name: string
+  genus: string
   species: string
+  cultivar: string
   locationId: Id | null
   system: System
   potSize: number | null
@@ -112,7 +137,7 @@ export async function savePlant(draft: PlantDraft): Promise<Plant> {
   const code =
     existing?.code ??
     (await generatePlantCode(
-      draft.species,
+      draft.genus,
       draft.name,
       new Set(state.plants.map((plant) => plant.code)),
     ))
@@ -135,8 +160,21 @@ export async function savePlant(draft: PlantDraft): Promise<Plant> {
   return plant
 }
 
-export async function setTagWritten(code: string, tagWritten: boolean): Promise<void> {
-  await patchPlant(code, { tagWritten })
+export async function setTagWritten(code: string, tagWritten: boolean): Promise<UndoAction | null> {
+  const before = findPlant(code)
+  if (!before || before.tagWritten === tagWritten) return null
+
+  const plant = await patchPlant(code, { tagWritten })
+  if (!plant) return null
+
+  return {
+    message: tagWritten
+      ? `Marked ${plant.name}'s tag as written`
+      : `Marked ${plant.name}'s tag as not written`,
+    undo: async () => {
+      await patchPlant(code, { tagWritten: before.tagWritten })
+    },
+  }
 }
 
 /** Removing a plant removes its history too — there is nothing left for those

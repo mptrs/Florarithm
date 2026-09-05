@@ -20,8 +20,9 @@ import {
   type System,
 } from '~/data/types'
 import { isoToInputValue, inputValueToISO, todayInputValue } from '~/lib/date'
-import { label } from '~/lib/format'
-import { suggestName } from '~/lib/nameGenerator'
+import { formatSpecies, label } from '~/lib/format'
+import { suggestNameAI } from '~/lib/aiNameGenerator'
+import { cn } from '~/lib/cn'
 import { routes } from '~/lib/router'
 import { Button, IconButton } from '~/ui/Button'
 import { Chip } from '~/ui/Chip'
@@ -57,7 +58,9 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
   const candidates = ownedPlants(state).filter((plant) => plant.code !== code)
 
   const [wish, setWish] = useState(false)
+  const [genus, setGenus] = useState('')
   const [species, setSpecies] = useState('')
+  const [cultivar, setCultivar] = useState('')
   const [name, setName] = useState('')
   const [parent, setParent] = useState<string>('')
   const [method, setMethod] = useState<PropagationMethod>('cutting')
@@ -72,13 +75,17 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
   const [wishNote, setWishNote] = useState('')
   const [status, setStatus] = useState<PlantStatus>('active')
   const [saving, setSaving] = useState(false)
+  const [rolling, setRolling] = useState(false)
+  const [loadProgress, setLoadProgress] = useState<string | null>(null)
 
   // Fill the form once the record is in memory. Keyed on the plant's identity
   // so switching plants refills, while typing never gets overwritten.
   useEffect(() => {
     if (existing) {
       setWish(promote ? false : existing.wish)
+      setGenus(existing.genus)
       setSpecies(existing.species)
+      setCultivar(existing.cultivar)
       setName(existing.name)
       setParent(existing.parent?.code ?? '')
       setMethod(existing.parent?.method ?? 'cutting')
@@ -97,7 +104,11 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
       setParent(parentCode ?? '')
       if (parentCode) {
         const source = findPlant(state, parentCode)
-        if (source) setSpecies(source.species)
+        if (source) {
+          setGenus(source.genus)
+          setSpecies(source.species)
+          setCultivar(source.cultivar)
+        }
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -105,9 +116,25 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
 
   const parentPlant = parent ? findPlant(state, parent) : null
 
-  const rollName = () => {
+  const rollName = async () => {
     const taken = new Set(state.plants.filter((p) => p.code !== code).map((p) => p.name))
-    setName(suggestName(species, taken, parentPlant?.name ?? null))
+    setRolling(true)
+    setLoadProgress(null)
+
+    const suggestion = await suggestNameAI(
+      { genus: genus.trim(), species: species.trim(), cultivar: cultivar.trim() },
+      taken,
+      parentPlant?.name ?? null,
+      (report) => setLoadProgress(report.text),
+    )
+
+    setRolling(false)
+    if (suggestion) {
+      setName(suggestion)
+      setLoadProgress(null)
+    } else {
+      setLoadProgress("Couldn't think of one — type your own.")
+    }
   }
 
   const submit = async () => {
@@ -118,10 +145,19 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
         ensureVocabItem('medium', medium),
       ])
 
+      const genusTrimmed = genus.trim()
+      const speciesTrimmed = species.trim()
+      const cultivarTrimmed = cultivar.trim()
+
       const plant = await savePlant({
         code: existing?.code,
-        name: name.trim() || species.trim() || 'Unnamed',
-        species: species.trim(),
+        name:
+          name.trim() ||
+          formatSpecies({ genus: genusTrimmed, species: speciesTrimmed, cultivar: cultivarTrimmed }) ||
+          'Unnamed',
+        genus: genusTrimmed,
+        species: speciesTrimmed,
+        cultivar: cultivarTrimmed,
         locationId,
         system,
         potSize: potSize ? Number(potSize) : null,
@@ -175,16 +211,33 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
 
       <div className="flex flex-col gap-6 lg:flex-row lg:gap-12">
         <div className="flex flex-col gap-5 lg:w-[32rem] lg:shrink-0">
+          <div className="flex gap-3">
+            <TextField
+              label="Genus"
+              value={genus}
+              onChange={(event) => setGenus(event.target.value)}
+              placeholder="Monstera"
+              fieldClassName="flex-1"
+              hint={
+                existing
+                  ? undefined
+                  : 'The plant code is drawn from this, not from the name — a sticker cannot be rewritten.'
+              }
+            />
+            <TextField
+              label="Species"
+              value={species}
+              onChange={(event) => setSpecies(event.target.value)}
+              placeholder="deliciosa"
+              fieldClassName="flex-1"
+            />
+          </div>
+
           <TextField
-            label="Species"
-            value={species}
-            onChange={(event) => setSpecies(event.target.value)}
-            placeholder="Monstera deliciosa 'Thai Constellation'"
-            hint={
-              existing
-                ? undefined
-                : 'The plant code is drawn from this, not from the name — a sticker cannot be rewritten.'
-            }
+            label="Cultivar"
+            value={cultivar}
+            onChange={(event) => setCultivar(event.target.value)}
+            placeholder="Thai Constellation"
           />
 
           {wish ? null : (
@@ -222,9 +275,10 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
           <Field
             label="Name"
             hint={
-              parentPlant
+              loadProgress ??
+              (parentPlant
                 ? `The dice continues the line from ${parentPlant.name}, so the family tree reads without a diagram.`
-                : 'The dice suggests something that fits the genus. It is an offer, not a decision.'
+                : 'The dice asks a small AI, running in your browser, for something that fits the genus. It is an offer, not a decision.')
             }
           >
             <div className="flex gap-2.5">
@@ -235,7 +289,13 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
                 fieldClassName="flex-1"
                 placeholder="Gruyère"
               />
-              <IconButton icon="dice" label="Suggest a name" onClick={rollName} className="text-leaf" />
+              <IconButton
+                icon="dice"
+                label="Suggest a name"
+                onClick={rollName}
+                disabled={rolling}
+                className={cn('text-leaf', rolling && 'animate-spin')}
+              />
             </div>
           </Field>
 

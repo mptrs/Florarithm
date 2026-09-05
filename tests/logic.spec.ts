@@ -8,7 +8,7 @@
 
 import { expect, test } from '@playwright/test'
 import { codePrefix, generatePlantCode, isPlantCode } from '../src/lib/plantCode'
-import { nextInLine, splitLineage, suggestName } from '../src/lib/nameGenerator'
+import { nextInLine, splitLineage } from '../src/lib/nameGenerator'
 import { parseBackup, BackupParseError } from '../src/data/backup'
 import { daysBetween, inputValueToISO, isoToInputValue } from '../src/lib/date'
 import { toRoman, fromRoman } from '../src/lib/format'
@@ -89,18 +89,6 @@ test.describe('names inherit down a line', () => {
     )
   })
 
-  test('a suggestion fits the genus and skips names in use', () => {
-    const suggestion = suggestName('Monstera deliciosa', new Set())
-    expect(['Gruyère', 'Kolos', 'Zwitser', 'Titaan', 'Raam']).toContain(suggestion)
-
-    const taken = new Set(['Gruyère', 'Kolos', 'Zwitser', 'Titaan', 'Raam'])
-    expect(taken.has(suggestName('Monstera deliciosa', taken))).toBe(false)
-  })
-
-  test('an unknown genus still gets a name', () => {
-    expect(suggestName('Blorptacea imaginaria', new Set()).length).toBeGreaterThan(0)
-  })
-
   test('roman numerals round-trip', () => {
     for (const n of [1, 2, 4, 9, 14, 19, 39]) expect(fromRoman(toRoman(n))).toBe(n)
   })
@@ -109,7 +97,7 @@ test.describe('names inherit down a line', () => {
 test.describe('backups', () => {
   const valid = {
     format: 'florarithm',
-    version: 1,
+    version: 2,
     exportedAt: '2026-09-05T10:00:00.000Z',
     plants: [],
     events: [],

@@ -14,6 +14,23 @@ export function formatPotSize(cm: number | null): string {
   return cm === null ? '—' : `${cm} cm`
 }
 
+/** `Monstera deliciosa 'Thai Constellation'` from the three separate fields —
+ *  the one place that puts them back together, so genus, species and cultivar
+ *  never get joined two different ways in two different screens. */
+export function formatSpecies({
+  genus,
+  species,
+  cultivar,
+}: {
+  genus: string
+  species: string
+  cultivar: string
+}): string {
+  const binomial = [genus, species].filter(Boolean).join(' ')
+  if (!cultivar) return binomial
+  return binomial ? `${binomial} '${cultivar}'` : `'${cultivar}'`
+}
+
 /** `I`, `II`, `III` … Used by the name generator so a cutting reads as the next
  *  in its line, and nowhere else. Above 39 it gives up and returns the number,
  *  which is the right moment to stop pretending this is a Roman inscription. */

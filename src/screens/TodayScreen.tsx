@@ -16,7 +16,7 @@ import {
   vocabName,
 } from '~/data/selectors'
 import { daysSince, formatDayMonth, formatFullDate } from '~/lib/date'
-import { label, plural } from '~/lib/format'
+import { formatSpecies, label, plural } from '~/lib/format'
 import { routes } from '~/lib/router'
 import { Banner } from '~/ui/Banner'
 import { Button } from '~/ui/Button'
@@ -79,7 +79,7 @@ export function TodayScreen() {
                 <RowLink key={plant.code} href={routes.plant(plant.code)}>
                   <RowName name={plant.name} secondary={place} hideSecondaryFrom="lg" />
 
-                  <Cell className="hidden w-64 lg:block">{plant.species}</Cell>
+                  <Cell className="hidden w-64 lg:block">{formatSpecies(plant)}</Cell>
                   <Cell className="hidden w-52 lg:block">{place}</Cell>
                   <Cell className="hidden w-28 lg:block">{label(plant.system)}</Cell>
                   <Cell className="hidden w-24 lg:block" mono>

@@ -3,9 +3,9 @@
  *
  * Ported from the Shortcut that did this before, step for step:
  *
- *  1. Take the *species*, not the name. A code goes on a sticker and can never
+ *  1. Take the *genus*, not the name. A code goes on a sticker and can never
  *     be changed, so it hangs off the most stable field — rename Gruyère and
- *     `MON-…` still reads true. No species? Fall back to the name.
+ *     `MON-…` still reads true. No genus? Fall back to the name.
  *  2. Strip diacritics and everything non-alphanumeric, take the first three
  *     characters, uppercase, pad to three with `X`.
  *  3. SHA-256 of an ISO timestamp plus a random number, as uppercase hex.
@@ -41,16 +41,16 @@ async function randomHex(): Promise<string> {
 /**
  * Draw a code that is not in `taken`.
  *
- * @param species the plant's species; falls back to `name` when empty
- * @param name    used only when there is no species yet
- * @param taken   every code already in the collection
+ * @param genus the plant's genus; falls back to `name` when empty
+ * @param name  used only when there is no genus yet
+ * @param taken every code already in the collection
  */
 export async function generatePlantCode(
-  species: string,
+  genus: string,
   name: string,
   taken: ReadonlySet<string>,
 ): Promise<string> {
-  const prefix = codePrefix(species.trim() || name.trim())
+  const prefix = codePrefix(genus.trim() || name.trim())
 
   // Step 5. Bounded rather than recursive: 16^4 is 65k codes per prefix, so a
   // collision is already unlikely, but a loop that cannot end is worse than a
