@@ -12,6 +12,7 @@
 
 import { useSyncExternalStore } from 'react'
 import type { UndoAction } from '~/data/store'
+import { setPendingUndo } from '~/lib/pendingUndo'
 import { Icon } from './Icon'
 
 const VISIBLE_MS = 6000
@@ -45,10 +46,12 @@ export function offerUndo(action: UndoAction | null): void {
   clearTimer()
   sequence += 1
   pending = { ...action, id: sequence }
+  setPendingUndo(true)
   emit()
 
   timer = setTimeout(() => {
     pending = null
+    setPendingUndo(false)
     timer = null
     emit()
   }, VISIBLE_MS)
@@ -57,6 +60,7 @@ export function offerUndo(action: UndoAction | null): void {
 export function dismissUndo(): void {
   clearTimer()
   pending = null
+  setPendingUndo(false)
   emit()
 }
 

@@ -101,6 +101,27 @@ test('deleting a history entry is undoable', async ({ page }) => {
   await expect(page.getByText('1 entry')).toBeVisible()
 })
 
+test('deleting a plant forever tombstones it rather than erasing it outright', async ({ page }) => {
+  const code = await addPlant(page, 'Hoya carnosa', 'Weg')
+  await page.goto(`#p=${code}`)
+  await page.getByRole('button', { name: 'WATER', exact: true }).click()
+
+  await page.goto(`#edit/${code}`)
+  page.once('dialog', (dialog) => void dialog.accept())
+  await page.getByRole('button', { name: 'Delete this plant' }).click()
+
+  // Gone from the collection... (the undo toast from the earlier WATER tap
+  // can still be on screen saying "Watered Weg" for a few seconds, so this
+  // checks the empty state rather than searching the whole page for the name)
+  await expect(page.getByRole('heading', { name: 'Collection' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'No plants yet' })).toBeVisible()
+
+  // ...and its old code reads exactly like one that never existed, not a
+  // crash or a page that half-shows the deleted record.
+  await page.goto(`#p=${code}`)
+  await expect(page.getByText('No plant with this code')).toBeVisible()
+})
+
 test('promoting a wish keeps its code, its name and its history', async ({ page }) => {
   await page.goto('#new/wish')
   await page.getByLabel('Species').fill('Philodendron spiritus-sancti')

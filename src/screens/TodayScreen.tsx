@@ -12,9 +12,11 @@ import {
   daysSinceWater,
   isThirsty,
   lastWaterAt,
+  livePlants,
   todayList,
   vocabName,
 } from '~/data/selectors'
+import { useSyncStatus } from '~/data/sync'
 import { daysSince, formatDayMonth, formatFullDate } from '~/lib/date'
 import { label, plural } from '~/lib/format'
 import { routes } from '~/lib/router'
@@ -22,6 +24,7 @@ import { Banner } from '~/ui/Banner'
 import { Button } from '~/ui/Button'
 import { DaysSinceWater, EmptyState, Rows, ScreenHeader } from '~/ui/primitives'
 import { Cell, ColumnHeader, RowLink, RowName } from '~/ui/rows'
+import { SyncStatusPill } from '~/ui/SyncStatusPill'
 
 /** After this long without an export, the reminder appears and stays. */
 const BACKUP_REMINDER_DAYS = 14
@@ -29,9 +32,12 @@ const BACKUP_REMINDER_DAYS = 14
 export function TodayScreen() {
   const state = useStore()
   const plants = todayList(state)
+  const syncStatus = useSyncStatus()
 
   return (
     <div className="flex flex-col gap-4">
+      <SyncStatusPill status={syncStatus} className="md:hidden" />
+
       <ScreenHeader
         title="Today"
         meta={
@@ -42,10 +48,7 @@ export function TodayScreen() {
         }
       />
 
-      <BackupReminder
-        lastBackupAt={state.lastBackupAt}
-        hasPlants={state.plants.length > 0}
-      />
+      <BackupReminder lastBackupAt={state.lastBackupAt} hasPlants={livePlants(state).length > 0} />
 
       {plants.length === 0 ? (
         <EmptyState

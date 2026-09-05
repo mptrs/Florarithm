@@ -79,10 +79,6 @@ export async function putPlant(plant: Plant): Promise<void> {
   await (await db()).put('plants', plant)
 }
 
-export async function deletePlant(code: string): Promise<void> {
-  await (await db()).delete('plants', code)
-}
-
 export async function putEvent(event: PlantEvent): Promise<void> {
   await (await db()).put('events', event)
 }
