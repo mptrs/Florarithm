@@ -48,7 +48,11 @@ export function TodayScreen() {
         }
       />
 
-      <BackupReminder lastBackupAt={state.lastBackupAt} hasPlants={livePlants(state).length > 0} />
+      <BackupReminder
+        lastBackupAt={state.lastBackupAt}
+        hasPlants={livePlants(state).length > 0}
+        synced={syncStatus.kind !== 'unconfigured'}
+      />
 
       {plants.length === 0 ? (
         <EmptyState
@@ -105,11 +109,16 @@ export function TodayScreen() {
 function BackupReminder({
   lastBackupAt,
   hasPlants,
+  synced,
 }: {
   lastBackupAt: string | null
   hasPlants: boolean
+  /** Sync is the real safety net once it's configured, so the manual-export
+   *  nag has nothing left to warn about — it stays quiet rather than
+   *  competing with the sync status pill for the same worry. */
+  synced: boolean
 }) {
-  if (!hasPlants) return null
+  if (!hasPlants || synced) return null
 
   const days = lastBackupAt === null ? null : daysSince(lastBackupAt)
   if (days !== null && days < BACKUP_REMINDER_DAYS) return null
