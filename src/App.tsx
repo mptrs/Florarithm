@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { load, useStore } from '~/data/store'
 import { requestPersistence } from '~/data/db'
+import { initSync } from '~/data/sync'
 import { useRoute } from '~/lib/router'
 import { AppShell } from '~/layout/AppShell'
 import { CollectionScreen } from '~/screens/CollectionScreen'
@@ -20,6 +21,7 @@ export function App() {
     // Ask Safari to keep the data rather than sweeping it up after a week
     // unused. Advisory, and a refusal is not an error.
     void requestPersistence()
+    initSync()
   }, [])
 
   return (

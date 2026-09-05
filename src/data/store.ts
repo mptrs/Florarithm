@@ -60,7 +60,9 @@ function commit(patch: Partial<State>): void {
   for (const listener of listeners) listener()
 }
 
-function subscribe(listener: () => void): () => void {
+/** Exported for `sync.ts`, which watches the store the same way a component
+ *  does rather than `store.ts` knowing sync exists at all. */
+export function subscribe(listener: () => void): () => void {
   listeners.add(listener)
   return () => listeners.delete(listener)
 }
@@ -75,7 +77,16 @@ export function useStore(): State {
 
 // --- boot -------------------------------------------------------------------
 
+// Set synchronously, before the first await, so StrictMode's double-invoked
+// effect can't start a second read: `sync.ts` counts every post-boot commit
+// as a real change, and a second `load()` racing the first would otherwise
+// land one extra "change" that nobody made.
+let loadStarted = false
+
 export async function load(): Promise<void> {
+  if (loadStarted) return
+  loadStarted = true
+
   try {
     const [snapshot, lastBackupAt] = await Promise.all([
       db.readAll(),
@@ -177,16 +188,29 @@ export async function setTagWritten(code: string, tagWritten: boolean): Promise<
   }
 }
 
-/** Removing a plant removes its history too — there is nothing left for those
- *  events to belong to. Not undoable, so the screen asks first. */
+/**
+ * Removing a plant removes its history too, as far as anyone can see — but
+ * both land as tombstones, not a row deletion. Once sync exists, a plant or
+ * event that is simply gone from local storage looks to a merge exactly like
+ * "never got here yet," and the other device hands it straight back. Not
+ * undoable, so the screen asks first.
+ */
 export async function deletePlantForever(code: string): Promise<void> {
+  const timestamp = nowISO()
   const events = await db.eventsForPlant(code)
-  await db.deleteEvents(events.map((event) => event.id))
-  await db.deletePlant(code)
 
+  const tombstonedEvents = events
+    .filter((event) => !event.deleted)
+    .map((event) => ({ ...event, deleted: true }) as PlantEvent)
+  await Promise.all(tombstonedEvents.map((event) => db.putEvent(event)))
+
+  const plant = { ...findPlant(code), deleted: true, updatedAt: timestamp } as Plant
+  await db.putPlant(plant)
+
+  const tombstonedById = new Map(tombstonedEvents.map((event) => [event.id, event]))
   commit({
-    plants: state.plants.filter((plant) => plant.code !== code),
-    events: state.events.filter((event) => event.plantCode !== code),
+    plants: state.plants.map((current) => (current.code === code ? plant : current)),
+    events: state.events.map((event) => tombstonedById.get(event.id) ?? event),
   })
 }
 
@@ -310,12 +334,14 @@ export async function ensureVocabItem(kind: VocabKind, name: string): Promise<Id
   )
   if (existing) return existing.id
 
+  const timestamp = nowISO()
   const item: VocabItem = {
     id: newId(),
     kind,
     name: trimmed,
     archived: false,
-    createdAt: nowISO(),
+    createdAt: timestamp,
+    updatedAt: timestamp,
   }
 
   await db.putVocab(item)
@@ -338,7 +364,7 @@ async function patchVocabItem(id: Id, patch: Partial<VocabItem>): Promise<void> 
   const existing = state.vocab.find((item) => item.id === id)
   if (!existing) return
 
-  const item: VocabItem = { ...existing, ...patch }
+  const item: VocabItem = { ...existing, ...patch, updatedAt: nowISO() }
   await db.putVocab(item)
   commit({ vocab: state.vocab.map((current) => (current.id === id ? item : current)) })
 }

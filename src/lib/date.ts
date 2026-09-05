@@ -76,3 +76,20 @@ export function formatFullDate(date: Date = new Date()): string {
 export function yearOf(iso: string): number {
   return new Date(iso).getFullYear()
 }
+
+/** `just now` / `4 minutes ago` / `2 hours ago`, falling back to the plain
+ *  date once it's not today — for the sync pill, where the whole point is
+ *  that it's usually a moment ago. */
+export function formatRelative(iso: string): string {
+  const seconds = Math.round((Date.now() - new Date(iso).getTime()) / 1000)
+  if (seconds < 45) return 'just now'
+  if (seconds < 90) return 'a minute ago'
+
+  const minutes = Math.round(seconds / 60)
+  if (minutes < 45) return `${minutes} minutes ago`
+
+  const hours = Math.round(minutes / 60)
+  if (hours < 20) return `${hours} hour${hours === 1 ? '' : 's'} ago`
+
+  return formatDate(iso)
+}

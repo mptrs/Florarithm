@@ -111,7 +111,7 @@ in Chrome on Android. Reading works everywhere, because the tag just holds a URL
 ## Where this is going
 
 - **M1 — done.** Everything above, on one device.
-- **M2 — sync.** A private repository holding `plants.json`, one
+- **M2 — done.** A private repository holding `plants.json`, one
   `events/YYYY-MM.json` per month and `meta.json`, merged with a pure function
   and pushed with a fine-grained token. Sync doubles as the backup.
 - **M3 — photos and QR.** Photos in a separate private repository, one file

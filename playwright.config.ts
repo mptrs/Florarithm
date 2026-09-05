@@ -10,6 +10,7 @@ export default defineConfig({
   use: { baseURL: BASE_URL, trace: 'retain-on-failure' },
   projects: [
     { name: 'logic', testMatch: /logic\.spec\.ts/ },
+    { name: 'merge', testMatch: /merge\.spec\.ts/ },
     {
       name: 'app',
       testMatch: /app\.spec\.ts/,
@@ -23,6 +24,11 @@ export default defineConfig({
     {
       name: 'offline',
       testMatch: /offline\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'sync',
+      testMatch: /sync\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
   ],

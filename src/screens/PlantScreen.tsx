@@ -44,7 +44,9 @@ export function PlantScreen({ code }: { code: string }) {
   const plant = findPlant(state, code)
   const [sheetOpen, setSheetOpen] = useState(false)
 
-  if (!plant) return <UnknownPlant code={code} ready={state.status === 'ready'} />
+  // A tombstoned plant reads exactly like a code that never existed — the
+  // lookup itself stays unfiltered so an old event can still name it.
+  if (!plant || plant.deleted) return <UnknownPlant code={code} ready={state.status === 'ready'} />
 
   const place = vocabName(state, plant.locationId)
   const days = daysSinceWater(state, plant.code)

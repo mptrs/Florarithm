@@ -14,8 +14,10 @@ import type { ReactNode } from 'react'
 import { cn } from '~/lib/cn'
 import { useStore } from '~/data/store'
 import { countOf } from '~/data/selectors'
+import { useSyncStatus } from '~/data/sync'
 import { routes, type Route } from '~/lib/router'
 import { Icon, type IconName } from '~/ui/Icon'
+import { SyncStatusPill } from '~/ui/SyncStatusPill'
 
 type NavKey = 'today' | 'collection' | 'wishlist' | 'new' | 'settings'
 
@@ -86,6 +88,7 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
 
 function Sidebar({ active }: { active: NavKey | null }) {
   const state = useStore()
+  const syncStatus = useSyncStatus()
 
   const counts: Partial<Record<NavKey, number>> = {
     collection: countOf(state, 'all'),
@@ -126,6 +129,16 @@ function Sidebar({ active }: { active: NavKey | null }) {
           )
         })}
       </nav>
+
+      {/* Settings already shows its own, larger status — no need for both. */}
+      {active === 'settings' || syncStatus.kind === 'unconfigured' ? null : (
+        <>
+          <div className="flex-1" />
+          <div className="border-t border-line px-2.5 pt-3.5">
+            <SyncStatusPill status={syncStatus} />
+          </div>
+        </>
+      )}
     </aside>
   )
 }

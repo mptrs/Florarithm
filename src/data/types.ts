@@ -77,8 +77,11 @@ export type Plant = {
   wishNote: string
   tagWritten: boolean
   createdAt: string
-  /** Bumped on every write. Only the sync in M2 reads this. */
+  /** Bumped on every write. Sync uses it to pick a winner between two devices. */
   updatedAt: string
+  /** Tombstone, same reasoning as `PlantEvent.deleted`: a removed plant still
+   *  has to be visible to a merge, or the other device just brings it back. */
+  deleted?: boolean
 }
 
 export type EventType = 'water' | 'repot' | 'leaf' | 'bloom' | 'note'
@@ -129,6 +132,8 @@ export type VocabItem = {
   name: string
   archived: boolean
   createdAt: string
+  /** Bumped on every write. Sync uses it to pick a winner between two devices. */
+  updatedAt: string
 }
 
 /** The export file, and in M2 the shape that goes to the private repo. */

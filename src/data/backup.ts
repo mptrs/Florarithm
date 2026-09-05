@@ -10,7 +10,7 @@
  */
 
 import { nowISO } from '~/lib/date'
-import { BACKUP_FORMAT, BACKUP_VERSION, type Backup } from './types'
+import { BACKUP_FORMAT, BACKUP_VERSION, type Backup, type VocabItem } from './types'
 import type { State } from './store'
 
 export function buildBackup(state: State): Backup {
@@ -110,8 +110,15 @@ export function parseBackup(text: string): Backup {
     exportedAt: candidate.exportedAt ?? nowISO(),
     plants: candidate.plants,
     events: candidate.events,
-    vocab: candidate.vocab,
+    vocab: candidate.vocab.map(withVocabUpdatedAt),
   }
+}
+
+/** A backup exported before `VocabItem.updatedAt` existed has no way to date
+ *  a rename, so it falls back to `createdAt` — good enough for a field that
+ *  only matters once a second device's copy needs to be compared against it. */
+function withVocabUpdatedAt(item: VocabItem): VocabItem {
+  return { ...item, updatedAt: item.updatedAt ?? item.createdAt }
 }
 
 export async function readBackupFile(file: File): Promise<Backup> {

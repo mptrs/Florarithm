@@ -40,6 +40,11 @@ export const plantsByCode = memo(
   (state) => new Map(state.plants.map((plant) => [plant.code, plant])),
 )
 
+/** Every plant minus tombstones. A lookup by code still resolves a deleted
+ *  plant — an old event should still be able to name it — but nothing that
+ *  produces a list should ever show one. */
+export const livePlants = memo((state) => state.plants.filter((plant) => !plant.deleted))
+
 export const vocabById = memo((state) => new Map(state.vocab.map((item) => [item.id, item])))
 
 export function findPlant(state: State, code: string): Plant | undefined {
@@ -154,7 +159,7 @@ export function lastRepot(state: State, code: string) {
 export const childrenByParent = memo((state) => {
   const grouped = new Map<string, Plant[]>()
 
-  for (const plant of state.plants) {
+  for (const plant of livePlants(state)) {
     const parentCode = plant.parent?.code
     if (!parentCode) continue
     const bucket = grouped.get(parentCode)
@@ -174,7 +179,7 @@ export function childrenOf(state: State, code: string): Plant[] {
 /** What Today shows: plants you actually own and still care for, thirstiest at
  *  the top, and anything never logged above all of it. */
 export function todayList(state: State): Plant[] {
-  return state.plants
+  return livePlants(state)
     .filter((plant) => !plant.wish && plant.status === 'active')
     .sort((a, b) => {
       const left = daysSinceWater(state, a.code) ?? Number.POSITIVE_INFINITY
@@ -184,17 +189,17 @@ export function todayList(state: State): Plant[] {
 }
 
 export function collectionValue(state: State): number {
-  return state.plants
+  return livePlants(state)
     .filter((plant) => !plant.wish)
     .reduce((total, plant) => total + (plant.origin.price ?? 0), 0)
 }
 
 export function ownedPlants(state: State): Plant[] {
-  return state.plants.filter((plant) => !plant.wish)
+  return livePlants(state).filter((plant) => !plant.wish)
 }
 
 export function wishlist(state: State): Plant[] {
-  return state.plants
+  return livePlants(state)
     .filter((plant) => plant.wish)
     .sort((a, b) => (formatSpecies(a) || a.name).localeCompare(formatSpecies(b) || b.name))
 }
@@ -217,7 +222,7 @@ export function filterCollection(
 ): Plant[] {
   const needle = query.trim().toLowerCase()
 
-  return state.plants
+  return livePlants(state)
     .filter((plant) => {
       if (filter === 'wishlist') return plant.wish
       if (plant.wish) return false

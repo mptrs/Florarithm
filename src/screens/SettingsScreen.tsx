@@ -16,22 +16,156 @@ import {
   setVocabArchived,
   useStore,
 } from '~/data/store'
+import { configureSync, getSyncConfig, syncNow, useSyncStatus } from '~/data/sync'
 import { VOCAB_KINDS, type VocabKind } from '~/data/types'
 import { daysSince, formatDate } from '~/lib/date'
 import { label, plural } from '~/lib/format'
 import { Banner } from '~/ui/Banner'
 import { Button, IconButton } from '~/ui/Button'
-import { TextField } from '~/ui/fields'
+import { Field, TextField } from '~/ui/fields'
 import { Rows, ScreenHeader, SectionHeading } from '~/ui/primitives'
 import { Row } from '~/ui/rows'
+import { SyncStatusPill } from '~/ui/SyncStatusPill'
 
 export function SettingsScreen() {
   return (
     <div className="flex flex-col gap-10">
       <ScreenHeader title="Settings" />
+      <SyncSection />
       <BackupSection />
       <ListsSection />
     </div>
+  )
+}
+
+// --- sync ---------------------------------------------------------------
+
+/** `owner/repo`, optionally pasted as a full github.com URL. */
+function parseOwnerRepo(value: string): { owner: string; repo: string } | null {
+  const cleaned = value
+    .trim()
+    .replace(/^https?:\/\/(www\.)?github\.com\//i, '')
+    .replace(/\.git$/i, '')
+    .replace(/^\/+|\/+$/g, '')
+
+  const [owner, repo, ...rest] = cleaned.split('/')
+  return owner && repo && rest.length === 0 ? { owner, repo } : null
+}
+
+/** `github_pat_·······7Qa` — enough to recognise it, never enough to use it. */
+function maskToken(token: string): string {
+  // `github_pat_` and `ghp_` are the two prefixes GitHub actually issues —
+  // matched as up to two underscore-delimited segments so the mask still
+  // reads as recognisably a GitHub token rather than just its first word.
+  const prefix = /^([a-z0-9]+_){1,2}/i.exec(token)?.[0] ?? token.slice(0, 4)
+  return `${prefix}·······${token.slice(-3)}`
+}
+
+function SyncSection() {
+  const status = useSyncStatus()
+  const config = getSyncConfig()
+
+  const [repoInput, setRepoInput] = useState(config ? `${config.owner}/${config.repo}` : '')
+  const [tokenInput, setTokenInput] = useState('')
+  const [replacingToken, setReplacingToken] = useState(!config)
+  const [error, setError] = useState<string | null>(null)
+
+  const saveRepo = async (value: string) => {
+    const trimmed = value.trim()
+    setRepoInput(trimmed)
+
+    const unchanged = config && trimmed === `${config.owner}/${config.repo}`
+    if (!trimmed || unchanged) return
+
+    const owned = parseOwnerRepo(trimmed)
+    if (!owned) {
+      setError('Use the owner/repo shown on github.com, e.g. mptrs/florarithm-data.')
+      return
+    }
+    if (!config?.token) {
+      setError('Add a fine-grained access token first.')
+      return
+    }
+
+    setError(null)
+    await configureSync({ ...owned, token: config.token })
+  }
+
+  const saveToken = async () => {
+    const token = tokenInput.trim()
+    if (!token) return
+
+    const owned = parseOwnerRepo(repoInput)
+    if (!owned) {
+      setError('Add the private repository first, as owner/repo.')
+      return
+    }
+
+    setError(null)
+    await configureSync({ ...owned, token })
+    setTokenInput('')
+    setReplacingToken(false)
+  }
+
+  return (
+    <section className="flex flex-col gap-3">
+      <SectionHeading>Sync</SectionHeading>
+
+      <SyncStatusPill status={status} variant="detailed" />
+
+      <TextField
+        label="Private repository"
+        placeholder="owner/repo"
+        defaultValue={repoInput}
+        onBlur={(event) => void saveRepo(event.target.value)}
+        fieldClassName="max-w-sm"
+      />
+
+      {replacingToken ? (
+        <Field
+          label="Access token"
+          hint="Reaches this one repository and nothing else. Lose the phone and you revoke it on github.com; every other device carries on."
+        >
+          <div className="flex gap-2.5">
+            <TextField
+              type="password"
+              autoComplete="off"
+              placeholder="github_pat_…"
+              value={tokenInput}
+              onChange={(event) => setTokenInput(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') void saveToken()
+              }}
+              fieldClassName="max-w-sm flex-1"
+            />
+            <Button variant="outline" onClick={() => void saveToken()}>
+              Save
+            </Button>
+          </div>
+        </Field>
+      ) : (
+        <Field label="Access token">
+          <div className="flex gap-2.5">
+            <div className="flex h-control w-full max-w-sm items-center rounded-sm border border-line-strong bg-surface px-3.5 font-mono text-body text-ink-muted">
+              {maskToken(config?.token ?? '')}
+            </div>
+            <Button variant="outline" onClick={() => setReplacingToken(true)}>
+              Replace
+            </Button>
+          </div>
+        </Field>
+      )}
+
+      {error ? <Banner tone="warning">{error}</Banner> : null}
+
+      <Button
+        variant="outline"
+        disabled={!config || status.kind === 'syncing'}
+        onClick={() => syncNow()}
+      >
+        Sync now
+      </Button>
+    </section>
   )
 }
 
