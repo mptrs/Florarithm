@@ -1,0 +1,16 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html", "title": "Florarithm — logo", "x": 0, "y": 0, "w": 1080, "h": 640 },
+    { "file": "Mark.dc.html", "title": "Mark, standalone", "x": 1200, "y": 0, "w": 240, "h": 240 }
+  ],
+  "annotations": [
+    {
+      "id": "concept",
+      "x": 1200,
+      "y": 280,
+      "w": 240,
+      "text": "The mark is a phyllotaxis spiral — eight leaflets placed at the golden angle (137.5°), growing outward like real leaf growth, with the centre bud in the same green. Flora, and the arithm(etic) underneath it.\n\nColours and type are pulled straight from the app's own tokens (leaf, ink, Newsreader). Toggle \"dark\" above the main board to check both themes."
+    }
+  ],
+  "launch": { "view": "focused", "file": "Main.dc.html" }
+}

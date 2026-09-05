@@ -1,0 +1,40 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    * { box-sizing: border-box; }
+    svg { display: block; }
+  </style>
+</helmet>
+<svg viewBox="0 0 220 220" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+  <g fill="{{leafColor}}">
+    <path transform="translate(95.99,122.84) rotate(137.508)" d="M0,0 Q5.11,-4.96 14.6,0 Q5.11,4.96 0,0 Z" />
+    <path transform="translate(112.34,83.23) rotate(275.016)" d="M0,0 Q6.02,-5.85 17.2,0 Q6.02,5.85 0,0 Z" />
+    <path transform="translate(130.02,136.11) rotate(52.524)" d="M0,0 Q6.93,-6.73 19.8,0 Q6.93,6.73 0,0 Z" />
+    <path transform="translate(72.58,103.38) rotate(190.032)" d="M0,0 Q7.84,-7.62 22.4,0 Q7.84,7.62 0,0 Z" />
+    <path transform="translate(145.85,87.19) rotate(327.54)" d="M0,0 Q8.75,-8.5 25,0 Q8.75,8.5 0,0 Z" />
+    <path transform="translate(97.91,154.96) rotate(105.048)" d="M0,0 Q9.66,-9.38 27.6,0 Q9.66,9.38 0,0 Z" />
+    <path transform="translate(86.87,65.37) rotate(242.556)" d="M0,0 Q10.57,-10.27 30.2,0 Q10.57,10.27 0,0 Z" />
+    <path transform="translate(160.47,128.42) rotate(20.064)" d="M0,0 Q11.48,-11.15 32.8,0 Q11.48,11.15 0,0 Z" />
+  </g>
+  <circle cx="110" cy="110" r="9" fill="{{dotColor}}" />
+</svg>
+</x-dc>
+<script data-dc-script data-props='{"leafColor":{"editor":null,"default":"#5c7a4a"},"dotColor":{"editor":null,"default":"#3c6e8f"},"$preview":{"width":220,"height":220}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      leafColor: this.props.leafColor ?? '#5c7a4a',
+      dotColor: this.props.dotColor ?? '#3c6e8f',
+    };
+  }
+}
+</script>
+</body>
+</html>
