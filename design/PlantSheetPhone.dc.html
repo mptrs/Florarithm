@@ -1,0 +1,140 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+  <style>
+    :root{
+      --color-paper:oklch(0.968 0.008 85);
+      --color-surface:oklch(0.995 0.003 85);
+      --color-sunk:oklch(0.944 0.010 85);
+      --color-line:oklch(0.886 0.010 80);
+      --color-line-strong:oklch(0.800 0.012 80);
+      --color-ink:oklch(0.255 0.014 65);
+      --color-ink-muted:oklch(0.510 0.014 68);
+      --color-ink-faint:oklch(0.655 0.012 72);
+      --color-leaf:oklch(0.455 0.098 152);
+      --color-leaf-tint:oklch(0.944 0.026 152);
+      --color-water:oklch(0.455 0.104 236);
+      --color-water-tint:oklch(0.944 0.028 236);
+      --color-ember:oklch(0.520 0.130 47);
+      --color-ember-tint:oklch(0.948 0.034 47);
+      --color-on-accent:oklch(0.985 0.004 85);
+      --font-display:'Newsreader',Georgia,'Times New Roman',serif;
+      --font-ui:system-ui,-apple-system,'Segoe UI',sans-serif;
+      --font-mono:'IBM Plex Mono',ui-monospace,'SF Mono',Menlo,monospace;
+    }
+    .dark{
+      --color-paper:oklch(0.190 0.008 80);
+      --color-surface:oklch(0.238 0.009 80);
+      --color-sunk:oklch(0.155 0.008 80);
+      --color-line:oklch(0.322 0.010 80);
+      --color-line-strong:oklch(0.405 0.012 80);
+      --color-ink:oklch(0.945 0.008 85);
+      --color-ink-muted:oklch(0.735 0.012 80);
+      --color-ink-faint:oklch(0.575 0.012 78);
+      --color-leaf:oklch(0.760 0.110 152);
+      --color-leaf-tint:oklch(0.300 0.040 152);
+      --color-water:oklch(0.760 0.105 236);
+      --color-water-tint:oklch(0.305 0.042 236);
+      --color-ember:oklch(0.790 0.120 47);
+      --color-ember-tint:oklch(0.322 0.048 47);
+      --color-on-accent:oklch(0.180 0.010 80);
+    }
+    body{margin:0;font-family:var(--font-ui);}
+    a{color:var(--color-leaf);} a:hover{color:var(--color-ink);}
+  </style>
+</helmet>
+
+<div style="position:relative;height:844px;background:var(--color-paper);color:var(--color-ink);font-family:var(--font-ui);overflow:hidden">
+
+  <div style="padding:14px 16px 0">
+    <div style="display:flex;align-items:center;justify-content:space-between;height:44px;margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:4px;color:var(--color-leaf);height:44px;margin-left:-8px;padding:0 8px">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg>
+        <span style="font-size:16px;font-weight:500">Today</span>
+      </div>
+      <span style="font-family:var(--font-mono);font-size:13px;font-weight:500;letter-spacing:0.08em;color:var(--color-ink-muted);border:1px solid var(--color-line-strong);border-radius:4px;padding:5px 9px">MON-8F3A</span>
+    </div>
+    <h1 style="margin:0 0 6px;font-family:var(--font-display);font-size:38px;line-height:42px;font-weight:500;letter-spacing:-0.02em">Gruyère</h1>
+    <p style="margin:0 0 3px;font-size:15px;line-height:20px;color:var(--color-ink-muted)">Monstera deliciosa 'Thai Constellation'</p>
+    <p style="margin:0 0 20px;font-size:13px;line-height:18px;color:var(--color-ink-faint)">Living room · west window &nbsp;·&nbsp; Hydro &nbsp;·&nbsp; 15 cm</p>
+    <div style="width:100%;height:64px;border-radius:6px;background:var(--color-water)"></div>
+  </div>
+
+  <div style="position:absolute;left:0;right:0;bottom:0;height:78px;background:var(--color-surface);border-top:1px solid var(--color-line);display:flex;padding-top:9px;box-sizing:border-box">
+    <div style="flex-grow:1;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--color-leaf)">
+      <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3s6 6.2 6 10a6 6 0 0 1-12 0c0-3.8 6-10 6-10Z"></path></svg>
+      <span style="font-size:11px;font-weight:600">Today</span>
+    </div>
+    <div style="flex-grow:1;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--color-ink-faint)">
+      <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="6" rx="1.5"></rect><rect x="3" y="14" width="18" height="6" rx="1.5"></rect></svg>
+      <span style="font-size:11px">Collection</span>
+    </div>
+    <div style="flex-grow:1;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--color-ink-faint)">
+      <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+      <span style="font-size:11px">New</span>
+    </div>
+    <div style="flex-grow:1;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--color-ink-faint)">
+      <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9"></path><path d="M18 7h2"></path><path d="M4 17h3"></path><path d="M12 17h8"></path><circle cx="15.5" cy="7" r="2.2"></circle><circle cx="9.5" cy="17" r="2.2"></circle></svg>
+      <span style="font-size:11px">Settings</span>
+    </div>
+  </div>
+
+  <div style="position:absolute;inset:0;background:oklch(0.190 0.008 80 / 0.42)"></div>
+
+  <div style="position:absolute;left:0;right:0;bottom:0;background:var(--color-surface);border-top:1px solid var(--color-line);border-radius:14px 14px 0 0;padding:10px 16px 24px">
+
+    <div style="width:36px;height:4px;border-radius:999px;background:var(--color-line-strong);margin:0 auto 14px"></div>
+
+    <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:18px">
+      <span style="font-family:var(--font-display);font-size:22px;font-weight:500">Gruyère</span>
+      <span style="font-family:var(--font-mono);font-size:12px;letter-spacing:0.08em;color:var(--color-ink-faint)">MON-8F3A</span>
+    </div>
+
+    <span style="display:block;font-size:12px;font-weight:600;letter-spacing:0.09em;text-transform:uppercase;color:var(--color-ink-muted);margin-bottom:9px">Water with</span>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+      <span style="height:44px;display:inline-flex;align-items:center;padding:0 15px;border-radius:999px;background:var(--color-water);color:var(--color-on-accent);font-size:15px;font-weight:600">Plagron Alga Grow</span>
+      <span style="height:44px;display:inline-flex;align-items:center;padding:0 15px;border-radius:999px;border:1px solid var(--color-line-strong);color:var(--color-ink-muted);font-size:15px;font-weight:500">Plantura</span>
+      <span style="height:44px;display:inline-flex;align-items:center;padding:0 15px;border-radius:999px;border:1px solid var(--color-line-strong);color:var(--color-ink-muted);font-size:15px;font-weight:500">Nothing</span>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:12px;height:44px;margin-bottom:14px">
+      <div style="width:24px;height:24px;border-radius:4px;background:var(--color-water);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="oklch(0.985 0.004 85)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+      </div>
+      <span style="font-size:16px">Flushed the pot first</span>
+    </div>
+
+    <button style="width:100%;height:56px;border:none;border-radius:6px;background:var(--color-water);color:var(--color-on-accent);font-family:var(--font-ui);font-size:17px;font-weight:600;letter-spacing:0.1em;cursor:pointer;margin-bottom:18px">LOG WATER</button>
+
+    <div style="border-top:1px solid var(--color-line)">
+      <div style="display:flex;align-items:center;gap:14px;min-height:56px;border-bottom:1px solid var(--color-line)">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="oklch(0.455 0.098 152)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path><path d="M2 21c0-3 1.85-5.36 5.08-6"></path></svg>
+        <span style="font-size:17px">New leaf</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;min-height:56px;border-bottom:1px solid var(--color-line)">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="oklch(0.455 0.098 152)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M12 9c0-3.5-1.4-5-3-5s-3 2-3 4 1.5 3 3 3"></path><path d="M15 12c3.5 0 5-1.4 5-3s-2-3-4-3-3 1.5-3 3"></path><path d="M12 15c0 3.5 1.4 5 3 5s3-2 3-4-1.5-3-3-3"></path><path d="M9 12c-3.5 0-5 1.4-5 3s2 3 4 3 3-1.5 3-3"></path></svg>
+        <span style="font-size:17px">Blooming</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;min-height:56px;border-bottom:1px solid var(--color-line)">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="oklch(0.455 0.098 152)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h16l-1.6 11.2a2 2 0 0 1-2 1.8H7.6a2 2 0 0 1-2-1.8Z"></path><path d="M3 8V6a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v2"></path></svg>
+        <span style="font-size:17px">Repot</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;min-height:56px">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="oklch(0.455 0.098 152)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v12H8l-4 4Z"></path></svg>
+        <span style="font-size:17px">Note</span>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,45 @@
+{
+  "pages": [
+    { "id": "screens", "name": "Screens" },
+    { "id": "system", "name": "Design system" }
+  ],
+  "artboards": [
+    { "file": "TodayPhone.dc.html",         "title": "Today",                  "page": "screens", "x": 0,    "y": 0,   "w": 390,  "h": 844 },
+    { "file": "PlantPhone.dc.html",         "title": "Plant — what a scan opens", "page": "screens", "x": 490,  "y": 0,   "w": 390,  "h": 844 },
+    { "file": "PlantWateredPhone.dc.html",  "title": "Plant — one tap later",  "page": "screens", "x": 980,  "y": 0,   "w": 390,  "h": 844 },
+    { "file": "PlantSheetPhone.dc.html",    "title": "Plant — More…",          "page": "screens", "x": 1470, "y": 0,   "w": 390,  "h": 844 },
+    { "file": "PlantHistoryPhone.dc.html",  "title": "Plant — scrolled down",  "page": "screens", "x": 1960, "y": 0,   "w": 390,  "h": 844 },
+    { "file": "CollectionPhone.dc.html",    "title": "Collection",             "page": "screens", "x": 2450, "y": 0,   "w": 390,  "h": 844 },
+    { "file": "WishlistPhone.dc.html",      "title": "Wishlist",               "page": "screens", "x": 2940, "y": 0,   "w": 390,  "h": 844 },
+    { "file": "NewPhone.dc.html",           "title": "New plant",              "page": "screens", "x": 3430, "y": 0,   "w": 390,  "h": 844 },
+    { "file": "SettingsPhone.dc.html",      "title": "Settings",               "page": "screens", "x": 3920, "y": 0,   "w": 390,  "h": 844 },
+
+    { "file": "TodayDesktop.dc.html",       "title": "Today — desktop",        "page": "screens", "x": 0,    "y": 964, "w": 1440, "h": 900 },
+    { "file": "PlantDesktop.dc.html",       "title": "Plant — desktop",        "page": "screens", "x": 1540, "y": 964, "w": 1440, "h": 900 },
+    { "file": "CollectionDesktop.dc.html",  "title": "Collection — desktop",   "page": "screens", "x": 3080, "y": 964, "w": 1440, "h": 900 },
+    { "file": "NewDesktop.dc.html",         "title": "New plant — desktop",    "page": "screens", "x": 4620, "y": 964, "w": 1440, "h": 900 },
+
+    { "file": "Main.dc.html",               "title": "Foundations",            "page": "system",  "x": 0,    "y": 0,   "w": 880,  "h": 2950 },
+    { "file": "Components.dc.html",         "title": "Components",             "page": "system",  "x": 980,  "y": 0,   "w": 880,  "h": 2550 },
+    { "file": "Patterns.dc.html",           "title": "Patterns",               "page": "system",  "x": 1960, "y": 0,   "w": 880,  "h": 1750 }
+  ],
+  "annotations": [
+    {
+      "id": "screens-note",
+      "page": "screens",
+      "x": -340,
+      "y": 0,
+      "w": 280,
+      "text": "Static mockups, Direction A.\n\nTop row is the phone at 390×844 — real screen height, so what falls below the bottom edge is genuinely below the fold. The three Plant boards are one screen in three states: what a scan opens, one tap later, and scrolled down.\n\nBottom row is the MacBook at 1440×900. Not a stretched phone: sidebar instead of a tab bar, and the list becomes a real table, because the Mac is where you enter and compare, not where you water."
+    },
+    {
+      "id": "direction",
+      "page": "system",
+      "x": -340,
+      "y": 0,
+      "w": 280,
+      "text": "Direction A — Herbarium ledger.\n\nWarm paper, ink text, one saturated colour per meaning: green = the plant, blue = the water action, ember = thirsty. Names in a serif like a specimen label; every machine-made fact in mono so it lines up down a column.\n\nToken names use Tailwind v4 --color-* namespace, so they drop into @theme unchanged."
+    }
+  ],
+  "launch": { "view": "canvas", "page": "screens" }
+}

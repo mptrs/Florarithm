@@ -1,0 +1,177 @@
+@import 'tailwindcss';
+
+/* ---------------------------------------------------------------------------
+   Design tokens.
+
+   These are the light values, and they are the source of truth: every colour,
+   face and size in the app comes from a `--color-*` / `--font-*` / `--text-*`
+   token, never from a literal. Tailwind turns each one into a utility, so
+   `--color-water` gives you `bg-water`, `text-water`, `border-water`.
+
+   Dark mode is further down: it redefines the same variable names, so nothing
+   in the app has to know which theme is on.
+--------------------------------------------------------------------------- */
+
+@theme {
+  /* Clear Tailwind's stock palette. Not housekeeping: with the defaults gone,
+     `bg-red-500` simply does not exist, so every colour in the app has to come
+     from a token below. A design system you can step around is a suggestion. */
+  --color-*: initial;
+  --color-transparent: transparent;
+  --color-current: currentColor;
+
+  /* Surfaces, from the page ground up to a raised card. */
+  --color-paper: oklch(0.968 0.008 85);
+  --color-surface: oklch(0.995 0.003 85);
+  --color-sunk: oklch(0.944 0.01 85);
+  --color-line: oklch(0.886 0.01 80);
+  --color-line-strong: oklch(0.8 0.012 80);
+
+  /* Text, from primary down to placeholder. */
+  --color-ink: oklch(0.255 0.014 65);
+  --color-ink-muted: oklch(0.51 0.014 68);
+  --color-ink-faint: oklch(0.655 0.012 72);
+
+  /* One saturated colour per meaning. Leaf and water sit at the same lightness
+     and chroma so neither shouts over the other; ember is deliberately a touch
+     brighter, because a warning that is exactly as loud as everything else is
+     not a warning. */
+  --color-leaf: oklch(0.455 0.098 152);
+  --color-leaf-tint: oklch(0.944 0.026 152);
+  --color-water: oklch(0.455 0.104 236);
+  --color-water-tint: oklch(0.944 0.028 236);
+  --color-ember: oklch(0.52 0.13 47);
+  --color-ember-tint: oklch(0.948 0.034 47);
+  --color-on-accent: oklch(0.985 0.004 85);
+
+  /* Two webfonts. The interface chrome runs on system-ui, which is SF on both
+     devices this app will ever see, so it feels native and costs nothing. */
+  --font-display: 'Newsreader', Georgia, 'Times New Roman', serif;
+  --font-ui: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  /* The named type ramp. Sizes carry their own line height and tracking, so
+     `text-display` is the whole specimen, not just a font-size. */
+  --text-display: 2.125rem;
+  --text-display--line-height: 2.375rem;
+  --text-display--letter-spacing: -0.015em;
+  --text-display--font-weight: 500;
+
+  --text-title: 1.5rem;
+  --text-title--line-height: 1.8125rem;
+  --text-title--font-weight: 500;
+
+  --text-heading: 1.0625rem;
+  --text-heading--line-height: 1.375rem;
+  --text-heading--font-weight: 600;
+
+  /* 16px is the floor for anything you can type into: Safari zooms the page in
+     on a smaller input, and never zooms back out. */
+  --text-body: 1rem;
+  --text-body--line-height: 1.5rem;
+
+  --text-label: 0.75rem;
+  --text-label--line-height: 1rem;
+  --text-label--letter-spacing: 0.09em;
+  --text-label--font-weight: 600;
+
+  --text-metric: 1.375rem;
+  --text-metric--line-height: 1.5rem;
+  --text-metric--font-weight: 500;
+
+  --text-code: 0.8125rem;
+  --text-code--line-height: 1rem;
+  --text-code--letter-spacing: 0.08em;
+  --text-code--font-weight: 500;
+
+  --text-micro: 0.75rem;
+  --text-micro--line-height: 1rem;
+
+  /* Square-ish, like a ledger. Only chips are round. */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+
+  /* Reach. Nothing that writes data goes below `touch`; filter chips are the
+     one documented exception at 36px. */
+  --spacing-touch: 2.75rem; /* 44px — the floor */
+  --spacing-control: 3rem; /* 48px — the standard control */
+  --spacing-primary: 4rem; /* 64px — the one action you came for */
+}
+
+/* Dark mode remaps the same names. `data-theme` lets an explicit choice win in
+   both directions; with no choice made, the system decides. */
+@layer base {
+  :root {
+    color-scheme: light dark;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) {
+      --color-paper: oklch(0.19 0.008 80);
+      --color-surface: oklch(0.238 0.009 80);
+      --color-sunk: oklch(0.155 0.008 80);
+      --color-line: oklch(0.322 0.01 80);
+      --color-line-strong: oklch(0.405 0.012 80);
+      --color-ink: oklch(0.945 0.008 85);
+      --color-ink-muted: oklch(0.735 0.012 80);
+      --color-ink-faint: oklch(0.575 0.012 78);
+      --color-leaf: oklch(0.76 0.11 152);
+      --color-leaf-tint: oklch(0.3 0.04 152);
+      --color-water: oklch(0.76 0.105 236);
+      --color-water-tint: oklch(0.305 0.042 236);
+      --color-ember: oklch(0.79 0.12 47);
+      --color-ember-tint: oklch(0.322 0.048 47);
+      --color-on-accent: oklch(0.18 0.01 80);
+    }
+  }
+
+  :root[data-theme='dark'] {
+    --color-paper: oklch(0.19 0.008 80);
+    --color-surface: oklch(0.238 0.009 80);
+    --color-sunk: oklch(0.155 0.008 80);
+    --color-line: oklch(0.322 0.01 80);
+    --color-line-strong: oklch(0.405 0.012 80);
+    --color-ink: oklch(0.945 0.008 85);
+    --color-ink-muted: oklch(0.735 0.012 80);
+    --color-ink-faint: oklch(0.575 0.012 78);
+    --color-leaf: oklch(0.76 0.11 152);
+    --color-leaf-tint: oklch(0.3 0.04 152);
+    --color-water: oklch(0.76 0.105 236);
+    --color-water-tint: oklch(0.305 0.042 236);
+    --color-ember: oklch(0.79 0.12 47);
+    --color-ember-tint: oklch(0.322 0.048 47);
+    --color-on-accent: oklch(0.18 0.01 80);
+  }
+
+  html {
+    /* Keep the page from bouncing past the tab bar on iOS. */
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-paper text-ink font-ui text-body antialiased;
+  }
+
+  /* Numbers that sit under each other must line up, everywhere. */
+  .font-mono {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Safari renders `date` and `number` inputs with its own chrome and padding;
+     flatten them so they match every other field. */
+  input[type='date'],
+  input[type='number'] {
+    appearance: none;
+  }
+
+  input[type='number']::-webkit-outer-spin-button,
+  input[type='number']::-webkit-inner-spin-button {
+    appearance: none;
+    margin: 0;
+  }
+}
+
+@utility safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}

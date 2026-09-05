@@ -1,0 +1,254 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+  <style>
+    :root{
+      --color-paper:oklch(0.968 0.008 85);
+      --color-surface:oklch(0.995 0.003 85);
+      --color-sunk:oklch(0.944 0.010 85);
+      --color-line:oklch(0.886 0.010 80);
+      --color-line-strong:oklch(0.800 0.012 80);
+      --color-ink:oklch(0.255 0.014 65);
+      --color-ink-muted:oklch(0.510 0.014 68);
+      --color-ink-faint:oklch(0.655 0.012 72);
+      --color-leaf:oklch(0.455 0.098 152);
+      --color-leaf-tint:oklch(0.944 0.026 152);
+      --color-water:oklch(0.455 0.104 236);
+      --color-water-tint:oklch(0.944 0.028 236);
+      --color-ember:oklch(0.520 0.130 47);
+      --color-ember-tint:oklch(0.948 0.034 47);
+      --color-on-accent:oklch(0.985 0.004 85);
+      --font-display:'Newsreader',Georgia,'Times New Roman',serif;
+      --font-ui:system-ui,-apple-system,'Segoe UI',sans-serif;
+      --font-mono:'IBM Plex Mono',ui-monospace,'SF Mono',Menlo,monospace;
+    }
+    .dark{
+      --color-paper:oklch(0.190 0.008 80);
+      --color-surface:oklch(0.238 0.009 80);
+      --color-sunk:oklch(0.155 0.008 80);
+      --color-line:oklch(0.322 0.010 80);
+      --color-line-strong:oklch(0.405 0.012 80);
+      --color-ink:oklch(0.945 0.008 85);
+      --color-ink-muted:oklch(0.735 0.012 80);
+      --color-ink-faint:oklch(0.575 0.012 78);
+      --color-leaf:oklch(0.760 0.110 152);
+      --color-leaf-tint:oklch(0.300 0.040 152);
+      --color-water:oklch(0.760 0.105 236);
+      --color-water-tint:oklch(0.305 0.042 236);
+      --color-ember:oklch(0.790 0.120 47);
+      --color-ember-tint:oklch(0.322 0.048 47);
+      --color-on-accent:oklch(0.180 0.010 80);
+    }
+    body{margin:0;font-family:var(--font-ui);}
+    a{color:var(--color-leaf);} a:hover{color:var(--color-ink);}
+  </style>
+</helmet>
+
+<div style="display:flex;height:900px;background:var(--color-paper);color:var(--color-ink);font-family:var(--font-ui);overflow:hidden">
+
+  <aside style="width:248px;flex-shrink:0;background:var(--color-surface);border-right:1px solid var(--color-line);padding:26px 14px;display:flex;flex-direction:column;box-sizing:border-box">
+    <span style="font-family:var(--font-display);font-size:23px;font-weight:500;letter-spacing:-0.01em;padding:0 10px;margin-bottom:26px">Florarithm</span>
+    <div style="display:flex;flex-direction:column;gap:2px">
+      <div style="display:flex;align-items:center;gap:11px;height:44px;padding:0 10px;border-radius:6px;color:var(--color-ink-muted);font-size:15px;font-weight:500">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3s6 6.2 6 10a6 6 0 0 1-12 0c0-3.8 6-10 6-10Z"></path></svg>
+        <span>Today</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:11px;height:44px;padding:0 10px;border-radius:6px;background:var(--color-leaf-tint);color:var(--color-leaf);font-size:15px;font-weight:600">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="6" rx="1.5"></rect><rect x="3" y="14" width="18" height="6" rx="1.5"></rect></svg>
+        <span style="flex-grow:1">Collection</span>
+        <span style="font-family:var(--font-mono);font-size:13px">21</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:11px;height:44px;padding:0 10px;border-radius:6px;color:var(--color-ink-muted);font-size:15px;font-weight:500">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h12v17l-6-4-6 4Z"></path></svg>
+        <span style="flex-grow:1">Wishlist</span>
+        <span style="font-family:var(--font-mono);font-size:13px;color:var(--color-ink-faint)">5</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:11px;height:44px;padding:0 10px;border-radius:6px;color:var(--color-ink-muted);font-size:15px;font-weight:500">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+        <span>New plant</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:11px;height:44px;padding:0 10px;border-radius:6px;color:var(--color-ink-muted);font-size:15px;font-weight:500">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9"></path><path d="M18 7h2"></path><path d="M4 17h3"></path><path d="M12 17h8"></path><circle cx="15.5" cy="7" r="2.2"></circle><circle cx="9.5" cy="17" r="2.2"></circle></svg>
+        <span>Settings</span>
+      </div>
+    </div>
+    <div style="flex-grow:1"></div>
+    <div style="display:flex;align-items:center;gap:9px;height:40px;padding:0 10px;border-top:1px solid var(--color-line)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="oklch(0.455 0.098 152)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+      <span style="font-size:13px;color:var(--color-ink-muted)">Synced just now</span>
+    </div>
+  </aside>
+
+  <main style="flex-grow:1;padding:32px 40px;box-sizing:border-box;min-width:0;display:flex;gap:48px">
+
+    <div style="width:520px;flex-shrink:0">
+      <div style="display:flex;align-items:center;gap:4px;color:var(--color-leaf);height:44px;margin-left:-8px;padding:0 8px;margin-bottom:8px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg>
+        <span style="font-size:15px;font-weight:500">Collection</span>
+      </div>
+
+      <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:6px">
+        <h1 style="margin:0;font-family:var(--font-display);font-size:44px;line-height:48px;font-weight:500;letter-spacing:-0.02em">Gruyère IV</h1>
+        <span style="font-family:var(--font-mono);font-size:13px;font-weight:500;letter-spacing:0.08em;color:var(--color-ink-muted);border:1px solid var(--color-line-strong);border-radius:4px;padding:5px 9px">MON-C41D</span>
+      </div>
+      <p style="margin:0 0 3px;font-size:16px;color:var(--color-ink-muted)">Monstera deliciosa 'Thai Constellation'</p>
+      <p style="margin:0 0 24px;font-size:14px;color:var(--color-ink-faint)">Kitchen · windowsill &nbsp;·&nbsp; Hydro &nbsp;·&nbsp; 12 cm</p>
+
+      <div style="border:1px solid var(--color-leaf);border-radius:6px;background:var(--color-leaf-tint);padding:18px;display:flex;gap:20px;align-items:center;margin-bottom:26px">
+        <div style="flex-grow:1;display:flex;flex-direction:column;gap:12px">
+          <span style="font-size:12px;font-weight:600;letter-spacing:0.09em;text-transform:uppercase;color:var(--color-leaf)">Tag not written yet</span>
+          <span style="font-family:var(--font-mono);font-size:15px;color:var(--color-ink)">…/Florarithm/#p=MON-C41D</span>
+          <div style="display:flex;gap:10px">
+            <button style="height:44px;padding:0 18px;border:none;border-radius:6px;background:var(--color-leaf);color:var(--color-on-accent);font-family:var(--font-ui);font-size:15px;font-weight:600;cursor:pointer">Copy link</button>
+            <button style="height:44px;padding:0 18px;border:1px solid var(--color-leaf);border-radius:6px;background:transparent;color:var(--color-leaf);font-family:var(--font-ui);font-size:15px;font-weight:500;cursor:pointer">Tag is written</button>
+          </div>
+        </div>
+        <div style="width:104px;height:104px;background:var(--color-surface);border:1px solid var(--color-line);border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg width="80" height="80" viewBox="0 0 21 21" shape-rendering="crispEdges" aria-hidden="true">
+            <g fill="oklch(0.255 0.014 65)">
+              <rect x="0" y="0" width="7" height="1"></rect><rect x="0" y="0" width="1" height="7"></rect>
+              <rect x="6" y="0" width="1" height="7"></rect><rect x="0" y="6" width="7" height="1"></rect>
+              <rect x="2" y="2" width="3" height="3"></rect>
+              <rect x="14" y="0" width="7" height="1"></rect><rect x="14" y="0" width="1" height="7"></rect>
+              <rect x="20" y="0" width="1" height="7"></rect><rect x="14" y="6" width="7" height="1"></rect>
+              <rect x="16" y="2" width="3" height="3"></rect>
+              <rect x="0" y="14" width="7" height="1"></rect><rect x="0" y="14" width="1" height="7"></rect>
+              <rect x="6" y="14" width="1" height="7"></rect><rect x="0" y="20" width="7" height="1"></rect>
+              <rect x="2" y="16" width="3" height="3"></rect>
+              <rect x="8" y="0" width="1" height="1"></rect><rect x="10" y="0" width="1" height="1"></rect>
+              <rect x="9" y="1" width="1" height="1"></rect><rect x="11" y="1" width="1" height="1"></rect>
+              <rect x="8" y="2" width="1" height="1"></rect><rect x="12" y="2" width="1" height="1"></rect>
+              <rect x="10" y="3" width="1" height="1"></rect><rect x="8" y="4" width="1" height="1"></rect>
+              <rect x="11" y="4" width="1" height="1"></rect><rect x="9" y="5" width="1" height="1"></rect>
+              <rect x="12" y="5" width="1" height="1"></rect><rect x="8" y="6" width="1" height="1"></rect>
+              <rect x="10" y="6" width="1" height="1"></rect>
+              <rect x="0" y="8" width="1" height="1"></rect><rect x="2" y="8" width="1" height="1"></rect>
+              <rect x="4" y="8" width="1" height="1"></rect><rect x="6" y="8" width="1" height="1"></rect>
+              <rect x="1" y="9" width="1" height="1"></rect><rect x="3" y="9" width="1" height="1"></rect>
+              <rect x="5" y="9" width="1" height="1"></rect><rect x="0" y="10" width="1" height="1"></rect>
+              <rect x="2" y="10" width="1" height="1"></rect><rect x="6" y="10" width="1" height="1"></rect>
+              <rect x="1" y="11" width="1" height="1"></rect><rect x="4" y="11" width="1" height="1"></rect>
+              <rect x="0" y="12" width="1" height="1"></rect><rect x="3" y="12" width="1" height="1"></rect>
+              <rect x="5" y="12" width="1" height="1"></rect>
+              <rect x="14" y="8" width="1" height="1"></rect><rect x="16" y="8" width="1" height="1"></rect>
+              <rect x="19" y="8" width="1" height="1"></rect><rect x="15" y="9" width="1" height="1"></rect>
+              <rect x="18" y="9" width="1" height="1"></rect><rect x="20" y="9" width="1" height="1"></rect>
+              <rect x="14" y="10" width="1" height="1"></rect><rect x="17" y="10" width="1" height="1"></rect>
+              <rect x="19" y="10" width="1" height="1"></rect><rect x="16" y="11" width="1" height="1"></rect>
+              <rect x="20" y="11" width="1" height="1"></rect><rect x="15" y="12" width="1" height="1"></rect>
+              <rect x="18" y="12" width="1" height="1"></rect>
+              <rect x="9" y="8" width="1" height="1"></rect><rect x="11" y="9" width="1" height="1"></rect>
+              <rect x="9" y="10" width="1" height="1"></rect><rect x="12" y="10" width="1" height="1"></rect>
+              <rect x="10" y="11" width="1" height="1"></rect><rect x="8" y="12" width="1" height="1"></rect>
+              <rect x="11" y="12" width="1" height="1"></rect>
+              <rect x="8" y="14" width="1" height="1"></rect><rect x="10" y="14" width="1" height="1"></rect>
+              <rect x="12" y="14" width="1" height="1"></rect><rect x="9" y="15" width="1" height="1"></rect>
+              <rect x="11" y="16" width="1" height="1"></rect><rect x="8" y="17" width="1" height="1"></rect>
+              <rect x="10" y="17" width="1" height="1"></rect><rect x="12" y="18" width="1" height="1"></rect>
+              <rect x="9" y="19" width="1" height="1"></rect><rect x="11" y="19" width="1" height="1"></rect>
+              <rect x="8" y="20" width="1" height="1"></rect><rect x="10" y="20" width="1" height="1"></rect>
+              <rect x="14" y="15" width="1" height="1"></rect><rect x="16" y="15" width="1" height="1"></rect>
+              <rect x="18" y="14" width="1" height="1"></rect><rect x="20" y="15" width="1" height="1"></rect>
+              <rect x="15" y="17" width="1" height="1"></rect><rect x="17" y="16" width="1" height="1"></rect>
+              <rect x="19" y="17" width="1" height="1"></rect><rect x="14" y="18" width="1" height="1"></rect>
+              <rect x="16" y="19" width="1" height="1"></rect><rect x="18" y="20" width="1" height="1"></rect>
+              <rect x="20" y="19" width="1" height="1"></rect>
+            </g>
+          </svg>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:12px;margin-bottom:28px">
+        <button style="width:220px;height:56px;border:none;border-radius:6px;background:var(--color-water);color:var(--color-on-accent);font-family:var(--font-ui);font-size:17px;font-weight:600;letter-spacing:0.12em;cursor:pointer">WATER</button>
+        <button style="flex-grow:1;height:56px;border:1px solid var(--color-line-strong);border-radius:6px;background:transparent;color:var(--color-ink);font-family:var(--font-ui);font-size:16px;font-weight:500;cursor:pointer">+ fertilizer</button>
+        <button style="flex-grow:1;height:56px;border:1px solid var(--color-line-strong);border-radius:6px;background:transparent;color:var(--color-ink);font-family:var(--font-ui);font-size:16px;font-weight:500;cursor:pointer">More…</button>
+      </div>
+
+      <div style="border-top:1px solid var(--color-line-strong)">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:16px;padding:12px 0;border-bottom:1px solid var(--color-line)">
+          <span style="font-size:15px;color:var(--color-ink-muted)">Last water</span>
+          <span style="font-size:15px;text-align:right"><span style="font-family:var(--font-mono);font-variant-numeric:tabular-nums">2</span> days ago · 3 Sep</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:16px;padding:12px 0;border-bottom:1px solid var(--color-line)">
+          <span style="font-size:15px;color:var(--color-ink-muted)">Rhythm</span>
+          <span style="font-size:15px;color:var(--color-ink-faint)">not enough beats yet</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:16px;padding:12px 0;border-bottom:1px solid var(--color-line)">
+          <span style="font-size:15px;color:var(--color-ink-muted)">Medium</span>
+          <span style="font-size:15px;text-align:right">SYBAStones fine 60</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:16px;padding:12px 0;border-bottom:1px solid var(--color-line)">
+          <span style="font-size:15px;color:var(--color-ink-muted)">Came from</span>
+          <span style="font-size:15px;text-align:right">A cutting off Gruyère · <span style="font-family:var(--font-mono)">€0.00</span></span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:16px;padding:12px 0;border-bottom:1px solid var(--color-line)">
+          <span style="font-size:15px;color:var(--color-ink-muted)">In the collection since</span>
+          <span style="font-size:15px;text-align:right">28 Aug 2026</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="flex-grow:1;min-width:0">
+
+      <h2 style="margin:40px 0 4px;font-size:12px;font-weight:600;letter-spacing:0.09em;text-transform:uppercase;color:var(--color-ink-muted)">Family</h2>
+      <div style="border-top:1px solid var(--color-line);margin-bottom:26px">
+        <div style="display:flex;align-items:center;gap:10px;height:46px;border-bottom:1px solid var(--color-line)">
+          <span style="font-family:var(--font-mono);font-size:13px;color:var(--color-ink-faint);width:14px">↑</span>
+          <span style="font-family:var(--font-display);font-size:18px;font-weight:500;color:var(--color-leaf);flex-grow:1">Gruyère</span>
+          <span style="font-size:13px;color:var(--color-ink-muted)">grown from a cutting</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;height:46px;border-bottom:1px solid var(--color-line)">
+          <span style="font-family:var(--font-mono);font-size:13px;color:var(--color-ink-faint);width:14px">·</span>
+          <span style="font-family:var(--font-display);font-size:18px;font-weight:500;color:var(--color-leaf);flex-grow:1">Gruyère II</span>
+          <span style="font-size:13px;color:var(--color-ink-muted)">sibling · cutting, Jan 2026</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;height:46px;border-bottom:1px solid var(--color-line)">
+          <span style="font-family:var(--font-mono);font-size:13px;color:var(--color-ink-faint);width:14px">·</span>
+          <span style="font-family:var(--font-display);font-size:18px;font-weight:500;color:var(--color-leaf);flex-grow:1">Gruyère III</span>
+          <span style="font-size:13px;color:var(--color-ink-muted)">sibling · corm, Mar 2026</span>
+        </div>
+      </div>
+
+      <h2 style="margin:0 0 4px;font-size:12px;font-weight:600;letter-spacing:0.09em;text-transform:uppercase;color:var(--color-ink-muted)">History</h2>
+      <div style="border-top:1px solid var(--color-line)">
+        <div style="display:flex;align-items:center;gap:14px;height:46px;border-bottom:1px solid var(--color-line)">
+          <span style="font-family:var(--font-mono);font-size:13px;color:var(--color-ink-faint);width:64px;flex-shrink:0">3 Sep</span>
+          <span style="flex-grow:1;font-size:15px">Water</span>
+          <span style="font-size:13px;color:var(--color-ink-muted)">Plagron Alga Grow</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;height:46px;border-bottom:1px solid var(--color-line)">
+          <span style="font-family:var(--font-mono);font-size:13px;color:var(--color-ink-faint);width:64px;flex-shrink:0">30 Aug</span>
+          <span style="flex-grow:1;font-size:15px">Water</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;height:46px;border-bottom:1px solid var(--color-line)">
+          <span style="font-family:var(--font-mono);font-size:13px;color:var(--color-ink-faint);width:64px;flex-shrink:0">29 Aug</span>
+          <span style="flex-grow:1;font-size:15px;color:var(--color-leaf);font-weight:500">New leaf</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;height:46px;border-bottom:1px solid var(--color-line)">
+          <span style="font-family:var(--font-mono);font-size:13px;color:var(--color-ink-faint);width:64px;flex-shrink:0">28 Aug</span>
+          <div style="flex-grow:1;display:flex;flex-direction:column;gap:1px">
+            <span style="font-size:15px">Note</span>
+            <span style="font-size:13px;color:var(--color-ink-muted)">Two roots already, straight into hydro</span>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;height:46px;border-bottom:1px solid var(--color-line)">
+          <span style="font-family:var(--font-mono);font-size:13px;color:var(--color-ink-faint);width:64px;flex-shrink:0">28 Aug</span>
+          <span style="flex-grow:1;font-size:15px">Added to the collection</span>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+</div>
+</x-dc>
+</body>
+</html>

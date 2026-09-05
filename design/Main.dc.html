@@ -1,0 +1,414 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+  <style>
+    :root{
+      --color-paper:oklch(0.968 0.008 85);
+      --color-surface:oklch(0.995 0.003 85);
+      --color-sunk:oklch(0.944 0.010 85);
+      --color-line:oklch(0.886 0.010 80);
+      --color-line-strong:oklch(0.800 0.012 80);
+      --color-ink:oklch(0.255 0.014 65);
+      --color-ink-muted:oklch(0.510 0.014 68);
+      --color-ink-faint:oklch(0.655 0.012 72);
+      --color-leaf:oklch(0.455 0.098 152);
+      --color-leaf-tint:oklch(0.944 0.026 152);
+      --color-water:oklch(0.455 0.104 236);
+      --color-water-tint:oklch(0.944 0.028 236);
+      --color-ember:oklch(0.520 0.130 47);
+      --color-ember-tint:oklch(0.948 0.034 47);
+      --color-on-accent:oklch(0.985 0.004 85);
+      --font-display:'Newsreader',Georgia,'Times New Roman',serif;
+      --font-ui:system-ui,-apple-system,'Segoe UI',sans-serif;
+      --font-mono:'IBM Plex Mono',ui-monospace,'SF Mono',Menlo,monospace;
+    }
+    .dark{
+      --color-paper:oklch(0.190 0.008 80);
+      --color-surface:oklch(0.238 0.009 80);
+      --color-sunk:oklch(0.155 0.008 80);
+      --color-line:oklch(0.322 0.010 80);
+      --color-line-strong:oklch(0.405 0.012 80);
+      --color-ink:oklch(0.945 0.008 85);
+      --color-ink-muted:oklch(0.735 0.012 80);
+      --color-ink-faint:oklch(0.575 0.012 78);
+      --color-leaf:oklch(0.760 0.110 152);
+      --color-leaf-tint:oklch(0.300 0.040 152);
+      --color-water:oklch(0.760 0.105 236);
+      --color-water-tint:oklch(0.305 0.042 236);
+      --color-ember:oklch(0.790 0.120 47);
+      --color-ember-tint:oklch(0.322 0.048 47);
+      --color-on-accent:oklch(0.180 0.010 80);
+    }
+    body{margin:0;font-family:var(--font-ui);}
+    a{color:var(--color-leaf);} a:hover{color:var(--color-ink);}
+  </style>
+</helmet>
+
+<div style="background:var(--color-paper);color:var(--color-ink);padding:40px;box-sizing:border-box;min-height:100%">
+
+  <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:40px">
+    <div style="display:flex;align-items:baseline;gap:14px">
+      <h1 style="margin:0;font-family:var(--font-display);font-size:36px;font-weight:500;letter-spacing:-0.015em">Florarithm</h1>
+      <span style="font-family:var(--font-mono);font-size:12px;font-weight:500;letter-spacing:0.06em;color:var(--color-ink-faint)">FOUNDATIONS</span>
+    </div>
+    <p style="margin:0;max-width:620px;font-size:16px;line-height:24px;color:var(--color-ink-muted);text-wrap:pretty">A herbarium ledger on a phone. Warm paper ground, ink-black text, one saturated colour per meaning. Names are set in a serif like a specimen label; everything a machine produced — codes, dates, day counts — is set in mono so it lines up and stays comparable down a column.</p>
+  </div>
+
+  <div style="display:flex;align-items:baseline;gap:12px;border-bottom:1px solid var(--color-line-strong);padding-bottom:10px;margin-bottom:22px">
+    <h2 style="margin:0;font-size:12px;font-weight:600;letter-spacing:0.09em;text-transform:uppercase;color:var(--color-ink-muted)">Colour · light</h2>
+    <span style="font-family:var(--font-mono);font-size:12px;color:var(--color-ink-faint)">--color-* · drops into Tailwind @theme unchanged</span>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(4, minmax(0, 1fr));gap:16px;margin-bottom:40px">
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="height:52px;border-radius:6px;border:1px solid var(--color-line);background:oklch(0.968 0.008 85)"></div>
+      <span style="font-family:var(--font-mono);font-size:12px;font-weight:500">--color-paper</span>
+      <span style="font-family:var(--font-mono);font-size:11px;color:var(--color-ink-faint)">oklch(0.968 0.008 85)</span>
+      <span style="font-size:12px;color:var(--color-ink-muted)">page ground</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="height:52px;border-radius:6px;border:1px solid var(--color-line);background:oklch(0.995 0.003 85)"></div>
+      <span style="font-family:var(--font-mono);font-size:12px;font-weight:500">--color-surface</span>
+      <span style="font-family:var(--font-mono);font-size:11px;color:var(--color-ink-faint)">oklch(0.995 0.003 85)</span>
+      <span style="font-size:12px;color:var(--color-ink-muted)">cards, sheets</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="height:52px;border-radius:6px;border:1px solid var(--color-line);background:oklch(0.944 0.010 85)"></div>
+      <span style="font-family:var(--font-mono);font-size:12px;font-weight:500">--color-sunk</span>
+      <span style="font-family:var(--font-mono);font-size:11px;color:var(--color-ink-faint)">oklch(0.944 0.010 85)</span>
+      <span style="font-size:12px;color:var(--color-ink-muted)">inputs, wells</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="height:52px;border-radius:6px;border:1px solid var(--color-line);background:oklch(0.886 0.010 80)"></div>
+      <span style="font-family:var(--font-mono);font-size:12px;font-weight:500">--color-line</span>
+      <span style="font-family:var(--font-mono);font-size:11px;color:var(--color-ink-faint)">oklch(0.886 0.010 80)</span>
+      <span style="font-size:12px;color:var(--color-ink-muted)">hairlines</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="height:52px;border-radius:6px;border:1px solid var(--color-line);background:oklch(0.800 0.012 80)"></div>
+      <span style="font-family:var(--font-mono);font-size:12px;font-weight:500">--color-line-strong</span>
+      <span style="font-family:var(--font-mono);font-size:11px;color:var(--color-ink-faint)">oklch(0.800 0.012 80)</span>
+      <span style="font-size:12px;color:var(--color-ink-muted)">section rules</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="height:52px;border-radius:6px;border:1px solid var(--color-line);background:oklch(0.255 0.014 65)"></div>
+      <span style="font-family:var(--font-mono);font-size:12px;font-weight:500">--color-ink</span>
+      <span style="font-family:var(--font-mono);font-size:11px;color:var(--color-ink-faint)">oklch(0.255 0.014 65)</span>
+      <span style="font-size:12px;color:var(--color-ink-muted)">primary text</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="height:52px;border-radius:6px;border:1px solid var(--color-line);background:oklch(0.510 0.014 68)"></div>
+      <span style="font-family:var(--font-mono);font-size:12px;font-weight:500">--color-ink-muted</span>
+      <span style="font-family:var(--font-mono);font-size:11px;color:var(--color-ink-faint)">oklch(0.510 0.014 68)</span>
+      <span style="font-size:12px;color:var(--color-ink-muted)">secondary text</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="height:52px;border-radius:6px;border:1px solid var(--color-line);background:oklch(0.655 0.012 72)"></div>
+      <span style="font-family:var(--font-mono);font-size:12px;font-weight:500">--color-ink-faint</span>
+      <span style="font-family:var(--font-mono);font-size:11px;color:var(--color-ink-faint)">oklch(0.655 0.012 72)</span>
+      <span style="font-size:12px;color:var(--color-ink-muted)">placeholder, meta</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="height:52px;border-radius:6px;border:1px solid var(--color-line);background:oklch(0.455 0.098 152)"></div>
+      <span style="font-family:var(--font-mono);font-size:12px;font-weight:500">--color-leaf</span>
+      <span style="font-family:var(--font-mono);font-size:11px;color:var(--color-ink-faint)">oklch(0.455 0.098 152)</span>
+      <span style="font-size:12px;color:var(--color-ink-muted)">brand, the plant</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="height:52px;border-radius:6px;border:1px solid var(--color-line);background:oklch(0.944 0.026 152)"></div>
+      <span style="font-family:var(--font-mono);font-size:12px;font-weight:500">--color-leaf-tint</span>
+      <span style="font-family:var(--font-mono);font-size:11px;color:var(--color-ink-faint)">oklch(0.944 0.026 152)</span>
+      <span style="font-size:12px;color:var(--color-ink-muted)">quiet fill</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="height:52px;border-radius:6px;border:1px solid var(--color-line);background:oklch(0.455 0.104 236)"></div>
+      <span style="font-family:var(--font-mono);font-size:12px;font-weight:500">--color-water</span>
+      <span style="font-family:var(--font-mono);font-size:11px;color:var(--color-ink-faint)">oklch(0.455 0.104 236)</span>
+      <span style="font-size:12px;color:var(--color-ink-muted)">the WATER action</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="height:52px;border-radius:6px;border:1px solid var(--color-line);background:oklch(0.944 0.028 236)"></div>
+      <span style="font-family:var(--font-mono);font-size:12px;font-weight:500">--color-water-tint</span>
+      <span style="font-family:var(--font-mono);font-size:11px;color:var(--color-ink-faint)">oklch(0.944 0.028 236)</span>
+      <span style="font-size:12px;color:var(--color-ink-muted)">watered-today fill</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="height:52px;border-radius:6px;border:1px solid var(--color-line);background:oklch(0.520 0.130 47)"></div>
+      <span style="font-family:var(--font-mono);font-size:12px;font-weight:500">--color-ember</span>
+      <span style="font-family:var(--font-mono);font-size:11px;color:var(--color-ink-faint)">oklch(0.520 0.130 47)</span>
+      <span style="font-size:12px;color:var(--color-ink-muted)">thirsty, 14 days+</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="height:52px;border-radius:6px;border:1px solid var(--color-line);background:oklch(0.948 0.034 47)"></div>
+      <span style="font-family:var(--font-mono);font-size:12px;font-weight:500">--color-ember-tint</span>
+      <span style="font-family:var(--font-mono);font-size:11px;color:var(--color-ink-faint)">oklch(0.948 0.034 47)</span>
+      <span style="font-size:12px;color:var(--color-ink-muted)">warning fill</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="height:52px;border-radius:6px;border:1px solid var(--color-line);background:oklch(0.985 0.004 85)"></div>
+      <span style="font-family:var(--font-mono);font-size:12px;font-weight:500">--color-on-accent</span>
+      <span style="font-family:var(--font-mono);font-size:11px;color:var(--color-ink-faint)">oklch(0.985 0.004 85)</span>
+      <span style="font-size:12px;color:var(--color-ink-muted)">text on leaf/water</span>
+    </div>
+  </div>
+
+  <div style="padding:32px;border-radius:10px;margin-bottom:40px;background:var(--color-paper);color:var(--color-ink)" class="dark">
+    <div style="display:flex;align-items:baseline;gap:12px;border-bottom:1px solid var(--color-line-strong);padding-bottom:10px;margin-bottom:22px">
+      <h2 style="margin:0;font-size:12px;font-weight:600;letter-spacing:0.09em;text-transform:uppercase;color:var(--color-ink-muted)">Colour · dark</h2>
+      <span style="font-family:var(--font-mono);font-size:12px;color:var(--color-ink-faint)">same names, remapped</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4, minmax(0, 1fr));gap:16px">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="height:52px;border-radius:6px;border:1px solid var(--color-line);background:oklch(0.190 0.008 80)"></div>
+        <span style="font-family:var(--font-mono);font-size:12px;font-weight:500">--color-paper</span>
+        <span style="font-family:var(--font-mono);font-size:11px;color:var(--color-ink-faint)">oklch(0.190 0.008 80)</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="height:52px;border-radius:6px;border:1px solid var(--color-line);background:oklch(0.238 0.009 80)"></div>
+        <span style="font-family:var(--font-mono);font-size:12px;font-weight:500">--color-surface</span>
+        <span style="font-family:var(--font-mono);font-size:11px;color:var(--color-ink-faint)">oklch(0.238 0.009 80)</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="height:52px;border-radius:6px;border:1px solid var(--color-line);background:oklch(0.155 0.008 80)"></div>
+        <span style="font-family:var(--font-mono);font-size:12px;font-weight:500">--color-sunk</span>
+        <span style="font-family:var(--font-mono);font-size:11px;color:var(--color-ink-faint)">oklch(0.155 0.008 80)</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="height:52px;border-radius:6px;border:1px solid var(--color-line);background:oklch(0.322 0.010 80)"></div>
+        <span style="font-family:var(--font-mono);font-size:12px;font-weight:500">--color-line</span>
+        <span style="font-family:var(--font-mono);font-size:11px;color:var(--color-ink-faint)">oklch(0.322 0.010 80)</span>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="height:52px;border-radius:6px;border:1px solid var(--color-line);background:oklch(0.405 0.012 80)"></div>
+        <span style="font-family:var(--font-mono);font-size:12px;font-weight:500">--color-line-strong</span>
+        <span style="font-family:var(--font-mono);font-size:11px;color:var(--color-ink-faint)">oklch(0.405 0.012 80)</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="height:52px;border-radius:6px;border:1px solid var(--color-line);background:oklch(0.945 0.008 85)"></div>
+        <span style="font-family:var(--font-mono);font-size:12px;font-weight:500">--color-ink</span>
+        <span style="font-family:var(--font-mono);font-size:11px;color:var(--color-ink-faint)">oklch(0.945 0.008 85)</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="height:52px;border-radius:6px;border:1px solid var(--color-line);background:oklch(0.735 0.012 80)"></div>
+        <span style="font-family:var(--font-mono);font-size:12px;font-weight:500">--color-ink-muted</span>
+        <span style="font-family:var(--font-mono);font-size:11px;color:var(--color-ink-faint)">oklch(0.735 0.012 80)</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="height:52px;border-radius:6px;border:1px solid var(--color-line);background:oklch(0.575 0.012 78)"></div>
+        <span style="font-family:var(--font-mono);font-size:12px;font-weight:500">--color-ink-faint</span>
+        <span style="font-family:var(--font-mono);font-size:11px;color:var(--color-ink-faint)">oklch(0.575 0.012 78)</span>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="height:52px;border-radius:6px;border:1px solid var(--color-line);background:oklch(0.760 0.110 152)"></div>
+        <span style="font-family:var(--font-mono);font-size:12px;font-weight:500">--color-leaf</span>
+        <span style="font-family:var(--font-mono);font-size:11px;color:var(--color-ink-faint)">oklch(0.760 0.110 152)</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="height:52px;border-radius:6px;border:1px solid var(--color-line);background:oklch(0.300 0.040 152)"></div>
+        <span style="font-family:var(--font-mono);font-size:12px;font-weight:500">--color-leaf-tint</span>
+        <span style="font-family:var(--font-mono);font-size:11px;color:var(--color-ink-faint)">oklch(0.300 0.040 152)</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="height:52px;border-radius:6px;border:1px solid var(--color-line);background:oklch(0.760 0.105 236)"></div>
+        <span style="font-family:var(--font-mono);font-size:12px;font-weight:500">--color-water</span>
+        <span style="font-family:var(--font-mono);font-size:11px;color:var(--color-ink-faint)">oklch(0.760 0.105 236)</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="height:52px;border-radius:6px;border:1px solid var(--color-line);background:oklch(0.305 0.042 236)"></div>
+        <span style="font-family:var(--font-mono);font-size:12px;font-weight:500">--color-water-tint</span>
+        <span style="font-family:var(--font-mono);font-size:11px;color:var(--color-ink-faint)">oklch(0.305 0.042 236)</span>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="height:52px;border-radius:6px;border:1px solid var(--color-line);background:oklch(0.790 0.120 47)"></div>
+        <span style="font-family:var(--font-mono);font-size:12px;font-weight:500">--color-ember</span>
+        <span style="font-family:var(--font-mono);font-size:11px;color:var(--color-ink-faint)">oklch(0.790 0.120 47)</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="height:52px;border-radius:6px;border:1px solid var(--color-line);background:oklch(0.322 0.048 47)"></div>
+        <span style="font-family:var(--font-mono);font-size:12px;font-weight:500">--color-ember-tint</span>
+        <span style="font-family:var(--font-mono);font-size:11px;color:var(--color-ink-faint)">oklch(0.322 0.048 47)</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="height:52px;border-radius:6px;border:1px solid var(--color-line);background:oklch(0.180 0.010 80)"></div>
+        <span style="font-family:var(--font-mono);font-size:12px;font-weight:500">--color-on-accent</span>
+        <span style="font-family:var(--font-mono);font-size:11px;color:var(--color-ink-faint)">oklch(0.180 0.010 80)</span>
+      </div>
+    </div>
+    <p style="margin:22px 0 0;font-size:14px;line-height:21px;color:var(--color-ink-muted);max-width:640px;text-wrap:pretty">Leaf and water sit at exactly one lightness and one chroma — only the hue separates them, so neither can shout over the other. Ember is deliberately a little brighter and a little more saturated: a warning that is exactly as loud as everything else is not a warning.</p>
+  </div>
+
+  <div style="display:flex;align-items:baseline;gap:12px;border-bottom:1px solid var(--color-line-strong);padding-bottom:10px;margin-bottom:22px">
+    <h2 style="margin:0;font-size:12px;font-weight:600;letter-spacing:0.09em;text-transform:uppercase;color:var(--color-ink-muted)">Type</h2>
+    <span style="font-family:var(--font-mono);font-size:12px;color:var(--color-ink-faint)">Newsreader · system-ui · IBM Plex Mono</span>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:20px;margin-bottom:20px">
+    <div style="display:flex;gap:24px;align-items:baseline">
+      <div style="width:210px;flex-shrink:0;display:flex;flex-direction:column;gap:2px">
+        <span style="font-family:var(--font-mono);font-size:12px;font-weight:500">text-display</span>
+        <span style="font-family:var(--font-mono);font-size:11px;color:var(--color-ink-faint)">Newsreader 500 · 34/38</span>
+      </div>
+      <span style="font-family:var(--font-display);font-size:34px;line-height:38px;font-weight:500;letter-spacing:-0.015em">Gruyère</span>
+    </div>
+    <div style="display:flex;gap:24px;align-items:baseline">
+      <div style="width:210px;flex-shrink:0;display:flex;flex-direction:column;gap:2px">
+        <span style="font-family:var(--font-mono);font-size:12px;font-weight:500">text-title</span>
+        <span style="font-family:var(--font-mono);font-size:11px;color:var(--color-ink-faint)">Newsreader 500 · 24/29</span>
+      </div>
+      <span style="font-family:var(--font-display);font-size:24px;line-height:29px;font-weight:500">Fluweel III</span>
+    </div>
+    <div style="display:flex;gap:24px;align-items:baseline">
+      <div style="width:210px;flex-shrink:0;display:flex;flex-direction:column;gap:2px">
+        <span style="font-family:var(--font-mono);font-size:12px;font-weight:500">text-heading</span>
+        <span style="font-family:var(--font-mono);font-size:11px;color:var(--color-ink-faint)">system-ui 600 · 17/22</span>
+      </div>
+      <span style="font-size:17px;line-height:22px;font-weight:600">Where it came from</span>
+    </div>
+    <div style="display:flex;gap:24px;align-items:baseline">
+      <div style="width:210px;flex-shrink:0;display:flex;flex-direction:column;gap:2px">
+        <span style="font-family:var(--font-mono);font-size:12px;font-weight:500">text-body</span>
+        <span style="font-family:var(--font-mono);font-size:11px;color:var(--color-ink-faint)">system-ui 400 · 16/24</span>
+      </div>
+      <span style="font-size:16px;line-height:24px">Sixteen pixels is the floor, not a preference — Safari zooms the page on any input smaller than that.</span>
+    </div>
+    <div style="display:flex;gap:24px;align-items:baseline">
+      <div style="width:210px;flex-shrink:0;display:flex;flex-direction:column;gap:2px">
+        <span style="font-family:var(--font-mono);font-size:12px;font-weight:500">text-label</span>
+        <span style="font-family:var(--font-mono);font-size:11px;color:var(--color-ink-faint)">system-ui 600 · 12/16 · 0.09em</span>
+      </div>
+      <span style="font-size:12px;line-height:16px;font-weight:600;letter-spacing:0.09em;text-transform:uppercase;color:var(--color-ink-muted)">Potting medium</span>
+    </div>
+    <div style="display:flex;gap:24px;align-items:baseline">
+      <div style="width:210px;flex-shrink:0;display:flex;flex-direction:column;gap:2px">
+        <span style="font-family:var(--font-mono);font-size:12px;font-weight:500">text-metric</span>
+        <span style="font-family:var(--font-mono);font-size:11px;color:var(--color-ink-faint)">Plex Mono 500 · 22/24 · tabular</span>
+      </div>
+      <span style="font-family:var(--font-mono);font-size:22px;line-height:24px;font-weight:500;font-variant-numeric:tabular-nums">17</span>
+    </div>
+    <div style="display:flex;gap:24px;align-items:baseline">
+      <div style="width:210px;flex-shrink:0;display:flex;flex-direction:column;gap:2px">
+        <span style="font-family:var(--font-mono);font-size:12px;font-weight:500">text-code</span>
+        <span style="font-family:var(--font-mono);font-size:11px;color:var(--color-ink-faint)">Plex Mono 500 · 13/16 · 0.08em</span>
+      </div>
+      <span style="font-family:var(--font-mono);font-size:13px;line-height:16px;font-weight:500;letter-spacing:0.08em">MON-8F3A</span>
+    </div>
+    <div style="display:flex;gap:24px;align-items:baseline">
+      <div style="width:210px;flex-shrink:0;display:flex;flex-direction:column;gap:2px">
+        <span style="font-family:var(--font-mono);font-size:12px;font-weight:500">text-micro</span>
+        <span style="font-family:var(--font-mono);font-size:11px;color:var(--color-ink-faint)">system-ui 400 · 12/16</span>
+      </div>
+      <span style="font-size:12px;line-height:16px;color:var(--color-ink-muted)">Last synced 4 minutes ago</span>
+    </div>
+  </div>
+
+  <p style="margin:0 0 40px;font-size:14px;line-height:21px;color:var(--color-ink-muted);max-width:640px;text-wrap:pretty">Two webfonts, not three. The interface chrome runs on <span style="font-family:var(--font-mono);font-size:13px">system-ui</span> — which is SF on both devices this app will ever run on — so it feels native and costs nothing to load.</p>
+
+  <div style="display:flex;align-items:baseline;gap:12px;border-bottom:1px solid var(--color-line-strong);padding-bottom:10px;margin-bottom:22px">
+    <h2 style="margin:0;font-size:12px;font-weight:600;letter-spacing:0.09em;text-transform:uppercase;color:var(--color-ink-muted)">Rhythm</h2>
+    <span style="font-family:var(--font-mono);font-size:12px;color:var(--color-ink-faint)">4px base — Tailwind's own scale</span>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:40px">
+    <div style="display:flex;align-items:center;gap:16px">
+      <span style="font-family:var(--font-mono);font-size:12px;width:44px;color:var(--color-ink-muted)">1</span>
+      <div style="height:14px;width:4px;background:var(--color-leaf);border-radius:2px"></div>
+      <span style="font-family:var(--font-mono);font-size:12px;color:var(--color-ink-faint)">4px</span>
+      <span style="font-size:13px;color:var(--color-ink-muted)">icon to its label</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:16px">
+      <span style="font-family:var(--font-mono);font-size:12px;width:44px;color:var(--color-ink-muted)">2</span>
+      <div style="height:14px;width:8px;background:var(--color-leaf);border-radius:2px"></div>
+      <span style="font-family:var(--font-mono);font-size:12px;color:var(--color-ink-faint)">8px</span>
+      <span style="font-size:13px;color:var(--color-ink-muted)">stacked lines inside one row</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:16px">
+      <span style="font-family:var(--font-mono);font-size:12px;width:44px;color:var(--color-ink-muted)">3</span>
+      <div style="height:14px;width:12px;background:var(--color-leaf);border-radius:2px"></div>
+      <span style="font-family:var(--font-mono);font-size:12px;color:var(--color-ink-faint)">12px</span>
+      <span style="font-size:13px;color:var(--color-ink-muted)">between chips and buttons</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:16px">
+      <span style="font-family:var(--font-mono);font-size:12px;width:44px;color:var(--color-ink-muted)">4</span>
+      <div style="height:14px;width:16px;background:var(--color-leaf);border-radius:2px"></div>
+      <span style="font-family:var(--font-mono);font-size:12px;color:var(--color-ink-faint)">16px</span>
+      <span style="font-size:13px;color:var(--color-ink-muted)">screen gutter, row padding</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:16px">
+      <span style="font-family:var(--font-mono);font-size:12px;width:44px;color:var(--color-ink-muted)">6</span>
+      <div style="height:14px;width:24px;background:var(--color-leaf);border-radius:2px"></div>
+      <span style="font-family:var(--font-mono);font-size:12px;color:var(--color-ink-faint)">24px</span>
+      <span style="font-size:13px;color:var(--color-ink-muted)">between blocks of facts</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:16px">
+      <span style="font-family:var(--font-mono);font-size:12px;width:44px;color:var(--color-ink-muted)">8</span>
+      <div style="height:14px;width:32px;background:var(--color-leaf);border-radius:2px"></div>
+      <span style="font-family:var(--font-mono);font-size:12px;color:var(--color-ink-faint)">32px</span>
+      <span style="font-size:13px;color:var(--color-ink-muted)">between sections</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:16px">
+      <span style="font-family:var(--font-mono);font-size:12px;width:44px;color:var(--color-ink-muted)">12</span>
+      <div style="height:14px;width:48px;background:var(--color-leaf);border-radius:2px"></div>
+      <span style="font-family:var(--font-mono);font-size:12px;color:var(--color-ink-faint)">48px</span>
+      <span style="font-size:13px;color:var(--color-ink-muted)">above a screen title</span>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:baseline;gap:12px;border-bottom:1px solid var(--color-line-strong);padding-bottom:10px;margin-bottom:22px">
+    <h2 style="margin:0;font-size:12px;font-weight:600;letter-spacing:0.09em;text-transform:uppercase;color:var(--color-ink-muted)">Radius &amp; reach</h2>
+    <span style="font-family:var(--font-mono);font-size:12px;color:var(--color-ink-faint)">square-ish, like a ledger</span>
+  </div>
+
+  <div style="display:flex;gap:32px;flex-wrap:wrap;margin-bottom:32px">
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div style="width:96px;height:64px;background:var(--color-surface);border:1px solid var(--color-line-strong);border-radius:4px"></div>
+      <span style="font-family:var(--font-mono);font-size:12px;font-weight:500">rounded-sm · 4px</span>
+      <span style="font-size:12px;color:var(--color-ink-muted)">inputs, small tags</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div style="width:96px;height:64px;background:var(--color-surface);border:1px solid var(--color-line-strong);border-radius:6px"></div>
+      <span style="font-family:var(--font-mono);font-size:12px;font-weight:500">rounded · 6px</span>
+      <span style="font-size:12px;color:var(--color-ink-muted)">buttons, cards</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div style="width:96px;height:64px;background:var(--color-surface);border:1px solid var(--color-line-strong);border-radius:10px"></div>
+      <span style="font-family:var(--font-mono);font-size:12px;font-weight:500">rounded-lg · 10px</span>
+      <span style="font-size:12px;color:var(--color-ink-muted)">sheets, big panels</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div style="width:96px;height:64px;background:var(--color-surface);border:1px solid var(--color-line-strong);border-radius:999px"></div>
+      <span style="font-family:var(--font-mono);font-size:12px;font-weight:500">rounded-full</span>
+      <span style="font-size:12px;color:var(--color-ink-muted)">filter chips only</span>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:16px;align-items:flex-end;margin-bottom:16px">
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="width:180px;height:44px;border:1px dashed var(--color-line-strong);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:12px;color:var(--color-ink-muted)">44 — the floor</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="width:180px;height:48px;border:1px dashed var(--color-line-strong);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:12px;color:var(--color-ink-muted)">48 — every control</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="width:180px;height:64px;border:1px dashed var(--color-line-strong);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:12px;color:var(--color-ink-muted)">64 — WATER</div>
+    </div>
+  </div>
+
+  <p style="margin:0;font-size:14px;line-height:21px;color:var(--color-ink-muted);max-width:640px;text-wrap:pretty">You use this standing up, one-handed, holding a watering can. Nothing that writes data goes below 44 — filter chips are the one exception at 36. The standard control is 48, and the one action you came for is 64 tall and full width.</p>
+
+</div>
+</x-dc>
+</body>
+</html>

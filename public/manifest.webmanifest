@@ -1,0 +1,13 @@
+{
+  "name": "Florarithm",
+  "short_name": "Florarithm",
+  "description": "A plant logbook you open by tapping the tag on the pot.",
+  "start_url": "/Florarithm/",
+  "scope": "/Florarithm/",
+  "display": "standalone",
+  "background_color": "#f6f2ea",
+  "theme_color": "#f6f2ea",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
