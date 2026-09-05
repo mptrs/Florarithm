@@ -8,4 +8,3 @@ tsconfig.tsbuildinfo
 # The seeded design canvas is generated from design/*.dc.html; the artboards are
 # the source, the 2.7 MB bundle with the editor baked in is not.
 design/florarithm-design-system.html
-design/logo/florarithm-logo.html
