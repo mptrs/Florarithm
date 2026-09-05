@@ -9,6 +9,7 @@ import { base64ToUtf8, utf8ToBase64 } from '../src/data/base64'
 import {
   GitHubAuthError,
   GitHubConflictError,
+  getDefaultBranch,
   getFile,
   listDir,
   putFile,
@@ -237,9 +238,20 @@ test.describe('the GitHub Contents API client', () => {
 
   test('a 409 on a write is a conflict, so the caller can re-fetch and retry', async () => {
     global.fetch = (async () => new Response(null, { status: 409 })) as typeof fetch
-    await expect(putFile(config, 'plants.json', '[]', 'sha1', 'sync')).rejects.toBeInstanceOf(
-      GitHubConflictError,
-    )
+    await expect(
+      putFile(config, 'plants.json', '[]', 'sha1', 'sync', 'main'),
+    ).rejects.toBeInstanceOf(GitHubConflictError)
+  })
+
+  test('a write always names an explicit branch, so it can create the very first commit on a repo with none yet', async () => {
+    let body: unknown
+    global.fetch = (async (_url, init) => {
+      body = JSON.parse(init?.body as string)
+      return new Response(JSON.stringify({ content: { sha: 'new-sha' } }), { status: 201 })
+    }) as typeof fetch
+
+    await putFile(config, 'plants.json', '[]', null, 'sync', 'main')
+    expect((body as { branch: string }).branch).toBe('main')
   })
 
   test('a successful get decodes the base64 body and hands back its sha', async () => {
@@ -248,5 +260,11 @@ test.describe('the GitHub Contents API client', () => {
         status: 200,
       })) as typeof fetch
     expect(await getFile(config, 'plants.json')).toEqual({ content: '[]', sha: 'abc123' })
+  })
+
+  test('the default branch comes from the repo itself, resolvable even before the first commit', async () => {
+    global.fetch = (async () =>
+      new Response(JSON.stringify({ default_branch: 'main' }), { status: 200 })) as typeof fetch
+    expect(await getDefaultBranch(config)).toBe('main')
   })
 })

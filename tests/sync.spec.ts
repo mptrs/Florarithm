@@ -39,11 +39,21 @@ test('a completely empty repo bootstraps on the first sync', async ({ page }) =>
 
   await page.route('https://api.github.com/**', async (route: Route) => {
     const request = route.request()
-    if (request.method() === 'GET') {
+    const path = new URL(request.url()).pathname
+
+    if (request.method() === 'GET' && path === '/repos/test-owner/test-repo') {
+      // `default_branch` exists from repo creation, before any commit —
+      // this is what lets a `PUT contents` create the very first one.
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ default_branch: 'main' }),
+      })
+    } else if (request.method() === 'GET') {
       await route.fulfill({ status: 404, body: '{}' })
     } else if (request.method() === 'PUT') {
-      const path = new URL(request.url()).pathname.split('/contents/')[1]
-      puts.push(path ?? '')
+      const contentsPath = path.split('/contents/')[1]
+      puts.push(contentsPath ?? '')
       await route.fulfill({
         status: 201,
         contentType: 'application/json',

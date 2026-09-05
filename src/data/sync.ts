@@ -22,10 +22,13 @@ import type { PlantEvent } from './types'
 import { getState, replaceEverything, subscribe as subscribeStore } from './store'
 import { mergeSnapshots } from './merge'
 import {
+  GitHubApiError,
   GitHubAuthError,
   GitHubConflictError,
+  GitHubNetworkError,
   type GitHubConfig,
   type RemoteFile,
+  getDefaultBranch,
   getFile,
   listDir,
   putFile,
@@ -227,11 +230,23 @@ async function performSync(): Promise<void> {
     if (error instanceof GitHubAuthError) {
       phase = 'error'
       errorMessage = 'Your access token expired. Sync is paused.'
-    } else {
-      // Network failure, a stray API error, a malformed remote file: none of
-      // these are the person's problem to fix by hand, so they all read the
-      // same way — sync will try again on its own.
+    } else if (error instanceof GitHubNetworkError) {
+      // Actually offline, or GitHub is unreachable — nobody's fault, sync
+      // will simply try again once a connection comes back.
       phase = 'offline'
+    } else {
+      // A 404/403 GitHub actually returned, a conflict that didn't resolve
+      // after a retry, a remote file that doesn't parse: these are real
+      // problems with the repository, the token's permissions, or the data —
+      // "waiting for a connection" would be a lie, so this gets a message
+      // instead, even though there's no single button that fixes all of them.
+      phase = 'error'
+      errorMessage =
+        error instanceof GitHubApiError
+          ? `GitHub rejected the request (${error.status}). Check the repository name and the token's Contents permission.`
+          : error instanceof Error
+            ? `Sync failed: ${error.message}`
+            : 'Sync failed for an unknown reason.'
     }
   }
 
@@ -240,6 +255,13 @@ async function performSync(): Promise<void> {
 }
 
 async function syncOnce(active: SyncConfig): Promise<void> {
+  // Resolved once per round and passed to every write: a `PUT contents` with
+  // no explicit branch resolves against the repo's default ref, which does
+  // not exist yet on a repo with zero commits — that PUT 404s even though
+  // the repo and the token are both fine. `default_branch` is set at repo
+  // creation, before any commit, so this works from the very first sync too.
+  const branch = await getDefaultBranch(active)
+
   const remoteMetaFile = await getFile(active, 'meta.json')
   const remoteVocab = remoteMetaFile ? parseRemoteMeta(remoteMetaFile.content).vocab : []
 
@@ -281,12 +303,18 @@ async function syncOnce(active: SyncConfig): Promise<void> {
     }
   }
 
-  await pushIfChanged(active, 'meta.json', remoteMetaFile, buildMetaFile(merged.vocab))
-  await pushIfChanged(active, 'plants.json', remotePlantsFile, buildPlantsFile(merged.plants))
+  await pushIfChanged(active, branch, 'meta.json', remoteMetaFile, buildMetaFile(merged.vocab))
+  await pushIfChanged(active, branch, 'plants.json', remotePlantsFile, buildPlantsFile(merged.plants))
 
   const mergedMonths = groupEventsByMonth(merged.events)
   for (const [key, events] of mergedMonths) {
-    await pushIfChanged(active, monthFilePath(key), remoteMonthFiles.get(key) ?? null, buildEventsFile(events))
+    await pushIfChanged(
+      active,
+      branch,
+      monthFilePath(key),
+      remoteMonthFiles.get(key) ?? null,
+      buildEventsFile(events),
+    )
   }
 }
 
@@ -294,6 +322,7 @@ const COMMIT_MESSAGE = 'Sync from Florarithm'
 
 async function pushIfChanged(
   active: SyncConfig,
+  branch: string,
   path: string,
   existing: RemoteFile | null,
   content: string,
@@ -301,7 +330,7 @@ async function pushIfChanged(
   if (existing && existing.content === content) return
 
   try {
-    await putFile(active, path, content, existing?.sha ?? null, COMMIT_MESSAGE)
+    await putFile(active, path, content, existing?.sha ?? null, COMMIT_MESSAGE, branch)
   } catch (error) {
     if (!(error instanceof GitHubConflictError)) throw error
 
@@ -310,7 +339,7 @@ async function pushIfChanged(
     // luck and will simply try again next time.
     const fresh = await getFile(active, path)
     if (fresh?.content !== content) {
-      await putFile(active, path, content, fresh?.sha ?? null, COMMIT_MESSAGE)
+      await putFile(active, path, content, fresh?.sha ?? null, COMMIT_MESSAGE, branch)
     }
   }
 }
