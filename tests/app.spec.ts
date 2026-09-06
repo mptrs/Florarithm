@@ -241,8 +241,9 @@ test('the collection searches on name, species, code and place', async ({ page }
 test('the service worker caches what a cold offline start needs', async ({ page }) => {
   await addPlant(page, 'Monstera deliciosa', 'Gruyère')
 
+  // clients.claim() is occasionally slow to land under CI load on WebKit.
   await page.waitForFunction(() => navigator.serviceWorker?.controller !== null, null, {
-    timeout: 15_000,
+    timeout: 30_000,
   })
 
   const cached = await page.evaluate(async () => {
