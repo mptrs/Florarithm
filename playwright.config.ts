@@ -6,6 +6,7 @@ const BASE_URL = `http://localhost:${PORT}/Florarithm/`
 export default defineConfig({
   testDir: './tests',
   fullyParallel: true,
+  retries: process.env.CI ? 1 : 0,
   reporter: [['list']],
   use: { baseURL: BASE_URL, trace: 'retain-on-failure' },
   projects: [
