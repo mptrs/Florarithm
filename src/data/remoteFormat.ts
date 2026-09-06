@@ -8,7 +8,15 @@
  * silently accepts a malformed remote file corrupts both devices at once.
  */
 
-import { BACKUP_FORMAT, BACKUP_VERSION, type Plant, type PlantEvent, type VocabItem } from './types'
+import { migrateEvents, migrateVocab } from './migrate'
+import {
+  BACKUP_FORMAT,
+  BACKUP_VERSION,
+  READABLE_BACKUP_VERSIONS,
+  type Plant,
+  type PlantEvent,
+  type VocabItem,
+} from './types'
 
 export type RemoteMeta = {
   format: typeof BACKUP_FORMAT
@@ -30,9 +38,11 @@ export function parseRemoteMeta(text: string): RemoteMeta {
   if (candidate.format !== BACKUP_FORMAT) {
     throw new RemoteParseError('meta.json was not written by Florarithm.')
   }
-  if (candidate.version !== BACKUP_VERSION) {
+  // A repository written by version 2 is read and migrated rather than
+  // refused: it is the same collection, and the next push rewrites it as 3.
+  if (!READABLE_BACKUP_VERSIONS.includes(Number(candidate.version))) {
     throw new RemoteParseError(
-      `meta.json is version ${String(candidate.version)}; this app reads version ${BACKUP_VERSION}.`,
+      `meta.json is version ${String(candidate.version)}; this app reads ${READABLE_BACKUP_VERSIONS.join(' and ')}.`,
     )
   }
   if (!Array.isArray(candidate.vocab)) {
@@ -42,7 +52,9 @@ export function parseRemoteMeta(text: string): RemoteMeta {
   return {
     format: BACKUP_FORMAT,
     version: BACKUP_VERSION,
-    vocab: candidate.vocab.map((item) => ({ ...item, updatedAt: item.updatedAt ?? item.createdAt })),
+    vocab: migrateVocab(
+      candidate.vocab.map((item) => ({ ...item, updatedAt: item.updatedAt ?? item.createdAt })),
+    ),
   }
 }
 
@@ -63,7 +75,7 @@ export function buildEventsFile(events: readonly PlantEvent[]): string {
 export function parseEventsFile(text: string, path: string): PlantEvent[] {
   const parsed = parseJson(text, path)
   if (!Array.isArray(parsed)) throw new RemoteParseError(`${path} is not a list.`)
-  return parsed as PlantEvent[]
+  return migrateEvents(parsed as PlantEvent[])
 }
 
 function parseJson(text: string, path: string): unknown {

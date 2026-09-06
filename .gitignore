@@ -5,9 +5,11 @@ test-results
 playwright-report
 tsconfig.tsbuildinfo
 
-# The seeded design canvas is generated from design/*.dc.html; the artboards are
-# the source, the 2.7 MB bundle with the editor baked in is not.
+# A seeded design canvas is generated from the .dc.html artboards beside it;
+# the artboards are the source, the multi-megabyte bundle with the editor baked
+# into it is not.
 design/florarithm-design-system.html
+design/plant-redesign/plant-page.html
 
 # Impeccable's compiled per-platform engine — downloaded once per machine on
 # first run, not something every clone should carry a darwin-arm64 binary for.

@@ -10,7 +10,14 @@
  */
 
 import { nowISO } from '~/lib/date'
-import { BACKUP_FORMAT, BACKUP_VERSION, type Backup, type VocabItem } from './types'
+import { migrateEvents, migrateVocab } from './migrate'
+import {
+  BACKUP_FORMAT,
+  BACKUP_VERSION,
+  READABLE_BACKUP_VERSIONS,
+  type Backup,
+  type VocabItem,
+} from './types'
 import type { State } from './store'
 
 export function buildBackup(state: State): Backup {
@@ -91,9 +98,9 @@ export function parseBackup(text: string): Backup {
   if (candidate.format !== BACKUP_FORMAT) {
     throw new BackupParseError('That file was not exported by Florarithm.')
   }
-  if (candidate.version !== BACKUP_VERSION) {
+  if (!READABLE_BACKUP_VERSIONS.includes(Number(candidate.version))) {
     throw new BackupParseError(
-      `That backup is version ${String(candidate.version)}; this app reads version ${BACKUP_VERSION}.`,
+      `That backup is version ${String(candidate.version)}; this app reads ${READABLE_BACKUP_VERSIONS.join(' and ')}.`,
     )
   }
   if (
@@ -109,8 +116,10 @@ export function parseBackup(text: string): Backup {
     version: BACKUP_VERSION,
     exportedAt: candidate.exportedAt ?? nowISO(),
     plants: candidate.plants,
-    events: candidate.events,
-    vocab: candidate.vocab.map(withVocabUpdatedAt),
+    // A version 2 file still names a fertilizer brand on every watering; it
+    // comes in as a plain yes/no, and the list it pointed at is dropped.
+    events: migrateEvents(candidate.events),
+    vocab: migrateVocab(candidate.vocab.map(withVocabUpdatedAt)),
   }
 }
 

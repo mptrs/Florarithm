@@ -87,6 +87,14 @@ export async function putVocab(item: VocabItem): Promise<void> {
   await (await db()).put('vocab', item)
 }
 
+/** Only the version 2 fertilizer list uses this. Vocab entries are otherwise
+ *  archived rather than deleted, so a reference from 2027 never dangles — but
+ *  the field that referenced these is gone, so there is nothing left to dangle
+ *  from. */
+export async function deleteVocab(id: string): Promise<void> {
+  await (await db()).delete('vocab', id)
+}
+
 /** Events belonging to a plant, including tombstones. Only used when deleting a
  *  plant outright; screens read from the in-memory store instead. */
 export async function eventsForPlant(code: string): Promise<PlantEvent[]> {

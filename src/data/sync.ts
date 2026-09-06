@@ -14,7 +14,6 @@
  */
 
 import { useSyncExternalStore } from 'react'
-import { hasPendingUndo } from '~/lib/pendingUndo'
 import { nowISO } from '~/lib/date'
 import * as db from './db'
 import type { Snapshot } from './db'
@@ -173,10 +172,6 @@ function scheduleSync(delayMs: number): void {
 
   debounceTimer = setTimeout(() => {
     debounceTimer = null
-    if (hasPendingUndo()) {
-      scheduleSync(DEBOUNCE_MS)
-      return
-    }
     void runSync()
   }, delayMs)
 }

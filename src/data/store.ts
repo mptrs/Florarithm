@@ -6,9 +6,10 @@
  * couple of megabytes and a filter costs microseconds — while every write goes
  * to IndexedDB one record at a time.
  *
- * Every mutation that a person could regret returns an `UndoAction`. That is not
- * a nicety: logging is one tap with no confirmation, so there has to be a way
- * back.
+ * Nothing here hands back an undo closure. A logged entry is corrected or
+ * removed from the row it is written on, which is visible for as long as the
+ * record exists rather than for three seconds — and, unlike a hard delete
+ * behind an undo bar, a tombstone merges correctly with another device.
  */
 
 import { useSyncExternalStore } from 'react'
@@ -16,6 +17,7 @@ import { nowISO } from '~/lib/date'
 import { newId } from '~/lib/id'
 import { generatePlantCode } from '~/lib/plantCode'
 import * as db from './db'
+import { migrateEvents, migrateVocab, needsMigration } from './migrate'
 import type {
   Id,
   Origin,
@@ -34,13 +36,6 @@ export type State = {
   events: readonly PlantEvent[]
   vocab: readonly VocabItem[]
   lastBackupAt: string | null
-}
-
-export type UndoAction = {
-  /** Past tense, and it names the plant: you may be two rooms away by the time
-   *  you read it. */
-  message: string
-  undo: () => Promise<void>
 }
 
 const LAST_BACKUP_KEY = 'lastBackupAt'
@@ -97,7 +92,20 @@ export async function load(): Promise<void> {
     const migrated = plants.filter((plant, index) => plant !== snapshot.plants[index])
     if (migrated.length > 0) await Promise.all(migrated.map((plant) => db.putPlant(plant)))
 
-    commit({ ...snapshot, plants, lastBackupAt: lastBackupAt ?? null, status: 'ready' })
+    // Version 2 waterings and the fertilizer list, corrected on the way in and
+    // written straight back so the next boot has nothing to do.
+    const events = migrateEvents(snapshot.events)
+    const vocab = migrateVocab(snapshot.vocab)
+    if (needsMigration(snapshot.events, snapshot.vocab)) {
+      const changed = events.filter((event, index) => event !== snapshot.events[index])
+      const dropped = snapshot.vocab.filter((item) => !vocab.includes(item))
+      await Promise.all([
+        ...changed.map((event) => db.putEvent(event)),
+        ...dropped.map((item) => db.deleteVocab(item.id)),
+      ])
+    }
+
+    commit({ ...snapshot, plants, events, vocab, lastBackupAt: lastBackupAt ?? null, status: 'ready' })
   } catch {
     commit({ status: 'error' })
   }
@@ -217,74 +225,54 @@ function findPlant(code: string): Plant | undefined {
  *  Identity and timestamp are the store's business.
  *
  *  Distributed over the union on purpose — a plain `Omit` on a union keeps only
- *  the keys every member shares, which would silently drop `text`, `flushed`
+ *  the keys every member shares, which would silently drop `text`, `fertilized`
  *  and the rest. */
 type DraftOf<T> = T extends unknown ? Omit<T, 'id' | 'date' | 'deleted'> & { date?: string } : never
 export type EventDraft = DraftOf<PlantEvent>
 
-export async function logEvent(draft: EventDraft): Promise<UndoAction> {
+export async function logEvent(draft: EventDraft): Promise<void> {
   const event = { ...draft, id: newId(), date: draft.date ?? nowISO() } as PlantEvent
 
   await db.putEvent(event)
   commit({ events: [...state.events, event] })
 
-  // Repotting changes the plant itself, not just the log. Remember what it was
-  // so undo puts the pot and the medium back too.
-  let restorePlant: (() => Promise<void>) | null = null
+  // Repotting changes the plant itself, not just the log.
   if (event.type === 'repot') {
     const before = findPlant(event.plantCode)
     if (before) {
-      const { potSize, mediumId } = before
       await patchPlant(event.plantCode, {
-        potSize: event.toSize ?? potSize,
-        mediumId: event.mediumId ?? mediumId,
+        potSize: event.toSize ?? before.potSize,
+        mediumId: event.mediumId ?? before.mediumId,
       })
-      restorePlant = async () => {
-        await patchPlant(event.plantCode, { potSize, mediumId })
-      }
     }
   }
+}
 
-  return {
-    message: undoMessage(event),
-    undo: async () => {
-      await hardRemoveEvent(event.id)
-      await restorePlant?.()
-    },
-  }
+/**
+ * Change an entry that is already in the log.
+ *
+ * Editing is not undoable the way logging is — you are looking straight at the
+ * thing you changed, and the form you changed it in is still on screen. The
+ * record keeps its id and its place, so a merge sees one row, not two.
+ */
+export async function updateEvent(id: string, patch: Partial<PlantEvent>): Promise<void> {
+  const event = state.events.find((candidate) => candidate.id === id)
+  if (!event || event.deleted) return
+
+  const next = { ...event, ...patch } as PlantEvent
+  await db.putEvent(next)
+  commit({ events: state.events.map((current) => (current.id === id ? next : current)) })
 }
 
 /** A deletion is a tombstone, never a removal: an append-only log that forgets
  *  a row will have it handed straight back by the next merge. */
-export async function removeEvent(id: string): Promise<UndoAction | null> {
+export async function removeEvent(id: string): Promise<void> {
   const event = state.events.find((candidate) => candidate.id === id)
-  if (!event || event.deleted) return null
+  if (!event || event.deleted) return
 
   const tombstone = { ...event, deleted: true } as PlantEvent
   await db.putEvent(tombstone)
   commit({ events: state.events.map((current) => (current.id === id ? tombstone : current)) })
-
-  return {
-    message: `Deleted ${describeEvent(event).toLowerCase()}`,
-    undo: async () => {
-      const restored = { ...event, deleted: false } as PlantEvent
-      await db.putEvent(restored)
-      commit({ events: state.events.map((current) => (current.id === id ? restored : current)) })
-    },
-  }
-}
-
-/** Undoing a log the moment it happened takes the row out for good — there is
- *  nothing to reconcile yet, and a tombstone for a mistap is just litter. */
-async function hardRemoveEvent(id: string): Promise<void> {
-  await db.deleteEvents([id])
-  commit({ events: state.events.filter((event) => event.id !== id) })
-}
-
-function undoMessage(event: PlantEvent): string {
-  const plant = findPlant(event.plantCode)
-  const name = plant?.name || event.plantCode
-  return event.type === 'water' ? `Watered ${name}` : `${describeEvent(event)} · ${name}`
 }
 
 /** One sentence describing what happened, without the plant's name. */
@@ -306,7 +294,7 @@ export function describeEvent(event: PlantEvent): string {
 // --- growing lists ----------------------------------------------------------
 
 /** Look a name up, or add it. This is what makes places, mediums and
- *  fertilizers lists you pick from instead of text you retype. */
+ *  mediums lists you pick from instead of text you retype. */
 export async function ensureVocabItem(kind: VocabKind, name: string): Promise<Id | null> {
   const trimmed = name.trim()
   if (!trimmed) return null

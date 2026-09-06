@@ -10,6 +10,7 @@ import { expect, test } from '@playwright/test'
 import { codePrefix, generatePlantCode, isPlantCode } from '../src/lib/plantCode'
 import { nextInLine, splitLineage } from '../src/lib/nameGenerator'
 import { parseBackup, BackupParseError } from '../src/data/backup'
+import { migrateEvent, migrateVocab } from '../src/data/migrate'
 import { daysBetween, inputValueToISO, isoToInputValue } from '../src/lib/date'
 import { toRoman, fromRoman } from '../src/lib/format'
 import { parseRoute } from '../src/lib/router'
@@ -115,6 +116,74 @@ test.describe('backups', () => {
     expect(() => parseBackup(JSON.stringify({ ...valid, plants: undefined }))).toThrow(
       BackupParseError,
     )
+  })
+})
+
+test.describe('reading version 2', () => {
+  // The sync repository and every backup on disk are still version 2, so the
+  // fertilizer brand has to survive being dropped rather than take the file
+  // with it.
+  const legacyWater = (extra: Record<string, unknown>) =>
+    ({
+      id: 'e1',
+      plantCode: 'MON-0001',
+      date: '2026-08-01T12:00:00.000Z',
+      type: 'water',
+      flushed: true,
+      ...extra,
+    }) as never
+
+  test('a named fertilizer becomes a plain yes', () => {
+    const migrated = migrateEvent(legacyWater({ fertilizerId: 'fert-1' })) as unknown as Record<
+      string,
+      unknown
+    >
+    expect(migrated.fertilized).toBe(true)
+    expect(migrated.fertilizerId).toBeUndefined()
+    expect(migrated.flushed).toBeUndefined()
+  })
+
+  test('a watering with no fertilizer becomes a plain no', () => {
+    const migrated = migrateEvent(legacyWater({ fertilizerId: null })) as unknown as Record<
+      string,
+      unknown
+    >
+    expect(migrated.fertilized).toBe(false)
+  })
+
+  test('an event that is already version 3 is handed back untouched', () => {
+    const current = {
+      id: 'e2',
+      plantCode: 'MON-0001',
+      date: '2026-08-01T12:00:00.000Z',
+      type: 'water',
+      fertilized: true,
+    } as never
+    expect(migrateEvent(current)).toBe(current)
+  })
+
+  test('only the fertilizer list is dropped', () => {
+    const vocab = [
+      { id: '1', kind: 'location', name: 'Hallway' },
+      { id: '2', kind: 'fertilizer', name: 'Plagron' },
+      { id: '3', kind: 'medium', name: 'SYBAStones' },
+    ] as never
+    expect(migrateVocab(vocab).map((item) => item.id)).toEqual(['1', '3'])
+  })
+
+  test('a version 2 file is read rather than refused', () => {
+    const file = {
+      format: 'florarithm',
+      version: 2,
+      exportedAt: '2026-09-05T10:00:00.000Z',
+      plants: [],
+      events: [legacyWater({ fertilizerId: 'fert-1' })],
+      vocab: [{ id: '2', kind: 'fertilizer', name: 'Plagron', createdAt: 'x' }],
+    }
+    const backup = parseBackup(JSON.stringify(file))
+    expect(backup.version).toBe(3)
+    expect(backup.vocab).toHaveLength(0)
+    expect((backup.events[0] as unknown as Record<string, unknown>).fertilized).toBe(true)
   })
 })
 

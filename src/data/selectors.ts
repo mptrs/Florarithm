@@ -108,6 +108,15 @@ export function daysSinceWater(state: State, code: string): number | null {
   return last === null ? null : daysSince(last)
 }
 
+/** The last watering that had fertilizer in it. Fertilizing is not its own
+ *  event: it is a property of a watering, because that is when it happens. */
+export function lastFertilisedAt(state: State, code: string): string | null {
+  const event = eventsFor(state, code).find(
+    (candidate) => candidate.type === 'water' && candidate.fertilized,
+  )
+  return event?.date ?? null
+}
+
 export function isThirsty(days: number | null): boolean {
   return days !== null && days >= THIRSTY_AFTER_DAYS
 }
@@ -147,6 +156,25 @@ export function countThisYear(state: State, code: string, type: EventType): numb
   return eventsFor(state, code).filter(
     (event) => event.type === type && yearOf(event.date) === thisYear,
   ).length
+}
+
+/**
+ * The log, cut into calendar months, newest first.
+ *
+ * Ninety entries today and a few thousand in ten years: a flat list stops being
+ * navigable long before it stops being correct, and the month is the unit
+ * people actually remember things in.
+ */
+export function eventsByMonth(events: readonly PlantEvent[]): [string, PlantEvent[]][] {
+  const groups = new Map<string, PlantEvent[]>()
+  for (const event of events) {
+    const date = new Date(event.date)
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+    const bucket = groups.get(key)
+    if (bucket) bucket.push(event)
+    else groups.set(key, [event])
+  }
+  return [...groups.entries()]
 }
 
 export function lastRepot(state: State, code: string) {

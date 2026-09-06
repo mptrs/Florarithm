@@ -58,6 +58,13 @@ function startOfDay(value: string | Date): number {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
 }
 
+/** `August 2026` — the heading over a month of history. */
+const monthYear = new Intl.DateTimeFormat(LOCALE, { month: 'long', year: 'numeric' })
+
+export function formatMonthYear(iso: string): string {
+  return monthYear.format(new Date(iso))
+}
+
 /** `2 Sep` — for history rows, where the year is obvious from context. */
 export function formatDayMonth(iso: string): string {
   return dayMonth.format(new Date(iso))
