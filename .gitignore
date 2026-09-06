@@ -8,3 +8,8 @@ tsconfig.tsbuildinfo
 # The seeded design canvas is generated from design/*.dc.html; the artboards are
 # the source, the 2.7 MB bundle with the editor baked in is not.
 design/florarithm-design-system.html
+
+# Impeccable's compiled per-platform engine — downloaded once per machine on
+# first run, not something every clone should carry a darwin-arm64 binary for.
+.claude/skills/impeccable/scripts/bin/
+.github/skills/impeccable/scripts/bin/

@@ -1,0 +1,183 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-05T21:17:23Z",
+  "title": "Design System: Florarithm",
+  "extensions": {
+    "colorMeta": {
+      "water": {
+        "role": "primary",
+        "displayName": "Deep Water Blue",
+        "canonical": "oklch(0.455 0.104 236)",
+        "tonalRamp": [
+          "oklch(0.15 0.104 236)",
+          "oklch(0.264 0.104 236)",
+          "oklch(0.379 0.104 236)",
+          "oklch(0.493 0.104 236)",
+          "oklch(0.607 0.104 236)",
+          "oklch(0.721 0.104 236)",
+          "oklch(0.836 0.104 236)",
+          "oklch(0.95 0.104 236)"
+        ]
+      },
+      "leaf": {
+        "role": "secondary",
+        "displayName": "Deep Moss Green",
+        "canonical": "oklch(0.455 0.098 152)",
+        "tonalRamp": [
+          "oklch(0.15 0.098 152)",
+          "oklch(0.264 0.098 152)",
+          "oklch(0.379 0.098 152)",
+          "oklch(0.493 0.098 152)",
+          "oklch(0.607 0.098 152)",
+          "oklch(0.721 0.098 152)",
+          "oklch(0.836 0.098 152)",
+          "oklch(0.95 0.098 152)"
+        ]
+      },
+      "ember": {
+        "role": "tertiary",
+        "displayName": "Warm Ember",
+        "canonical": "oklch(0.52 0.13 47)",
+        "tonalRamp": [
+          "oklch(0.15 0.13 47)",
+          "oklch(0.264 0.13 47)",
+          "oklch(0.379 0.13 47)",
+          "oklch(0.493 0.13 47)",
+          "oklch(0.607 0.13 47)",
+          "oklch(0.721 0.13 47)",
+          "oklch(0.836 0.13 47)",
+          "oklch(0.95 0.13 47)"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Parchment Paper",
+        "canonical": "oklch(0.968 0.008 85)",
+        "tonalRamp": [
+          "oklch(0.15 0.008 85)",
+          "oklch(0.264 0.008 85)",
+          "oklch(0.379 0.008 85)",
+          "oklch(0.493 0.008 85)",
+          "oklch(0.607 0.008 85)",
+          "oklch(0.721 0.008 85)",
+          "oklch(0.836 0.008 85)",
+          "oklch(0.95 0.008 85)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "oklch(0.255 0.014 65)",
+        "tonalRamp": [
+          "oklch(0.15 0.014 65)",
+          "oklch(0.264 0.014 65)",
+          "oklch(0.379 0.014 65)",
+          "oklch(0.493 0.014 65)",
+          "oklch(0.607 0.014 65)",
+          "oklch(0.721 0.014 65)",
+          "oklch(0.836 0.014 65)",
+          "oklch(0.95 0.014 65)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Screen titles, always in the serif." },
+      "title": { "displayName": "Title", "purpose": "Sheet and section titles, in the serif." },
+      "heading": { "displayName": "Heading", "purpose": "Sub-section headings, interface sans." },
+      "body": { "displayName": "Body", "purpose": "All copy and form input text; the 16px floor." },
+      "label": { "displayName": "Label", "purpose": "Uppercase field labels and eyebrows." },
+      "metric": { "displayName": "Metric", "purpose": "The one number that matters most on a row (days since water), mono for tabular alignment." },
+      "code": { "displayName": "Code", "purpose": "Plant codes and other short machine-produced strings, mono." }
+    },
+    "shadows": [
+      {
+        "name": "floating",
+        "value": "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
+        "purpose": "The undo toast only — the sole element in the system allowed to float above the page."
+      }
+    ],
+    "breakpoints": [
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The WATER button — the one loud, filled action on a plant screen.",
+      "html": "<button class=\"ds-btn-primary\">WATER</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 64px; padding: 0 24px; border-radius: 6px; border: 1px solid transparent; background: oklch(0.455 0.104 236); color: oklch(0.985 0.004 85); font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 1.1875rem; font-weight: 600; letter-spacing: 0.12em; transition: opacity 0.15s; } .ds-btn-primary:hover { opacity: 0.9; } .ds-btn-primary:active { opacity: 0.7; } .ds-btn-primary:focus-visible { outline: 2px solid oklch(0.455 0.098 152); outline-offset: 2px; } .ds-btn-primary:disabled { opacity: 0.4; pointer-events: none; }"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "The default, unopinionated button — transparent fill, hairline border.",
+      "html": "<button class=\"ds-btn-outline\">Cancel</button>",
+      "css": ".ds-btn-outline { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 48px; padding: 0 16px; border-radius: 6px; border: 1px solid oklch(0.8 0.012 80); background: transparent; color: oklch(0.255 0.014 65); font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 1rem; font-weight: 500; transition: opacity 0.15s; } .ds-btn-outline:hover { opacity: 0.85; } .ds-btn-outline:active { opacity: 0.7; } .ds-btn-outline:focus-visible { outline: 2px solid oklch(0.455 0.098 152); outline-offset: 2px; } .ds-btn-outline:disabled { opacity: 0.4; pointer-events: none; }"
+    },
+    {
+      "name": "Filter Chip",
+      "kind": "chip",
+      "refersTo": "chip-filter",
+      "description": "Narrows a list. 36px — below the touch floor on purpose, since a mis-tap only changes what you're looking at.",
+      "html": "<button class=\"ds-chip\">All</button>\n<button class=\"ds-chip ds-chip--selected\">Wishlist <span class=\"ds-chip__count\">6</span></button>",
+      "css": ".ds-chip { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 14px; border-radius: 9999px; border: 1px solid oklch(0.8 0.012 80); background: transparent; color: oklch(0.51 0.014 68); font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 0.875rem; font-weight: 500; white-space: nowrap; transition: opacity 0.15s; } .ds-chip:active { opacity: 0.7; } .ds-chip:focus-visible { outline: 2px solid oklch(0.455 0.098 152); outline-offset: 2px; } .ds-chip--selected { border-color: transparent; background: oklch(0.255 0.014 65); color: oklch(0.968 0.008 85); font-weight: 600; } .ds-chip__count { font-family: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace; font-size: 0.75rem; color: oklch(0.655 0.012 72); } .ds-chip--selected .ds-chip__count { color: inherit; opacity: 0.7; }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input-text",
+      "description": "The shared 48px-tall field every text/number/date input is built from.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"e.g. Monstera deliciosa\" />",
+      "css": ".ds-input { height: 48px; width: 100%; border-radius: 4px; border: 1px solid oklch(0.8 0.012 80); background: oklch(0.995 0.003 85); padding: 0 14px; color: oklch(0.255 0.014 65); font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 1rem; } .ds-input::placeholder { color: oklch(0.655 0.012 72); } .ds-input:focus { border-color: oklch(0.455 0.098 152); outline: none; }"
+    },
+    {
+      "name": "Sidebar Nav Item",
+      "kind": "nav",
+      "refersTo": "nav-item-sidebar",
+      "description": "A desktop sidebar entry; active state gets a tinted fill rather than a bar or underline.",
+      "html": "<a class=\"ds-nav-item ds-nav-item--active\" href=\"#\"><svg class=\"ds-nav-item__icon\" width=\"19\" height=\"19\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 3s6 6.2 6 10a6 6 0 0 1-12 0c0-3.8 6-10 6-10Z\"/></svg><span class=\"ds-nav-item__label\">Today</span><span class=\"ds-nav-item__count\">3</span></a>",
+      "css": ".ds-nav-item { display: flex; align-items: center; gap: 10px; height: 44px; border-radius: 6px; padding: 0 10px; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 0.9375rem; text-decoration: none; color: oklch(0.51 0.014 68); font-weight: 500; } .ds-nav-item:hover { background: oklch(0.944 0.01 85); } .ds-nav-item__label { flex: 1; } .ds-nav-item__count { font-family: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace; font-size: 0.8125rem; color: oklch(0.655 0.012 72); } .ds-nav-item--active { background: oklch(0.944 0.026 152); color: oklch(0.455 0.098 152); font-weight: 600; } .ds-nav-item--active .ds-nav-item__count { color: inherit; }"
+    },
+    {
+      "name": "Empty State Card",
+      "kind": "card",
+      "refersTo": "card-empty-state",
+      "description": "What a screen shows with nothing in it — a state, not an error.",
+      "html": "<div class=\"ds-card\"><h2 class=\"ds-card__title\">No plants yet</h2><p class=\"ds-card__body\">Add your first plant to start logging water, growth and notes.</p><button class=\"ds-btn-accent\">Add a plant</button></div>",
+      "css": ".ds-card { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; border-radius: 10px; border: 1px solid oklch(0.886 0.01 80); background: oklch(0.995 0.003 85); padding: 28px 20px; } .ds-card__title { font-family: 'Newsreader', Georgia, 'Times New Roman', serif; font-size: 1.5rem; font-weight: 500; margin: 0; } .ds-card__body { max-width: 60ch; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 0.9375rem; line-height: 1.5rem; color: oklch(0.51 0.014 68); margin: 0; } .ds-btn-accent { display: inline-flex; align-items: center; justify-content: center; height: 48px; padding: 0 16px; border-radius: 6px; border: none; background: oklch(0.455 0.098 152); color: oklch(0.985 0.004 85); font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 1rem; font-weight: 500; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Specimen Ledger",
+    "overview": "Florarithm reads like a herbarium record card crossed with an accounting ledger: square-cornered, typed rather than drawn, and quiet by default so that the one fact worth noticing — a plant is thirsty, a task is done — is the only thing that speaks. Names are set in a serif, like a specimen label; everything a machine produced (codes, dates, day counts) is set in mono so columns of numbers line up without effort. Color is treated as ink applied for meaning, not decoration: leaf and water sit at the same lightness and chroma so neither competes with the other, and warmth (ember) is the only color allowed to be louder, because a warning that is exactly as loud as everything else has stopped being a warning.\n\nThe system rejects anything that reads as playful, glossy, or gamified. There are no gradients, no drop shadows on resting surfaces, no rounded-everything softness — chips are the sole exception, and that exception is meaningful. Density and warmth come from a slightly warm, low-chroma paper tone rather than from ornament.",
+    "keyCharacteristics": [
+      "Square-ish, ledger-like forms; roundness is reserved for chips alone.",
+      "Serif for what a person named; mono for what a machine recorded.",
+      "One saturated color per meaning, never color for its own sake.",
+      "Flat at rest; the only shadow in the system belongs to an ephemeral toast.",
+      "Warm, low-chroma parchment neutrals rather than true gray or true white."
+    ],
+    "rules": [
+      { "name": "The One Loud Color Rule", "body": "Only ember is allowed to sit at a visibly higher chroma than its siblings. Every other accent is tuned to match leaf and water's lightness and chroma exactly, so urgency is never accidentally implied by a color choice alone.", "section": "colors" },
+      { "name": "The Specimen Label Rule", "body": "A plant's own name is always set in Newsreader; nothing else in the interface is. If it's a name someone gave a living thing, it gets the serif — everything else, including a screen title for a non-plant screen, uses the interface sans or mono instead.", "section": "typography" },
+      { "name": "The Flat-By-Default Rule", "body": "If it's still on screen a second from now, it has no shadow. Shadows are reserved for things that are about to disappear.", "section": "elevation" },
+      { "name": "The One Round Thing Rule", "body": "Full roundness is reserved for chips. If a new component needs to feel selectable-and-transient the way a chip does, it can round fully; anything that holds or writes data stays square-ish.", "section": "shapes" }
+    ],
+    "dos": [
+      "Do put a plant's own name in Newsreader and machine-produced data (codes, dates, day counts) in IBM Plex Mono with tabular figures.",
+      "Do keep leaf and water visually equal in weight; let ember alone carry extra urgency.",
+      "Do use a -tint color for a \"this already happened, calm down\" state instead of a second confirmation UI.",
+      "Do keep every control that writes data at least 44px tall (touch) and every text input at 16px, full stop."
+    ],
+    "donts": [
+      "Don't add a shadow to anything that stays on screen — shadows are reserved for the undo toast alone.",
+      "Don't round anything fully except chips; a rounded data field or button reads as off-system.",
+      "Don't introduce a fourth saturated accent color; every meaning in the app is already assigned to leaf, water, or ember.",
+      "Don't style a component with passed-in utility classes for anything but placement (margin, width, visibility) — look comes from variant/size/tone props only."
+    ]
+  }
+}
