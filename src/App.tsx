@@ -10,7 +10,6 @@ import { PlantScreen } from '~/screens/PlantScreen'
 import { SettingsScreen } from '~/screens/SettingsScreen'
 import { TodayScreen } from '~/screens/TodayScreen'
 import { Banner } from '~/ui/Banner'
-import { UndoBar } from '~/ui/undo'
 
 export function App() {
   const route = useRoute()
@@ -34,7 +33,6 @@ export function App() {
       ) : (
         <Screen route={route} />
       )}
-      <UndoBar />
     </AppShell>
   )
 }

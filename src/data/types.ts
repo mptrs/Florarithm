@@ -6,7 +6,7 @@
  * year, collection value, average rhythm — is derived from these at render time
  * and stored nowhere. Never persist a derived value.
  *
- * Places, mediums and fertilizers are entities with ids rather than free text,
+ * Places and mediums are entities with ids rather than free text,
  * so renaming one moves every plant and every logged event with it instead of
  * leaving three spellings behind.
  */
@@ -98,8 +98,10 @@ type EventBase = {
 
 export type WaterEvent = EventBase & {
   type: 'water'
-  fertilizerId: Id | null
-  flushed: boolean
+  /** Whether fertiliser went in with the water. This used to be a reference to
+   *  a named brand, plus a "flushed the pot first" flag. Both were written
+   *  often and read back never, so they are one boolean now. */
+  fertilized: boolean
 }
 
 export type RepotEvent = EventBase & {
@@ -120,8 +122,8 @@ export type NoteEvent = EventBase & { type: 'note'; text: string }
 
 export type PlantEvent = WaterEvent | RepotEvent | LeafEvent | BloomEvent | NoteEvent
 
-export type VocabKind = 'location' | 'medium' | 'fertilizer'
-export const VOCAB_KINDS: readonly VocabKind[] = ['location', 'medium', 'fertilizer']
+export type VocabKind = 'location' | 'medium'
+export const VOCAB_KINDS: readonly VocabKind[] = ['location', 'medium']
 
 /** A growing list: what you type once is there to pick the next time. Entries
  *  are archived, never deleted, so a reference from 2027 never dangles. */
@@ -138,7 +140,7 @@ export type VocabItem = {
 /** The export file, and in M2 the shape that goes to the private repo. */
 export type Backup = {
   format: 'florarithm'
-  version: 2
+  version: 3
   exportedAt: string
   plants: Plant[]
   events: PlantEvent[]
@@ -149,4 +151,7 @@ export const BACKUP_FORMAT = 'florarithm' as const
 /** Bumped when a plant's shape changes in a way that would corrupt an old
  *  file if it were read as the new shape — the genus/species/cultivar split
  *  being the reason for 2. */
-export const BACKUP_VERSION = 2 as const
+export const BACKUP_VERSION = 3 as const
+/** Versions this app can still read. A 2 is migrated on the way in — see
+ *  `migrate.ts` — because the sync repo and every backup on disk are 2. */
+export const READABLE_BACKUP_VERSIONS: readonly number[] = [2, 3]

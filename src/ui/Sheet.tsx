@@ -1,5 +1,5 @@
 /**
- * The sheet that holds everything the WATER button is not.
+ * The sheet.
  *
  * It rises from the bottom on a phone, because that is where a thumb is, and
  * becomes a centred panel from `md` up, because a desktop window has no bottom
@@ -8,18 +8,21 @@
 
 import { useEffect, useRef, type ReactNode } from 'react'
 import { cn } from '~/lib/cn'
+import { Icon } from './Icon'
 
 type SheetProps = {
   open: boolean
   onClose: () => void
   /** Announced to screen readers, and shown at the top of the sheet. */
   title: string
-  /** Small print beside the title — a plant code, usually. */
-  meta?: ReactNode
+  /** Given when this sheet replaced another one's contents rather than opening
+   *  on its own: a form swaps in where the action list was, instead of a second
+   *  sheet stacking on top of the first. */
+  onBack?: () => void
   children: ReactNode
 }
 
-export function Sheet({ open, onClose, title, meta, children }: SheetProps) {
+export function Sheet({ open, onClose, title, onBack, children }: SheetProps) {
   const panel = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -60,41 +63,40 @@ export function Sheet({ open, onClose, title, meta, children }: SheetProps) {
         tabIndex={-1}
         className={cn(
           'relative max-h-[88vh] w-full overflow-y-auto bg-surface outline-none',
-          'safe-bottom rounded-t-[14px] border-t border-line px-4 pt-2.5 pb-6',
-          'md:max-w-lg md:rounded-lg md:border md:px-6 md:pb-6',
+          'safe-bottom rounded-t-[1.625rem] border-t border-line px-5 pt-2.5 pb-7',
+          'md:max-w-lg md:rounded-xl md:border md:px-6 md:pb-6',
         )}
       >
-        <div className="mx-auto mb-3.5 h-1 w-9 rounded-full bg-line-strong md:hidden" />
+        <div className="mx-auto h-1 w-9 rounded-full bg-line-strong md:hidden" />
 
-        <div className="mb-4 flex items-baseline justify-between gap-4">
-          <h2 className="font-display text-title">{title}</h2>
-          {meta}
+        {/* Back on the left, close on the right, title centred between them —
+            so the title stays put as the sheet swaps its contents. */}
+        <div className="mt-3 mb-1 flex items-center justify-between gap-2">
+          {onBack ? (
+            <button
+              type="button"
+              onClick={onBack}
+              aria-label="Back"
+              className="-ml-2.5 flex size-touch items-center justify-center text-ink-muted active:opacity-70"
+            >
+              <Icon name="chevronLeft" size={23} />
+            </button>
+          ) : (
+            <span className="size-touch" />
+          )}
+          <h2 className="font-display text-[1.625rem] leading-8 font-medium">{title}</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="-mr-2.5 flex size-touch items-center justify-center text-ink-muted active:opacity-70"
+          >
+            <Icon name="close" size={22} />
+          </button>
         </div>
 
         {children}
       </div>
     </div>
-  )
-}
-
-/** A tappable row inside a sheet: one icon, one label, logs and closes. */
-export function SheetAction({
-  icon,
-  label,
-  onClick,
-}: {
-  icon: ReactNode
-  label: string
-  onClick: () => void
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex min-h-14 w-full items-center gap-3.5 border-b border-line text-left text-[1.0625rem] text-ink last:border-b-0 active:opacity-70"
-    >
-      <span className="text-leaf">{icon}</span>
-      {label}
-    </button>
   )
 }

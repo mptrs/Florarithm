@@ -52,7 +52,7 @@ function plant(code: string, updatedAt: string, extra: Partial<Plant> = {}): Pla
 }
 
 function waterEvent(id: string, date: string, extra: { deleted?: boolean } = {}): PlantEvent {
-  return { id, plantCode: 'MON-0001', date, type: 'water', fertilizerId: null, flushed: false, ...extra }
+  return { id, plantCode: 'MON-0001', date, type: 'water', fertilized: false, ...extra }
 }
 
 function vocab(id: string, updatedAt: string, extra: Partial<VocabItem> = {}): VocabItem {

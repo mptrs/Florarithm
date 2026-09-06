@@ -80,7 +80,6 @@ const LABELS: Record<string, string> = {
   note: 'Note',
   location: 'Place',
   medium: 'Medium',
-  fertilizer: 'Fertilizer',
 }
 
 /** The single place an enum value becomes English. */

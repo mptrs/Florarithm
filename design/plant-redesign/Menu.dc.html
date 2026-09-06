@@ -1,0 +1,162 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+  <style>
+    :root{
+      --paper:oklch(0.968 0.008 85); --surface:oklch(0.995 0.003 85);
+      --sunk:oklch(0.944 0.010 85); --line:oklch(0.886 0.010 80);
+      --line-strong:oklch(0.800 0.012 80); --ink:oklch(0.255 0.014 65);
+      --ink-muted:oklch(0.510 0.014 68); --ink-faint:oklch(0.655 0.012 72);
+      --leaf:oklch(0.455 0.098 152); --leaf-tint:oklch(0.944 0.026 152);
+      --water:oklch(0.455 0.104 236); --water-tint:oklch(0.944 0.028 236);
+      --ember:oklch(0.520 0.130 47); --ember-tint:oklch(0.948 0.034 47);
+      --on-accent:oklch(0.985 0.004 85);
+      --display:'Newsreader',Georgia,'Times New Roman',serif;
+      --ui:system-ui,-apple-system,'Segoe UI',sans-serif;
+      --mono:'IBM Plex Mono',ui-monospace,'SF Mono',Menlo,monospace;
+      --r-card:16px; --r-ctrl:12px;
+    }
+    body{margin:0;font-family:var(--ui);}
+    a{color:var(--leaf);text-decoration:none;} a:hover{color:var(--ink);}
+    .mono{font-family:var(--mono);font-variant-numeric:tabular-nums;}
+    .label{font-size:12px;line-height:16px;font-weight:600;letter-spacing:0.09em;
+           text-transform:uppercase;color:var(--ink-faint);}
+    .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-card);}
+    /* The dial fans out, holds, folds back. 4.4s loop so it reads on a canvas. */
+    @keyframes fan{
+      0%,4%    {transform:translate(var(--dx),var(--dy)) scale(.2);opacity:0}
+      15%      {transform:translate(0,0) scale(1.07);opacity:1}
+      21%,66%  {transform:translate(0,0) scale(1);opacity:1}
+      78%,100% {transform:translate(var(--dx),var(--dy)) scale(.2);opacity:0}
+    }
+    @keyframes fade{0%,6%{opacity:0}20%,66%{opacity:1}78%,100%{opacity:0}}
+    @keyframes iconOut{0%,8%{opacity:1;transform:rotate(0)}20%,70%{opacity:0;transform:rotate(90deg)}84%,100%{opacity:1;transform:rotate(0)}}
+    @keyframes iconIn{0%,8%{opacity:0;transform:rotate(-90deg)}20%,70%{opacity:1;transform:rotate(0)}84%,100%{opacity:0;transform:rotate(-90deg)}}
+    .sat{animation:fan 4.4s cubic-bezier(.34,1.4,.5,1) infinite both;}
+    .scrim{animation:fade 4.4s ease infinite both;}
+  </style>
+</helmet>
+<div style="position:relative;width:390px;height:844px;background:var(--paper);color:var(--ink);font-family:var(--ui);overflow:hidden">
+  <div style="position:relative;height:340px;overflow:hidden">
+    <svg viewBox="0 0 390 340" width="390" height="340" preserveAspectRatio="xMidYMid slice" style="display:block">
+  <defs>
+    <path id="lqmn" d="M 0,20 C 4,6 17,0 29,0 L 32,10 L 37,1 L 40,11 L 45,2.5 C 53,6.5 58,13.5 60,20 C 58,26.5 53,33.5 45,37.5 L 40,29 L 37,39 L 32,30 L 29,40 C 17,40 4,34 0,20 Z M 20,13 a 3.6,2.3 0 1,0 0.01,0 Z M 27,27 a 3.1,2 0 1,0 0.01,0 Z M 38,20 a 2.8,1.8 0 1,0 0.01,0 Z" fill-rule="evenodd"/>
+    <linearGradient id="wallmn" x1="0" y1="0" x2="0.7" y2="1">
+      <stop offset="0" stop-color="oklch(0.945 0.016 96)"/><stop offset="1" stop-color="oklch(0.868 0.020 92)"/>
+    </linearGradient>
+    <linearGradient id="glowmn" x1="0" y1="0" x2="1" y2="0.4">
+      <stop offset="0" stop-color="oklch(0.985 0.020 98)" stop-opacity="0.95"/><stop offset="1" stop-color="oklch(0.985 0.020 98)" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="potmn" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="oklch(0.700 0.084 47)"/><stop offset="0.55" stop-color="oklch(0.648 0.090 47)"/><stop offset="1" stop-color="oklch(0.560 0.082 45)"/>
+    </linearGradient>
+  </defs>
+  <rect width="390" height="340" fill="url(#wallmn)"/>
+  <rect x="16" y="-48" width="172" height="292" rx="6" fill="oklch(0.975 0.014 98)"/>
+  <rect x="16" y="-48" width="172" height="292" rx="6" fill="none" stroke="oklch(0.845 0.016 92)" stroke-width="2.5"/>
+  <line x1="101" y1="-48" x2="101" y2="245" stroke="oklch(0.845 0.016 92)" stroke-width="2"/>
+  <rect width="390" height="340" fill="url(#glowmn)"/>
+  <rect y="238" width="390" height="102" fill="oklch(0.855 0.022 90)"/>
+  <rect y="238" width="390" height="3" fill="oklch(0.800 0.024 88)"/>
+  <ellipse cx="238" cy="328" rx="93" ry="15" fill="oklch(0.760 0.024 86)" opacity="0.75"/>
+  <g transform="translate(148.6 134.8) scale(1.72)">
+    <g stroke="oklch(0.478 0.052 142)" stroke-width="3" fill="none" stroke-linecap="round">
+      <path d="M52 62C48 44 38 30 20 16"/><path d="M54 62C57 44 66 28 84 14"/>
+      <path d="M53 62C52 44 51 28 51 10"/><path d="M50 62C42 48 26 40 8 38"/>
+    </g>
+    <use href="#lqmn" transform="translate(22 16) rotate(198) scale(0.78)" fill="oklch(0.415 0.072 152)"/>
+    <use href="#lqmn" transform="translate(84 14) rotate(-26) scale(0.76)" fill="oklch(0.545 0.090 148)"/>
+    <use href="#lqmn" transform="translate(51 10) rotate(-82) scale(0.70)" fill="oklch(0.462 0.082 150)"/>
+    <use href="#lqmn" transform="translate(8 38) rotate(170) scale(0.62)" fill="oklch(0.585 0.086 146)"/>
+    <path d="M30 60h46l-5.6 30a5 5 0 0 1-5 4.4H40.6a5 5 0 0 1-5-4.4Z" fill="url(#potmn)"/>
+    <rect x="26" y="53" width="54" height="9" rx="3" fill="oklch(0.714 0.080 47)"/>
+    <path d="M30 60h46l-1.3 8H31.3Z" fill="oklch(0.590 0.086 45)" opacity="0.45"/>
+  </g>
+</svg>
+    <div style="position:absolute;inset:0;background:linear-gradient(oklch(0.16 0.01 80 / 0.20) 0 14%, oklch(0.16 0.01 80 / 0) 34%)"></div>
+    <div style="position:absolute;top:14px;left:16px;right:16px;display:flex;align-items:center;justify-content:space-between">
+      <div style="width:38px;height:38px;border-radius:50%;background:oklch(0.985 0.004 85 / 0.86);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px oklch(0.255 0.014 65 / 0.16)"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex-shrink:0;"><path d="m12 19-7-7 7-7" /> <path d="M19 12H5" /></svg></div>
+      <div style="display:flex;gap:9px"><div style="width:38px;height:38px;border-radius:50%;background:oklch(0.985 0.004 85 / 0.86);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px oklch(0.255 0.014 65 / 0.16)"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex-shrink:0;"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /> <path d="M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z" /></svg></div><div style="width:38px;height:38px;border-radius:50%;background:oklch(0.985 0.004 85 / 0.86);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px oklch(0.255 0.014 65 / 0.16)"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex-shrink:0;"><circle cx="12" cy="12" r="1" /> <circle cx="19" cy="12" r="1" /> <circle cx="5" cy="12" r="1" /></svg></div></div>
+    </div>
+    <div style="position:absolute;left:16px;right:16px;bottom:56px;display:flex">
+      <span style="display:inline-flex;align-items:center;gap:7px;background:oklch(0.985 0.004 85 / 0.9);
+        border-radius:999px;padding:9px 15px;font-size:14px;font-weight:600;color:var(--ink);
+        box-shadow:0 3px 12px oklch(0.255 0.014 65 / 0.16)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--leaf)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex-shrink:0;"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" /> <circle cx="12" cy="10" r="3" /></svg>Living room · west window</span>
+    </div>
+  </div>
+  <div style="position:relative;margin-top:-26px;background:var(--paper);border-radius:28px 28px 0 0;padding:22px 16px 0">
+    <h1 style="margin:0;font-family:var(--display);font-size:40px;line-height:43px;font-weight:500;letter-spacing:-0.025em">Gruyère</h1>
+    <p style="margin:7px 0 0;font-size:17px;line-height:23px;color:var(--ink-muted)">Monstera deliciosa 'Thai Constellation'</p>
+    <div style="display:flex;margin-top:20px;border-bottom:1px solid var(--line)">
+      <div style="flex-grow:1;display:flex;align-items:center;justify-content:center;height:48px;
+        font-size:15px;font-weight:600;color:var(--leaf);
+        border-bottom:2px solid var(--leaf)">Care</div>
+      <div style="flex-grow:1;display:flex;align-items:center;justify-content:center;height:48px;
+        font-size:15px;font-weight:500;color:var(--ink-muted);
+        border-bottom:2px solid transparent">History</div>
+    </div>
+    <div class="card" style="padding:2px 18px;margin-top:14px">
+      <div style="display:flex;align-items:center;gap:13px;padding:14px 0;border-bottom:1px solid var(--line);">
+        <div style="flex-shrink:0;width:38px;height:38px;border-radius:50%;background:var(--water-tint);display:flex;align-items:center;justify-content:center"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--water)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex-shrink:0;"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z" /></svg></div>
+        <div style="flex-grow:1;min-width:0">
+          <div style="font-size:15px;font-weight:500">Last watered</div>
+          <div style="font-size:13px;line-height:17px;color:var(--ink-faint);margin-top:2px">every 9 days · 7–11</div>
+        </div>
+        <div class="mono" style="font-size:14px;color:var(--ink-muted);text-align:right;flex-shrink:0">8 days ago</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:13px;padding:14px 0;border-bottom:1px solid var(--line);">
+        <div style="flex-shrink:0;width:38px;height:38px;border-radius:50%;background:var(--leaf-tint);display:flex;align-items:center;justify-content:center"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--leaf)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex-shrink:0;"><path d="M14 2v6a2 2 0 0 0 .245.96l5.51 10.08A2 2 0 0 1 18 22H6a2 2 0 0 1-1.755-2.96l5.51-10.08A2 2 0 0 0 10 8V2" /> <path d="M6.453 15h11.094" /> <path d="M8.5 2h7" /></svg></div>
+        <div style="flex-grow:1;min-width:0">
+          <div style="font-size:15px;font-weight:500">Last fertilised</div>
+          
+        </div>
+        <div class="mono" style="font-size:14px;color:var(--ink-muted);text-align:right;flex-shrink:0">25 days ago</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:13px;padding:14px 0;">
+        <div style="flex-shrink:0;width:38px;height:38px;border-radius:50%;background:var(--sunk);display:flex;align-items:center;justify-content:center"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--ink-muted)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex-shrink:0;"><path d="M14 9.536V7a4 4 0 0 1 4-4h1.5a.5.5 0 0 1 .5.5V5a4 4 0 0 1-4 4 4 4 0 0 0-4 4c0 2 1 3 1 5a5 5 0 0 1-1 3" /> <path d="M4 9a5 5 0 0 1 8 4 5 5 0 0 1-8-4" /> <path d="M5 21h14" /></svg></div>
+        <div style="flex-grow:1;min-width:0">
+          <div style="font-size:15px;font-weight:500">Last repot</div>
+          <div style="font-size:13px;line-height:17px;color:var(--ink-faint);margin-top:2px"><span class="mono">12 → 15</span> cm</div>
+        </div>
+        <div class="mono" style="font-size:14px;color:var(--ink-muted);text-align:right;flex-shrink:0">14 Mar 2026</div>
+      </div>
+    </div>
+  </div>
+  <div style="position:absolute;left:0;right:0;bottom:0;height:78px;background:var(--surface);border-top:1px solid var(--line);display:flex;padding-top:10px;box-sizing:border-box">
+    <div style="flex-grow:1;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--ink-faint)">
+      <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex-shrink:0;"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" /> <path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /></svg><span style="font-size:11px;font-weight:400">Today</span>
+    </div>
+    <div style="flex-grow:1;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--leaf)">
+      <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex-shrink:0;"><rect width="18" height="18" x="3" y="3" rx="2" /> <path d="M21 9H3" /> <path d="M21 15H3" /></svg><span style="font-size:11px;font-weight:600">Collection</span>
+    </div>
+    <div style="flex-grow:1;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--ink-faint)">
+      <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex-shrink:0;"><path d="M5 12h14" /> <path d="M12 5v14" /></svg><span style="font-size:11px;font-weight:400">New</span>
+    </div>
+    <div style="flex-grow:1;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--ink-faint)">
+      <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex-shrink:0;"><path d="M10 5H3" /> <path d="M12 19H3" /> <path d="M14 3v4" /> <path d="M16 17v4" /> <path d="M21 12h-9" /> <path d="M21 19h-5" /> <path d="M21 5h-7" /> <path d="M8 10v4" /> <path d="M8 12H3" /></svg><span style="font-size:11px;font-weight:400">Settings</span>
+    </div>
+  </div>
+  <div style="position:absolute;inset:0;background:oklch(0.255 0.014 65 / 0.30)"></div>
+  <div style="position:absolute;top:62px;right:16px;width:238px;background:var(--surface);border:1px solid var(--line);
+    border-radius:16px;overflow:hidden;box-shadow:0 14px 38px oklch(0.255 0.014 65 / 0.26)">
+    <div style="display:flex;align-items:center;gap:12px;height:52px;padding:0 16px;border-bottom:1px solid var(--line);color:var(--ink);font-size:15px;font-weight:500">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex-shrink:0;"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /> <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>Copy the tag link
+      </div><div style="display:flex;align-items:center;gap:12px;height:52px;padding:0 16px;border-bottom:1px solid var(--line);color:var(--ink);font-size:15px;font-weight:500">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex-shrink:0;"><rect width="5" height="5" x="3" y="3" rx="1" /> <rect width="5" height="5" x="16" y="3" rx="1" /> <rect width="5" height="5" x="3" y="16" rx="1" /> <path d="M21 16h-3a2 2 0 0 0-2 2v3" /> <path d="M21 21v.01" /> <path d="M12 7v3a2 2 0 0 1-2 2H7" /> <path d="M3 12h.01" /> <path d="M12 3h.01" /> <path d="M12 16v.01" /> <path d="M16 12h1" /> <path d="M21 12v.01" /> <path d="M12 21v-1" /></svg>Show the QR code
+      </div><div style="display:flex;align-items:center;gap:12px;height:52px;padding:0 16px;border-bottom:1px solid var(--line);color:var(--ink);font-size:15px;font-weight:500">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex-shrink:0;"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z" /> <circle cx="7.5" cy="7.5" r=".5" fill="currentColor" /></svg>Change status
+      </div><div style="display:flex;align-items:center;gap:12px;height:52px;padding:0 16px;color:var(--ember);font-size:15px;font-weight:500">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex-shrink:0;"><path d="M10 11v6" /> <path d="M14 11v6" /> <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /> <path d="M3 6h18" /> <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>Delete this plant
+      </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

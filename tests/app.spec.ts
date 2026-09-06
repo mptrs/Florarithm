@@ -26,6 +26,54 @@ async function addPlant(page: Page, species: string, name: string, place = 'Livi
   return code
 }
 
+/** Log a watering the way the viewport offers it. A phone fans the dial open
+ *  and takes one of its options; a desktop has no dial and reaches the same
+ *  three things through the overflow menu and the sheet. */
+async function logFromDial(page: Page, option: 'Watered' | 'Watered with fertiliser') {
+  const dial = page.getByRole('button', { name: 'Log activity' })
+  if (await dial.isVisible()) {
+    await dial.click()
+    await page.getByRole('button', { name: option, exact: true }).click()
+    return
+  }
+
+  await page.getByRole('button', { name: 'More' }).click()
+  await page.getByRole('menuitem', { name: 'Log activity' }).click()
+  const inSheet = option === 'Watered' ? 'Water' : 'Fertiliser'
+  await page.getByRole('button', { name: inSheet, exact: true }).click()
+}
+
+/** Drag a history row far enough left to open its delete, then take it. The
+ *  row itself carries the pointer handlers, three levels above its title. */
+async function removeEntry(page: Page, title: string, deleteName: RegExp) {
+  const row = main(page).getByText(title, { exact: true }).first().locator('../../..')
+  const box = await row.boundingBox()
+  if (!box) throw new Error(`no row to drag for ${title}`)
+
+  // A phone drags the row open; a desktop reveals the same action on hover.
+  const y = box.y + box.height / 2
+  await row.hover()
+  await page.mouse.move(box.x + box.width - 24, y)
+  await page.mouse.down()
+  await page.mouse.move(box.x + box.width - 70, y)
+  await page.mouse.move(box.x + box.width - 140, y)
+  await page.mouse.up()
+
+  await page.getByRole('button', { name: deleteName }).filter({ visible: true }).click()
+}
+
+/** A phone tabs between care and history; a desktop shows both at once and has
+ *  no tabs to click. */
+async function openHistory(page: Page) {
+  const tab = page.getByRole('tab', { name: 'history' })
+  if (await tab.isVisible()) await tab.click()
+}
+
+/** The nav says "Today" too, so anything about a date is scoped to the page. */
+function main(page: Page) {
+  return page.getByRole('main')
+}
+
 test.beforeEach(async ({ page }) => {
   await page.goto('')
   // Each test starts from an empty collection rather than inheriting one.
@@ -46,12 +94,15 @@ test('a scanned sticker opens the plant with the actions already in view', async
   // Exactly what an NFC tag carries: a cold load straight at the hash.
   await page.goto(`#p=${code}`)
 
-  const water = page.getByRole('button', { name: 'WATER', exact: true })
-  await expect(water).toBeVisible()
+  // The drop on a phone, the overflow menu on a desktop: whichever this
+  // viewport offers, it is the way to log something.
+  const dial = page.getByRole('button', { name: 'Log activity' })
+  const action = (await dial.isVisible()) ? dial : page.getByRole('button', { name: 'More' })
+  await expect(action).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Gruyère' })).toBeVisible()
 
   // "In view" is the point — it must not need a scroll.
-  const box = await water.boundingBox()
+  const box = await action.boundingBox()
   const viewport = page.viewportSize()
   expect(box).not.toBeNull()
   expect((box as { y: number; height: number }).y + (box as { height: number }).height).toBeLessThan(
@@ -65,57 +116,67 @@ test('an unknown code gets a real page, not an empty list', async ({ page }) => 
   await expect(page.getByText('No plant with this code')).toBeVisible()
 })
 
-test('watering is one tap, with no confirmation, and can be undone', async ({ page }) => {
+test('watering is the dial and one option, with no confirmation', async ({ page }) => {
   const code = await addPlant(page, 'Monstera deliciosa', 'Gruyère')
   await page.goto(`#p=${code}`)
 
-  await expect(page.getByText('never logged').first()).toBeVisible()
+  await expect(main(page).getByText('never').first()).toBeVisible()
 
-  await page.getByRole('button', { name: 'WATER', exact: true }).click()
+  await logFromDial(page, 'Watered')
 
-  // No dialog, no second step: the fact changes and the undo bar appears.
-  await expect(page.getByText('Watered Gruyère')).toBeVisible()
-  await expect(page.getByText('0 days ago')).toBeVisible()
+  // No dialog and no save step: the card is already telling you it happened.
+  await expect(main(page).getByText('today', { exact: true }).first()).toBeVisible()
+})
 
-  await page.getByRole('button', { name: 'UNDO' }).click()
-  await expect(page.getByText('never logged').first()).toBeVisible()
+test('fertiliser is a property of a watering, not a second entry', async ({ page }) => {
+  const code = await addPlant(page, 'Monstera deliciosa', 'Gruyère')
+  await page.goto(`#p=${code}`)
+
+  await logFromDial(page, 'Watered with fertiliser')
+
+  // Both facts move, because both happened, and there is one row for them.
+  await expect(main(page).getByText('Last watered')).toBeVisible()
+  await expect(main(page).getByText('today', { exact: true })).toHaveCount(2)
+
+  await openHistory(page)
+  await expect(page.getByText('with fertiliser')).toBeVisible()
+  await expect(page.getByText('1 entry')).toBeVisible()
 })
 
 test('a logged watering survives a reload', async ({ page }) => {
   const code = await addPlant(page, 'Anthurium crystallinum', 'Fluweel')
   await page.goto(`#p=${code}`)
-  await page.getByRole('button', { name: 'WATER', exact: true }).click()
-  await expect(page.getByText('0 days ago')).toBeVisible()
+  await logFromDial(page, 'Watered')
+  await expect(main(page).getByText('today', { exact: true }).first()).toBeVisible()
 
   await page.reload()
-  await expect(page.getByText('0 days ago')).toBeVisible()
+  await expect(main(page).getByText('today', { exact: true }).first()).toBeVisible()
 })
 
-test('deleting a history entry is undoable', async ({ page }) => {
+test('a history entry is removed by dragging it out of the way', async ({ page }) => {
   const code = await addPlant(page, 'Hoya carnosa', 'Was')
   await page.goto(`#p=${code}`)
-  await page.getByRole('button', { name: 'WATER', exact: true }).click()
+  await logFromDial(page, 'Watered')
+
+  await openHistory(page)
   await expect(page.getByText('1 entry')).toBeVisible()
 
-  await page.getByRole('button', { name: /^Delete water/ }).click()
-  await expect(page.getByText('No history yet')).toBeVisible()
-
-  await page.getByRole('button', { name: 'UNDO' }).click()
-  await expect(page.getByText('1 entry')).toBeVisible()
+  // There is no undo bar behind this any more, so the gesture has to be
+  // deliberate: a drag past the halfway point, and then the button under it.
+  await removeEntry(page, 'Water', /^Delete water/)
+  await expect(page.getByText('Nothing logged yet')).toBeVisible()
 })
 
 test('deleting a plant forever tombstones it rather than erasing it outright', async ({ page }) => {
   const code = await addPlant(page, 'Hoya carnosa', 'Weg')
   await page.goto(`#p=${code}`)
-  await page.getByRole('button', { name: 'WATER', exact: true }).click()
+  await logFromDial(page, 'Watered')
 
   await page.goto(`#edit/${code}`)
   page.once('dialog', (dialog) => void dialog.accept())
   await page.getByRole('button', { name: 'Delete this plant' }).click()
 
-  // Gone from the collection... (the undo toast from the earlier WATER tap
-  // can still be on screen saying "Watered Weg" for a few seconds, so this
-  // checks the empty state rather than searching the whole page for the name)
+  // Gone from the collection...
   await expect(page.getByRole('heading', { name: 'Collection' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'No plants yet' })).toBeVisible()
 
@@ -142,7 +203,8 @@ test('promoting a wish keeps its code, its name and its history', async ({ page 
 
   // Wait for the save to land before reading the URL, or you are asserting on
   // the form you were still standing on.
-  await expect(page.getByRole('button', { name: 'WATER', exact: true })).toBeVisible()
+  // The care card only exists for a plant you actually have.
+  await expect(main(page).getByText('Last watered')).toBeVisible()
 
   // Same record, same code: a promotion is one flag, not a new plant.
   expect(new URL(page.url()).hash).toBe(`#p=${code}`)
@@ -200,11 +262,8 @@ test('logging still works with every request failing', async ({ page, context })
   // Writes go to IndexedDB, so nothing about them should touch the network.
   await context.route('**/*', (route) => route.abort())
 
-  await page.getByRole('button', { name: 'WATER', exact: true }).click()
-  await expect(page.getByText('0 days ago')).toBeVisible()
-
-  await page.getByRole('button', { name: 'UNDO' }).click()
-  await expect(page.getByText('never logged').first()).toBeVisible()
+  await logFromDial(page, 'Watered')
+  await expect(main(page).getByText('today', { exact: true }).first()).toBeVisible()
 
   await context.unroute('**/*')
 })

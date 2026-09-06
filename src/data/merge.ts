@@ -50,10 +50,9 @@ export function mergeVocab(a: readonly VocabItem[], b: readonly VocabItem[]): Me
  * the only possible disagreement between two copies of the same id is that
  * flag — resolved with a monotonic OR, never flipping a tombstone back off.
  *
- * This is safe only because the sync engine never runs while `undo.tsx` has a
- * pending action showing: an in-flight undo relies on nothing having been
- * pushed out yet, for both the soft-delete tombstone and the hard-delete of a
- * just-logged event. See `sync.ts`'s trigger gating.
+ * Nothing removes an event outright any more — deleting one sets the flag and
+ * the row stays — so a push can go out at any moment without a merge handing
+ * back something a person has already taken away.
  */
 export function mergeEvents(a: readonly PlantEvent[], b: readonly PlantEvent[]): MergeResult<PlantEvent> {
   const fromA = new Map<string, PlantEvent>()

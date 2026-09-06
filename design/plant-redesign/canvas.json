@@ -1,0 +1,67 @@
+{
+  "pages": [
+    { "id": "page", "name": "The page" },
+    { "id": "pieces", "name": "The parts" }
+  ],
+  "artboards": [
+    { "file": "Main.dc.html",    "title": "Care",              "page": "page",   "x": 0,    "y": 0,    "w": 390,  "h": 844 },
+    { "file": "Sheet.dc.html",   "title": "Log activity",      "page": "page",   "x": 490,  "y": 0,    "w": 390,  "h": 844 },
+    { "file": "Date.dc.html",    "title": "The date picker",   "page": "page",   "x": 980,  "y": 0,    "w": 390,  "h": 844 },
+    { "file": "Note.dc.html",    "title": "Editing an entry",  "page": "page",   "x": 1470, "y": 0,    "w": 390,  "h": 844 },
+    { "file": "Menu.dc.html",    "title": "The ellipsis",      "page": "page",   "x": 1960, "y": 0,    "w": 390,  "h": 844 },
+    { "file": "History.dc.html", "title": "History",           "page": "page",   "x": 2450, "y": 0,    "w": 390,  "h": 844 },
+    { "file": "Desktop.dc.html", "title": "Desktop",           "page": "page",   "x": 0,    "y": 1010, "w": 1440, "h": 900 },
+    { "file": "Pieces.dc.html",  "title": "The parts",         "page": "pieces", "x": 0,    "y": 0,    "w": 880,  "h": 1250 }
+  ],
+  "annotations": [
+    {
+      "id": "sheet-note",
+      "page": "page",
+      "x": 490,
+      "y": -230,
+      "w": 380,
+      "text": "The free-text box is gone. It was a second way to write the same record as the Note button beside it — you asked what it did, and the honest answer was: the same thing, twice. Note is one of the six now, and it opens a proper form.\n\nThe sheet swaps its contents rather than stacking a second sheet on top, which is what PlantActionsSheet already does today."
+    },
+    {
+      "id": "date-note",
+      "page": "page",
+      "x": 980,
+      "y": -230,
+      "w": 380,
+      "text": "The picker, in the app's own parts: Newsreader month, mono numerals, the selected day filled ink like a selected filter chip. Today and Yesterday as shortcuts, since those are most of what back-dating is for. Forward months are dimmed — you cannot log something that has not happened."
+    },
+    {
+      "id": "note-note",
+      "page": "page",
+      "x": 1470,
+      "y": -230,
+      "w": 380,
+      "text": "Yes, you can edit. Dragging a row right opens the same form the entry was written in, carrying its own date rather than today's. Delete sits in here too, so there are two ways to the same thing and neither is hidden."
+    },
+    {
+      "id": "history-note",
+      "page": "page",
+      "x": 2450,
+      "y": -230,
+      "w": 380,
+      "text": "The whole history, newest month first, grouped by month so 89 entries and eventually a few thousand stay navigable. Older months load as you reach them.\n\nThe chips filter rather than truncate: Everything is the default now, with Notable and Waterings as narrowings. Nothing is hidden by default any more.\n\nBoth gestures are frozen here — Blooming dragged left to Delete, Note dragged right to Edit."
+    },
+    {
+      "id": "desktop-note",
+      "page": "page",
+      "x": -350,
+      "y": 1010,
+      "w": 290,
+      "text": "Every action behind the ellipsis, as you asked — edit, log, tag link, QR, status, delete. The header card is now purely what the plant is and how it is doing.\n\nHover is drawn rather than described: the row lifts to sunk and puts edit and delete where the date was. Same two actions as the swipe, same colours.\n\nSame month grouping as the phone."
+    },
+    {
+      "id": "pieces-note",
+      "page": "pieces",
+      "x": -350,
+      "y": 0,
+      "w": 290,
+      "text": "The colour rule applied everywhere, and both ways of changing an entry side by side — swipe on a phone, hover on a desktop."
+    }
+  ],
+  "launch": { "view": "canvas", "page": "page" }
+}

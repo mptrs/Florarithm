@@ -185,10 +185,12 @@
   --text-micro: 0.75rem;
   --text-micro--line-height: 1rem;
 
-  /* Square-ish, like a ledger. Only chips are round. */
+  /* Softer than the ledger this started as: cards group the plant page, and a
+     4px corner on a 16px-padded card reads like a mistake. Chips stay round. */
   --radius-sm: 4px;
   --radius-md: 6px;
-  --radius-lg: 10px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
 
   /* Reach. Nothing that writes data goes below `touch`; filter chips are the
      one documented exception at 36px. */

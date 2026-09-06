@@ -1,8 +1,8 @@
 # Florarithm
 
 A plant logbook you open by tapping the tag on the pot. Stick an NFC tag on a
-plant, hold your phone against it, and the app opens on that plant with one
-button: **WATER**.
+plant, hold your phone against it, and the app opens on that plant with a drop
+in the corner that never scrolls away.
 
 Live at **https://mptrs.github.io/Florarithm/**
 
@@ -14,9 +14,14 @@ step without either of those things.
 
 - **A tag opens the plant.** The sticker carries `…/Florarithm/#p=MON-8F3A`,
   which lands on that plant with the actions already in view.
-- **One tap logs a watering**, with no confirmation and always an undo.
-- Also logged: fertilizer, repotting (which updates the pot and medium of the
-  plant itself), new leaves, blooming, and free notes.
+- **The drop logs a watering.** Tapping it fans out three things: watered,
+  watered with fertilizer, and everything else. No confirmation step.
+- Also logged: repotting (which updates the pot and medium of the plant
+  itself), new leaves, blooming, and free notes — each of them datable, so the
+  watering you forgot on Tuesday can still be recorded on Thursday.
+- **A wrong entry is dragged away.** Pull a row left to delete it, right to
+  edit it. There is no undo bar: the record is right there, so a correction
+  happens where you can see it.
 - **Wishlist.** Plants you want, in the same table as plants you have. "I have
   this now" flips one flag and keeps the code, the name and the date.
 - **Family.** Cuttings and corms point at their parent, and the name generator
@@ -80,8 +85,10 @@ the event log, and then there are two answers and no way to tell which is true.
 removing the row, because the sync in M2 merges by union and a forgotten row
 comes straight back.
 
-**Every mutation a person could regret returns an `UndoAction`.** Logging is one
-tap with no confirmation, so there has to be a way back.
+**Every mutation a person could regret is reversible where it is visible.**
+`logEvent` still returns an `UndoAction` for callers that want one, but the
+plant page does not use it: an entry is corrected or removed from the row it is
+written on, which survives a reload in a way a three-second bar does not.
 
 **Colour, type and spacing come from tokens.** `src/styles.css` clears
 Tailwind's stock palette, so `bg-red-500` does not exist — every colour has to
@@ -120,7 +127,8 @@ in Chrome on Android. Reading works everywhere, because the tag just holds a URL
   `events/YYYY-MM.json` per month and `meta.json`, merged with a pure function
   and pushed with a fine-grained token. Sync doubles as the backup.
 - **M3 — in progress.** A QR code on the plant page as a fallback for a dead
-  sticker — done. Photos in a separate private repository, one file each —
-  next.
+  sticker — done, now behind the plant page's overflow menu. Photos in a
+  separate private repository, one file each — next; the plant page's hero is
+  already shaped for one and shows a drawn plate until then.
 - **M4 — later.** A family tree over several generations, pests with repeat
   treatments, achievements.
