@@ -19,7 +19,7 @@ import {
   vocabName,
   waterRhythm,
 } from '~/data/selectors'
-import { describeEvent, logEvent, removeEvent, setTagWritten, useStore } from '~/data/store'
+import { describeEvent, logEvent, removeEvent, useStore } from '~/data/store'
 import { vocabOf } from '~/data/selectors'
 import type { Plant, PlantEvent } from '~/data/types'
 import { formatDate, formatDayMonth } from '~/lib/date'
@@ -35,14 +35,16 @@ import {
   Rows,
   SectionHeading,
 } from '~/ui/primitives'
+import { QrCodeBox } from '~/ui/QrCode'
 import { Row } from '~/ui/rows'
-import { offerUndo, withUndo } from '~/ui/undo'
+import { offerUndo } from '~/ui/undo'
 import { PlantActionsSheet } from './PlantActionsSheet'
 
 export function PlantScreen({ code }: { code: string }) {
   const state = useStore()
   const plant = findPlant(state, code)
   const [sheetOpen, setSheetOpen] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   // A tombstoned plant reads exactly like a code that never existed — the
   // lookup itself stays unfiltered so an old event can still name it.
@@ -57,20 +59,27 @@ export function PlantScreen({ code }: { code: string }) {
     offerUndo(await logEvent({ type: 'water', plantCode: plant.code, fertilizerId, flushed: false }))
   }
 
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(plantUrl(plant.code))
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // Clipboard access can be refused; the code and QR are on screen either way.
+      setCopied(false)
+    }
+  }
+
   return (
     <div className="flex flex-col gap-6 md:flex-row md:gap-12">
       <div className="flex flex-col gap-5 md:w-[32rem] md:shrink-0">
         <div className="flex items-center justify-between gap-4">
           <BackButton />
-          <CodeBadge
-            code={plant.code}
-            onClick={
-              plant.wish || !plant.tagWritten
-                ? undefined
-                : () => void withUndo(() => setTagWritten(plant.code, false))
-            }
-            label={plant.tagWritten ? 'Tag not written after all — tap to fix' : undefined}
-          />
+          <div className="flex items-center gap-3">
+            {copied ? <span className="text-[0.8125rem] font-medium text-leaf">Copied</span> : null}
+            <CodeBadge code={plant.code} onClick={() => void copyLink()} label="Copy this plant's link" />
+            {plant.wish ? null : <QrCodeBox value={plantUrl(plant.code)} size={52} />}
+          </div>
         </div>
 
         <header className="flex flex-col gap-1">
@@ -91,8 +100,6 @@ export function PlantScreen({ code }: { code: string }) {
           <WishActions plant={plant} />
         ) : (
           <>
-            {plant.tagWritten ? null : <StickerBlock plant={plant} />}
-
             <div className="flex flex-col gap-3">
               <Button variant="primary" size="lg" onClick={() => void logWater(null)}>
                 WATER
@@ -226,42 +233,6 @@ function Facts({ plant, days }: { plant: Plant; days: number | null }) {
         </Button>
       </div>
     </FactList>
-  )
-}
-
-// --- sticker ----------------------------------------------------------------
-
-function StickerBlock({ plant }: { plant: Plant }) {
-  const [copied, setCopied] = useState(false)
-
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(plantUrl(plant.code))
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2500)
-    } catch {
-      // Clipboard access can be refused; the code is on screen either way.
-      setCopied(false)
-    }
-  }
-
-  return (
-    <section className="flex flex-col gap-3 rounded-md border border-leaf bg-leaf-tint p-4">
-      <h2 className="text-label uppercase text-leaf">Tag not written yet</h2>
-      <p className="font-mono text-[1.625rem] leading-8 tracking-[0.1em] text-ink">{plant.code}</p>
-      <p className="text-[0.8125rem] leading-5 text-ink-muted text-pretty">
-        Copy the link, paste it into NFC Tools, and write the sticker. Then put the code on the pot
-        in marker too, for the day the sticker gives up.
-      </p>
-      <div className="flex flex-wrap gap-3">
-        <Button variant="accent" icon={copied ? 'check' : 'link'} onClick={copy}>
-          {copied ? 'Copied' : 'Copy link'}
-        </Button>
-        <Button variant="outline" onClick={() => void withUndo(() => setTagWritten(plant.code, true))}>
-          Tag is written
-        </Button>
-      </div>
-    </section>
   )
 }
 

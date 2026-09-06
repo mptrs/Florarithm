@@ -156,7 +156,6 @@ export async function savePlant(draft: PlantDraft): Promise<Plant> {
   const plant: Plant = {
     ...draft,
     code,
-    tagWritten: existing?.tagWritten ?? false,
     createdAt: existing?.createdAt ?? timestamp,
     updatedAt: timestamp,
   }
@@ -169,23 +168,6 @@ export async function savePlant(draft: PlantDraft): Promise<Plant> {
   })
 
   return plant
-}
-
-export async function setTagWritten(code: string, tagWritten: boolean): Promise<UndoAction | null> {
-  const before = findPlant(code)
-  if (!before || before.tagWritten === tagWritten) return null
-
-  const plant = await patchPlant(code, { tagWritten })
-  if (!plant) return null
-
-  return {
-    message: tagWritten
-      ? `Marked ${plant.name}'s tag as written`
-      : `Marked ${plant.name}'s tag as not written`,
-    undo: async () => {
-      await patchPlant(code, { tagWritten: before.tagWritten })
-    },
-  }
 }
 
 /**
