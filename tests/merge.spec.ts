@@ -45,7 +45,6 @@ function plant(code: string, updatedAt: string, extra: Partial<Plant> = {}): Pla
     status: 'active',
     wish: false,
     wishNote: '',
-    tagWritten: false,
     createdAt: updatedAt,
     updatedAt,
     ...extra,

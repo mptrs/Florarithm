@@ -24,6 +24,8 @@ step without either of those things.
   reads without a diagram.
 - **Backup.** One JSON file with everything, through the iOS share sheet into
   Files and so into iCloud Drive.
+- **QR fallback.** Every plant page carries a QR code alongside its written
+  code, for the day the NFC sticker gives up.
 
 What it deliberately does **not** do is predict when a plant needs water. You
 water on fixed days, so every measured gap lands on 7 or 14 and the app would be
@@ -61,8 +63,11 @@ src/
 ```
 
 The dependency direction is one-way: `screens` use `ui`, `data` and `lib`;
-`ui` uses `lib`; `lib` uses nothing. Three runtime dependencies — React,
-ReactDOM and `idb` — and no others.
+`ui` uses `lib`; `lib` uses nothing. Four runtime dependencies — React,
+ReactDOM, `idb` and `qrcode-generator` — and no others. (`@mlc-ai/web-llm`
+is a fifth in `package.json`, but it is only ever loaded through a dynamic
+`import()`, so a build that never touches the AI name suggester never fetches
+it.)
 
 ### Conventions worth knowing before you change something
 
@@ -100,10 +105,10 @@ never zooms back out.
 ## Writing a tag
 
 1. Add the plant. It gets a code like `MON-8F3A`.
-2. On the plant page, tap **Copy link**.
+2. On the plant page, tap the code in the top corner to copy its link.
 3. Paste it into NFC Tools and write the sticker.
-4. Write the code on the pot in marker too, for the day the sticker gives up.
-5. Tap **Tag is written** so the block goes away.
+4. Write the code on the pot in marker too, and print the QR code alongside
+   it — both outlast the sticker.
 
 The app cannot write tags itself: that needs the Web NFC API, which only exists
 in Chrome on Android. Reading works everywhere, because the tag just holds a URL.
@@ -114,7 +119,8 @@ in Chrome on Android. Reading works everywhere, because the tag just holds a URL
 - **M2 — done.** A private repository holding `plants.json`, one
   `events/YYYY-MM.json` per month and `meta.json`, merged with a pure function
   and pushed with a fine-grained token. Sync doubles as the backup.
-- **M3 — photos and QR.** Photos in a separate private repository, one file
-  each; a QR code on the plant page as a fallback for a dead sticker.
+- **M3 — in progress.** A QR code on the plant page as a fallback for a dead
+  sticker — done. Photos in a separate private repository, one file each —
+  next.
 - **M4 — later.** A family tree over several generations, pests with repeat
   treatments, achievements.

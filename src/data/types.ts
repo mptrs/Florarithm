@@ -75,7 +75,6 @@ export type Plant = {
    *  code, its name and its history. */
   wish: boolean
   wishNote: string
-  tagWritten: boolean
   createdAt: string
   /** Bumped on every write. Sync uses it to pick a winner between two devices. */
   updatedAt: string

@@ -158,18 +158,6 @@ test('a place typed once is offered the next time', async ({ page }) => {
   expect(await page.locator('datalist option[value="Hallway · floor"]').count()).toBe(1)
 })
 
-test('the tag block disappears once the sticker is written', async ({ page }) => {
-  const code = await addPlant(page, 'Scindapsus pictus', 'Zilver')
-  await page.goto(`#p=${code}`)
-
-  await expect(page.getByText('Tag not written yet')).toBeVisible()
-  await page.getByRole('button', { name: 'Tag is written' }).click()
-  await expect(page.getByText('Tag not written yet')).toBeHidden()
-
-  await page.reload()
-  await expect(page.getByText('Tag not written yet')).toBeHidden()
-})
-
 test('the collection searches on name, species, code and place', async ({ page }) => {
   await addPlant(page, 'Monstera deliciosa', 'Gruyère', 'Living room')
   const code = await addPlant(page, 'Alocasia zebrina', 'Drakenkop', 'Bedroom')
