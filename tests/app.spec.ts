@@ -195,15 +195,22 @@ test('promoting a wish keeps its code, its name and its history', async ({ page 
   await page.goto('#new/wish')
   await page.getByLabel('Genus').fill('Philodendron')
   await page.getByLabel('Species', { exact: true }).fill('spiritus-sancti')
-  await page.getByLabel('Name', { exact: true }).fill('Ranker')
   await page.getByLabel('Note').fill('One day')
-  await page.getByRole('button', { name: 'Add to the wishlist' }).click()
+  // A wish is the species and a note, nothing else: there is no name field
+  // here, so the name it carries is the one its species makes.
+  await page.getByRole('button', { name: 'Add to wishlist' }).click()
   await expect(page.getByText('On the wishlist')).toBeVisible()
 
   const code = new URL(page.url()).hash.replace('#p=', '')
   expect(code).toMatch(/^[A-Z0-9]{3}-[0-9A-F]{4}$/)
 
   await page.getByRole('button', { name: 'I have this now' }).click()
+
+  // Promoting is the first moment a name can be typed, and the form opens
+  // holding the one the wish already had rather than an empty field.
+  const nameField = page.getByLabel('Name', { exact: true })
+  await expect(nameField).toHaveValue('Philodendron spiritus-sancti')
+  await nameField.fill('Ranker')
   await page.getByRole('button', { name: 'Save' }).click()
 
   // Wait for the save to land before reading the URL, or you are asserting on
