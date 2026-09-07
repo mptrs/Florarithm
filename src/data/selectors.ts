@@ -280,13 +280,86 @@ export function filterCollection(
       if (filter === 'all') return true
       return plant.system === filter
     })
-    .filter((plant) => {
-      if (!needle) return true
-      const place = vocabName(state, plant.locationId)
-      return [plant.name, formatSpecies(plant), plant.code, place]
-        .join(' ')
-        .toLowerCase()
-        .includes(needle)
-    })
-    .sort((a, b) => a.name.localeCompare(b.name) || a.code.localeCompare(b.code))
+    .filter((plant) => matchesQuery(state, plant, needle))
+    .sort(byName)
+}
+
+function byName(a: Plant, b: Plant): number {
+  return a.name.localeCompare(b.name) || a.code.localeCompare(b.code)
+}
+
+/** Name, species, code and place — the four things you might have in mind
+ *  when you are looking for a plant you already own. */
+function matchesQuery(state: State, plant: Plant, needle: string): boolean {
+  if (!needle) return true
+  const place = vocabName(state, plant.locationId)
+  return [plant.name, formatSpecies(plant), plant.code, place]
+    .join(' ')
+    .toLowerCase()
+    .includes(needle)
+}
+
+// --- the archive ------------------------------------------------------------
+
+/**
+ * The word that opens the drawer.
+ *
+ * The archive is not a filter chip: a plant you gave away in June should not
+ * cost you a tab stop every day for the rest of the year. You type your way in
+ * instead — and a prefix counts, so the drawer opens while you are still
+ * spelling it.
+ */
+const ARCHIVE_WORDS = ['archive', 'archived', 'archief']
+const SHORTEST_ARCHIVE_PREFIX = 4
+
+export function isArchiveQuery(query: string): boolean {
+  const needle = query.trim().toLowerCase()
+  if (needle.length < SHORTEST_ARCHIVE_PREFIX) return false
+  return ARCHIVE_WORDS.some((word) => word.startsWith(needle))
+}
+
+/**
+ * What the archive drawer holds for this query.
+ *
+ * Two ways in, deliberately: the word opens all of it, and any other search
+ * reaches in too — so the Monstera you gave away is findable by its name
+ * without knowing there is a word.
+ */
+export function archivedMatching(state: State, query: string): Plant[] {
+  const needle = query.trim().toLowerCase()
+  if (!needle) return []
+
+  const archived = livePlants(state).filter(
+    (plant) => !plant.wish && !plant.deleted && plant.status !== 'active',
+  )
+
+  return archived
+    .filter((plant) => isArchiveQuery(needle) || matchesQuery(state, plant, needle))
+    .sort(byName)
+}
+
+/**
+ * The list cut into places, and the places in alphabetical order.
+ *
+ * Anything without a place goes last rather than under an empty heading: it is
+ * a plant you have not told the app where to find, not a room called nothing.
+ */
+export const UNPLACED = 'No place'
+
+export function groupByPlace(state: State, plants: readonly Plant[]): [string, Plant[]][] {
+  const groups = new Map<string, Plant[]>()
+
+  for (const plant of plants) {
+    const place = vocabName(state, plant.locationId)
+    const key = place && place !== '—' ? place : UNPLACED
+    const bucket = groups.get(key)
+    if (bucket) bucket.push(plant)
+    else groups.set(key, [plant])
+  }
+
+  return [...groups.entries()].sort(([a], [b]) => {
+    if (a === UNPLACED) return 1
+    if (b === UNPLACED) return -1
+    return a.localeCompare(b)
+  })
 }

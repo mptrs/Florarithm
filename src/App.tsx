@@ -9,6 +9,7 @@ import { PlantFormScreen } from '~/screens/PlantFormScreen'
 import { PlantScreen } from '~/screens/PlantScreen'
 import { SettingsScreen } from '~/screens/SettingsScreen'
 import { TodayScreen } from '~/screens/TodayScreen'
+import { WishlistScreen } from '~/screens/WishlistScreen'
 import { Banner } from '~/ui/Banner'
 
 export function App() {
@@ -44,7 +45,14 @@ function Screen({ route }: { route: ReturnType<typeof useRoute> }) {
     case 'plant':
       return <PlantScreen code={route.code} />
     case 'collection':
-      return <CollectionScreen filter={route.filter} />
+      // A wish and a plant are one record with a flag between them, so they
+      // share a route; they stopped sharing a screen the day the collection
+      // grew photographs and a wish had none.
+      return route.filter === 'wishlist' ? (
+        <WishlistScreen />
+      ) : (
+        <CollectionScreen filter={route.filter} />
+      )
     case 'new':
       // Keyed on what makes it a fresh start: switching between plain "new",
       // a wish, or a cutting from a different parent should never inherit

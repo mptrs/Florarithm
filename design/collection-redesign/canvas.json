@@ -1,0 +1,115 @@
+{
+  "pages": [
+    {
+      "id": "page",
+      "name": "The page"
+    },
+    {
+      "id": "parts",
+      "name": "The parts"
+    }
+  ],
+  "artboards": [
+    {
+      "file": "Main.dc.html",
+      "title": "Collection",
+      "page": "page",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "is_interactive": true
+    },
+    {
+      "file": "Search.dc.html",
+      "title": "The archive",
+      "page": "page",
+      "x": 490,
+      "y": 0,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "Wishlist.dc.html",
+      "title": "Wishlist",
+      "page": "page",
+      "x": 980,
+      "y": 0,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "Desktop.dc.html",
+      "title": "Desktop",
+      "page": "page",
+      "x": 0,
+      "y": 1010,
+      "w": 1440,
+      "h": 900,
+      "is_interactive": true
+    },
+    {
+      "file": "Pieces.dc.html",
+      "title": "The parts",
+      "page": "parts",
+      "x": 0,
+      "y": 0,
+      "w": 880,
+      "h": 1060
+    }
+  ],
+  "annotations": [
+    {
+      "id": "main-note",
+      "page": "page",
+      "x": 0,
+      "y": -300,
+      "w": 380,
+      "text": "The picture leads, because you now have pictures. Two columns, name in the serif, one line under it — and nothing else.\n\nGone from the phone: the price total in the header, the plant code on every row, the system chips. None of them is what you came to this screen for; you came to find a plant or to look at them.\n\nGone too: days since water. Today already is that list, and on a phone two lists saying the same thing means you trust neither.\n\nThe switch is live — press By place and A–Z."
+    },
+    {
+      "id": "sort-note",
+      "page": "page",
+      "x": -420,
+      "y": 0,
+      "w": 380,
+      "text": "One rule runs through both orders: whatever you grouped by never repeats itself inside the row.\n\nGrouped by place, the drawer label says Living room, so the tile's second line is free to be the species — and on the desktop the Place column disappears altogether.\n\nSorted A–Z there is no label, so the place moves down into the tile and the column comes back."
+    },
+    {
+      "id": "archive-note",
+      "page": "page",
+      "x": 490,
+      "y": -300,
+      "w": 380,
+      "text": "The archive as you asked for it: no chip, no tab. Type archive and the drawer opens.\n\nOne thing I added — any search also reaches in there. Look up a name and anything archived that matches follows underneath the living plants, greyed and carrying its status, so the Monstera you gave away in June is still findable without knowing the magic word.\n\nSay so if you would rather it stayed strictly behind the keyword."
+    },
+    {
+      "id": "wishlist-note",
+      "page": "page",
+      "x": 980,
+      "y": -300,
+      "w": 380,
+      "text": "Its own page, and on the phone that means a fifth tab. A wish has no photograph, no place and no care — it was the one row in the collection that had to be built differently, which is the argument for it not living there.\n\nCost of the move: five tabs instead of four. Worth it, I think, but it is your thumb."
+    },
+    {
+      "id": "desktop-note",
+      "page": "page",
+      "x": -420,
+      "y": 1010,
+      "w": 380,
+      "text": "The four columns you kept — place, system, pot, days — plus a forty-pixel thumbnail, which is the whole reason to look at this list rather than Today.\n\nOne Plant column: name over species, the way the tile does it and the way the app's own row component already does it below the wide breakpoint. The identity reads as one thing, which is what it is. Rows are 62 pixels rather than 56 to carry the second line.\n\nDropped: the code (only useful when a sticker dies, and then you are standing at the plant with the QR on its own page) and what you paid, along with the euro total in the header. Search still matches a code, so nothing became unfindable.\n\nNote which plants show ember: the cactus at 29 days and the sansevieria at 23 are not neglected, they are correctly ignored. That is why this number earns a quiet column here and a loud one on Today."
+    },
+    {
+      "id": "parts-note",
+      "page": "parts",
+      "x": -420,
+      "y": 0,
+      "w": 380,
+      "text": "The tile, the drawer label, the sort switch and the desktop row, at the size they are actually drawn — including the two states a grid has to survive: a plant with no photograph, and one that is archived."
+    }
+  ],
+  "launch": {
+    "view": "canvas",
+    "page": "page"
+  }
+}
