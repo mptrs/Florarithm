@@ -11,49 +11,75 @@ permissions:
   pages: write
   id-token: write
 
-# One deploy at a time; a queued run is always newer than the one it replaces.
+# One run at a time per branch, newest wins. Keyed on the ref rather than a bare
+# "pages": with a single shared group, opening a pull request joins the same
+# queue as a deploy and cancels it half-written, which is the one thing this was
+# supposed to prevent.
 concurrency:
-  group: pages
+  group: pages-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  test:
+  # First, because everything after it is pointless if the app does not compile
+  # — and failing here costs half a minute rather than the two it takes to
+  # install browsers and run the suite.
+  #
+  # It also builds exactly once. The tests used to build the app a second time
+  # to have something to serve; they now run against this job's `dist`, which
+  # is the same bytes that get deployed rather than a rebuild of the same
+  # source.
+  build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm run build
+
+      # For the test job.
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: dist
+          retention-days: 1
+
+      # For the deploy job — and packaged on pull requests too, because turning
+      # `dist` into a Pages artifact is its own step that can break on its own.
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist
       - run: npx playwright install --with-deps chromium webkit
       - run: npm test
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: playwright-report
           path: playwright-report
           retention-days: 7
 
-  build:
-    needs: test
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npm run build
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: dist
-
+  # The one job that must not run on a pull request: it publishes to the live
+  # site, and a pull request is a proposal rather than a decision.
   deploy:
-    needs: build
+    needs: test
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment:
@@ -61,4 +87,4 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

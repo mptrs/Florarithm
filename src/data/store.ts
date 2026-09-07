@@ -18,6 +18,7 @@ import { newId } from '~/lib/id'
 import { generatePlantCode } from '~/lib/plantCode'
 import * as db from './db'
 import { migrateEvents, migrateVocab, needsMigration } from './migrate'
+import { dropPhotos } from './photos'
 import type {
   Id,
   Origin,
@@ -145,6 +146,7 @@ export type PlantDraft = {
   origin: Origin
   parent: Parent | null
   status: PlantStatus
+  photoEventId?: Id | null
   wish: boolean
   wishNote: string
 }
@@ -197,6 +199,9 @@ export async function deletePlantForever(code: string): Promise<void> {
   const plant = { ...findPlant(code), deleted: true, updatedAt: timestamp } as Plant
   await db.putPlant(plant)
 
+  // The bytes go for real; the events keep their tombstones. See `dropPhotos`.
+  await dropPhotos(events.filter((event) => event.photo).map((event) => event.id))
+
   const tombstonedById = new Map(tombstonedEvents.map((event) => [event.id, event]))
   commit({
     plants: state.plants.map((current) => (current.code === code ? plant : current)),
@@ -222,16 +227,22 @@ function findPlant(code: string): Plant | undefined {
 // --- events -----------------------------------------------------------------
 
 /** What a caller supplies: the type-specific fields, and optionally a date.
- *  Identity and timestamp are the store's business.
+ *  The timestamp is the store's business, and so is the id — except for the one
+ *  caller that has to know it in advance, because it wrote a photograph under
+ *  it before deciding the entry was worth keeping.
  *
  *  Distributed over the union on purpose — a plain `Omit` on a union keeps only
  *  the keys every member shares, which would silently drop `text`, `fertilized`
  *  and the rest. */
-type DraftOf<T> = T extends unknown ? Omit<T, 'id' | 'date' | 'deleted'> & { date?: string } : never
+type DraftOf<T> = T extends unknown
+  ? Omit<T, 'id' | 'date' | 'deleted'> & { id?: string; date?: string }
+  : never
 export type EventDraft = DraftOf<PlantEvent>
 
-export async function logEvent(draft: EventDraft): Promise<void> {
-  const event = { ...draft, id: newId(), date: draft.date ?? nowISO() } as PlantEvent
+/** Hands back the record it wrote, because a photograph has to be filed under
+ *  the id this just drew. */
+export async function logEvent(draft: EventDraft): Promise<PlantEvent> {
+  const event = { ...draft, id: draft.id ?? newId(), date: draft.date ?? nowISO() } as PlantEvent
 
   await db.putEvent(event)
   commit({ events: [...state.events, event] })
@@ -246,6 +257,8 @@ export async function logEvent(draft: EventDraft): Promise<void> {
       })
     }
   }
+
+  return event
 }
 
 /**
@@ -288,6 +301,8 @@ export function describeEvent(event: PlantEvent): string {
       return 'Blooming'
     case 'note':
       return 'Note'
+    case 'photo':
+      return 'Photo'
   }
 }
 

@@ -70,6 +70,16 @@ export type Plant = {
   origin: Origin
   parent: Parent | null
   status: PlantStatus
+  /**
+   * Which photograph stands for the plant, by the id of the entry carrying it.
+   *
+   * Absent means "the newest one", which is the right answer almost always and
+   * needs no upkeep. This is set only when you disagree with it — a close-up of
+   * one leaf is a true record and a poor portrait. A choice, not a cached
+   * value, which is why storing it does not break the rule next door: if the
+   * entry it names is deleted, the newest picture quietly takes over again.
+   */
+  photoEventId?: Id | null
   /** On the wishlist, not in your possession yet. A flag rather than a separate
    *  table, so "I have this now" is one field change and the record keeps its
    *  code, its name and its history. */
@@ -83,14 +93,39 @@ export type Plant = {
   deleted?: boolean
 }
 
-export type EventType = 'water' | 'repot' | 'leaf' | 'bloom' | 'note'
-export const EVENT_TYPES: readonly EventType[] = ['water', 'repot', 'leaf', 'bloom', 'note']
+export type EventType = 'water' | 'repot' | 'leaf' | 'bloom' | 'note' | 'photo'
+export const EVENT_TYPES: readonly EventType[] = [
+  'water',
+  'repot',
+  'leaf',
+  'bloom',
+  'note',
+  'photo',
+]
+
+/**
+ * The mark left on an event by a photograph. Present means "there is a picture
+ * for this entry"; the pixels themselves live in IndexedDB locally and, once
+ * synced, as their own file in the repo — see `photoFilePath`.
+ *
+ * Only the shape is here, and only as a hint for reserving the right box before
+ * the bytes arrive. Nothing is derived from it and nothing breaks if it turns
+ * out to disagree with the file by a pixel.
+ */
+export type EventPhoto = {
+  width: number
+  height: number
+}
 
 type EventBase = {
   id: Id
   plantCode: string
   /** ISO timestamp. */
   date: string
+  /** Set when a photograph was taken for this entry. Any kind of event can
+   *  carry one: the new leaf you photographed, the note with a picture in it,
+   *  the plant as it looked the day it was repotted. */
+  photo?: EventPhoto
   /** Tombstone. Events are append-only, so a deletion is a flag and never a
    *  removal — otherwise a merge would resurrect it. */
   deleted?: boolean
@@ -120,7 +155,17 @@ export type BloomEvent = EventBase & { type: 'bloom' }
 
 export type NoteEvent = EventBase & { type: 'note'; text: string }
 
-export type PlantEvent = WaterEvent | RepotEvent | LeafEvent | BloomEvent | NoteEvent
+/** Just a picture: nothing happened to the plant, this is what it looks like
+ *  now. The one event type that is meaningless without its `photo`. */
+export type PhotoEvent = EventBase & { type: 'photo' }
+
+export type PlantEvent =
+  | WaterEvent
+  | RepotEvent
+  | LeafEvent
+  | BloomEvent
+  | NoteEvent
+  | PhotoEvent
 
 export type VocabKind = 'location' | 'medium'
 export const VOCAB_KINDS: readonly VocabKind[] = ['location', 'medium']
@@ -135,6 +180,38 @@ export type VocabItem = {
   createdAt: string
   /** Bumped on every write. Sync uses it to pick a winner between two devices. */
   updatedAt: string
+}
+
+/**
+ * What IndexedDB holds for one photograph, keyed by the id of the event it
+ * belongs to.
+ *
+ * Local only. It is in neither `Backup` nor `plants.json`: the bytes travel to
+ * the private repo as their own file, and the event's `photo` field is what
+ * says the file should exist. That keeps a hundred megabytes of JPEG out of a
+ * document that is read and rewritten in full on every sync.
+ */
+export type StoredPhoto = {
+  eventId: Id
+  /**
+   * The JPEG's bytes, and not a `Blob`, which is what this obviously wants to
+   * be. WebKit fails a `Blob` put into IndexedDB with "Error preparing
+   * Blob/File data to be stored in object store" — a long-standing bug, and
+   * WebKit is the engine this app has to work on. Bytes go in without
+   * complaint, and a `Blob` is reassembled on the way out, where the mime type
+   * below is what makes that lossless.
+   */
+  bytes: ArrayBuffer
+  type: string
+  width: number
+  height: number
+  /**
+   * Whether the repo already has this file. `0`/`1` rather than a boolean
+   * because IndexedDB will not index one: a boolean is not a valid key, and
+   * this is indexed so the upload pass can find its work without reading every
+   * photograph's bytes off disk to look at a flag.
+   */
+  synced: 0 | 1
 }
 
 /** The export file, and in M2 the shape that goes to the private repo. */

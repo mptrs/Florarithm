@@ -10,10 +10,12 @@
  * out watered, fertilised, and a way to everything else.
  */
 
-import { useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ChangeEvent, type ReactNode } from 'react'
+import { preparePhoto, storePhoto, usePhoto } from '~/data/photos'
 import {
   childrenOf,
   countThisYear,
+  currentPhotoEvent,
   daysSinceWater,
   eventsByMonth,
   eventsFor,
@@ -29,9 +31,10 @@ import { describeEvent, logEvent, removeEvent, useStore } from '~/data/store'
 import type { Plant, PlantEvent } from '~/data/types'
 import { daysSince, formatDate, formatDayMonth, formatMonthYear } from '~/lib/date'
 import { formatPotSize, formatPrice, formatSpecies, label, plural } from '~/lib/format'
+import { newId } from '~/lib/id'
 import { plantUrl, routes } from '~/lib/router'
 import { cn } from '~/lib/cn'
-import { Button } from '~/ui/Button'
+import { BackButton, Button } from '~/ui/Button'
 import { ActionDial } from '~/ui/ActionDial'
 import { Card, GroupLabel, IconChip, type ChipTone } from '~/ui/Card'
 import { Icon, type IconName } from '~/ui/Icon'
@@ -59,11 +62,14 @@ export function PlantScreen({ code }: { code: string }) {
   }
 
   return (
-    <div className="-mx-4 -mt-6 md:mx-0 md:mt-0">
+    <div className="relative -mx-4 -mt-6 md:mx-0 md:mt-0">
       <Hero plant={plant} onLog={() => setIntent({ kind: 'new' })} />
 
-      {/* The sheet of content rides up over the bottom of the hero. */}
-      <div className="relative -mt-6 rounded-t-[1.75rem] bg-paper px-4 pt-5 md:mt-6 md:rounded-none md:px-0 md:pt-0">
+      {/* The sheet of content rides up over the bottom of the hero, and keeps
+          going over it as the page scrolls. The padding at its foot is the
+          drop's own footprint: without it the last row of the record sits
+          under a button that never scrolls away. */}
+      <div className="relative z-10 -mt-6 rounded-t-[1.75rem] bg-paper px-4 pt-5 pb-14 md:mt-6 md:rounded-none md:px-0 md:pt-0 md:pb-0">
         <h1 className="font-display text-[2.5rem] leading-[2.6875rem] font-medium tracking-[-0.025em]">
           {plant.name}
         </h1>
@@ -120,18 +126,100 @@ export function PlantScreen({ code }: { code: string }) {
 
 // --- the hero ---------------------------------------------------------------
 
+/** How much of the picture's height is slack for it to drift through, and how
+ *  fast it drifts. The two are the same number on purpose: the photograph runs
+ *  out of slack at exactly the point the sheet has covered it. */
+const DRIFT = 0.3
+
 /**
- * Photographs arrive in M3. Until they do this is a drawn plate rather than a
- * grey box with a camera in it — a plant with no photo still looks like it
- * belongs in the book — and it is shorter than the full hero will be, because
- * a tall empty rectangle on every plant is a worse answer than a short one.
+ * How far the page has been scrolled, for the photograph's drift.
+ *
+ * A scroll listener rather than a scroll-driven CSS animation, which Safari
+ * only learned recently and this has to work on the phone in your hand today.
+ * Reads are coalesced into one frame, and `prefers-reduced-motion` turns the
+ * whole thing off rather than slowing it down — the point of that setting is
+ * that nothing moves that did not have to.
+ */
+function useScrolled(): number {
+  const [scrolled, setScrolled] = useState(0)
+
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+
+    let frame = 0
+    const read = () => {
+      frame = 0
+      setScrolled(window.scrollY)
+    }
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(read)
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true })
+    read()
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      if (frame) cancelAnimationFrame(frame)
+    }
+  }, [])
+
+  return scrolled
+}
+
+
+/**
+ * The photograph, or the drawn plate standing in for one.
+ *
+ * A plant with no photo gets the plate rather than a grey box with a camera in
+ * it, so it still looks like it belongs in the book — and the hero is shorter
+ * without a photo than with one, because a tall empty rectangle on every plant
+ * is a worse answer than a short one.
  */
 function Hero({ plant, onLog }: { plant: Plant; onLog: () => void }) {
   const state = useStore()
   const [menuOpen, setMenuOpen] = useState(false)
   const [showQr, setShowQr] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [photoError, setPhotoError] = useState('')
+  const photoEvent = currentPhotoEvent(state, plant.code)
+  const photo = usePhoto(photoEvent?.id ?? null)
+  const picker = useRef<HTMLInputElement>(null)
+  const frame = useRef<HTMLDivElement>(null)
+  const scrolled = useScrolled()
   const place = vocabName(state, plant.locationId)
+
+  const choosePhoto = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+
+    // Clear the selection before doing anything with it: an input holds on to
+    // the last file it was given, so picking the same photo twice in a row
+    // would fire no second change event.
+    event.target.value = ''
+    if (!file) return
+
+    setPhotoError('')
+    try {
+      // A photograph taken from the hero is an entry in its own right — "this
+      // is what it looks like now" — so it goes into the log like everything
+      // else, and becomes the plant's picture by being the newest one.
+      const prepared = await preparePhoto(file)
+      URL.revokeObjectURL(prepared.previewUrl)
+
+      // Bytes before the entry that claims them: a failure here leaves nothing
+      // behind rather than a row promising a picture that never loads.
+      const id = newId()
+      await storePhoto(id, prepared)
+      await logEvent({
+        type: 'photo',
+        id,
+        plantCode: plant.code,
+        photo: { width: prepared.width, height: prepared.height },
+      })
+    } catch {
+      // A photo that silently fails to appear reads as the app losing it.
+      setPhotoError('That photo could not be read.')
+    }
+  }
 
   const copyLink = async () => {
     try {
@@ -144,22 +232,53 @@ function Hero({ plant, onLog }: { plant: Plant; onLog: () => void }) {
     }
   }
 
-  return (
-    <div className="relative h-[13.5rem] overflow-hidden bg-sunk md:h-56 md:rounded-xl">
-      <Plate />
+  // Both layers are the same box. The picture sticks to the top of the window
+  // while the sheet below slides up over it; the controls sit in that same
+  // space but scroll away with the page, so they never hang over the record.
+  const box = photo ? 'h-[21.25rem] md:h-72' : 'h-[13.5rem] md:h-56'
 
-      <div className="absolute inset-x-4 top-4 flex items-start justify-between">
-        <button
-          type="button"
-          onClick={() => {
-            if (window.history.length > 1) window.history.back()
-            else window.location.assign(routes.today())
-          }}
-          aria-label="Back"
-          className="flex size-10 items-center justify-center rounded-full bg-surface/90 text-ink shadow-md active:opacity-70"
-        >
-          <Icon name="back" size={19} />
-        </button>
+  // Clamped to the slack the picture actually has, so its bottom edge never
+  // lifts off the frame and shows the paper behind it.
+  const slack = (frame.current?.offsetHeight ?? 0) * DRIFT
+  const drift = Math.min(scrolled * DRIFT, slack)
+
+  return (
+    <>
+      <div
+        ref={frame}
+        className={cn('sticky top-0 z-0 overflow-hidden bg-sunk md:static md:rounded-xl', box)}
+      >
+        {photo ? (
+          // Taller than the frame it sits in, and pulled up through that slack
+          // at a fraction of the page's speed: the sheet moves, the picture
+          // drifts, and the gap between the two reads as depth.
+          <img
+            src={photo}
+            alt={`${plant.name}, photographed ${formatDate(photoEvent!.date)}`}
+            style={{ transform: `translate3d(0, ${-drift}px, 0)` }}
+            className="h-[130%] w-full object-cover will-change-transform"
+          />
+        ) : (
+          <Plate />
+        )}
+      </div>
+
+      {/* Above the sheet rather than under it, so the overflow menu can open
+          over the record instead of being clipped by the photograph's edge.
+          Transparent, so only the controls themselves take a tap. */}
+      <div className={cn('pointer-events-none absolute inset-x-0 top-0 z-20', box)}>
+        <input
+          ref={picker}
+          type="file"
+          accept="image/*"
+          onChange={choosePhoto}
+          tabIndex={-1}
+          aria-hidden
+          className="hidden"
+        />
+
+        <div className="pointer-events-auto absolute inset-x-4 top-4 flex items-start justify-between">
+        <BackButton />
 
         <div className="relative flex items-center gap-2">
           {copied ? (
@@ -197,6 +316,17 @@ function Hero({ plant, onLog }: { plant: Plant; onLog: () => void }) {
                 onLog()
               }}
             />
+            {/* Not "replace": every photograph is kept, and the newest one is
+                what the plant looks like now. Removing one means removing its
+                entry, in the history, where it is visible. */}
+            <MenuItem
+              icon="image"
+              label="Add a photo"
+              onClick={() => {
+                setMenuOpen(false)
+                picker.current?.click()
+              }}
+            />
             <MenuItem
               icon="link"
               label="Copy the tag link"
@@ -222,7 +352,19 @@ function Hero({ plant, onLog }: { plant: Plant; onLog: () => void }) {
         </div>
       </div>
 
-      {place && place !== '—' ? (
+      {/* One line at the foot of the photograph. A failed photo displaces the
+          place, because they want the same line and only one of them is news. */}
+      {photoError ? (
+        <div className="absolute inset-x-4 bottom-9">
+          <span
+            role="status"
+            className="inline-flex items-center gap-1.5 rounded-full bg-ember px-3.5 py-2 text-[0.875rem] font-semibold text-on-accent shadow-md"
+          >
+            <Icon name="alert" size={16} />
+            {photoError}
+          </span>
+        </div>
+      ) : place && place !== '—' ? (
         <div className="absolute inset-x-4 bottom-9">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-surface/90 px-3.5 py-2 text-[0.875rem] font-semibold text-ink shadow-md">
             <Icon name="place" size={16} className="text-leaf" />
@@ -236,13 +378,14 @@ function Hero({ plant, onLog }: { plant: Plant; onLog: () => void }) {
           type="button"
           aria-label="Hide the QR code"
           onClick={() => setShowQr(false)}
-          className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-paper/95"
+          className="pointer-events-auto absolute inset-0 flex flex-col items-center justify-center gap-3 bg-paper/95"
         >
           <QrCodeBox value={plantUrl(plant.code)} size={112} />
           <span className="font-mono text-code tracking-[0.1em] text-ink-muted">{plant.code}</span>
         </button>
       ) : null}
-    </div>
+      </div>
+    </>
   )
 }
 
@@ -448,7 +591,7 @@ function Details({ plant }: { plant: Plant }) {
 
 // --- history ----------------------------------------------------------------
 
-type Filter = 'all' | 'notable' | 'water'
+type Filter = 'all' | 'notable' | 'water' | 'photo'
 
 const TONE: Record<PlantEvent['type'], ChipTone> = {
   water: 'water',
@@ -456,6 +599,7 @@ const TONE: Record<PlantEvent['type'], ChipTone> = {
   leaf: 'leaf',
   bloom: 'leaf',
   note: 'ink',
+  photo: 'ink',
 }
 
 const GLYPH: Record<PlantEvent['type'], IconName> = {
@@ -464,6 +608,7 @@ const GLYPH: Record<PlantEvent['type'], IconName> = {
   leaf: 'leaf',
   bloom: 'bloom',
   note: 'note',
+  photo: 'image',
 }
 
 function History({ plant, onEdit }: { plant: Plant; onEdit: (event: PlantEvent) => void }) {
@@ -472,19 +617,22 @@ function History({ plant, onEdit }: { plant: Plant; onEdit: (event: PlantEvent) 
   const all = eventsFor(state, plant.code)
 
   const waterings = all.filter((event) => event.type === 'water').length
+  const photos = all.filter((event) => event.photo).length
   const shown =
     filter === 'all'
       ? all
       : filter === 'water'
         ? all.filter((event) => event.type === 'water')
-        : all.filter((event) => event.type !== 'water')
+        : filter === 'photo'
+          ? all.filter((event) => event.photo)
+          : all.filter((event) => event.type !== 'water')
 
   if (all.length === 0) {
     return (
       <div className="mt-4">
         <EmptyState
           title="Nothing logged yet"
-          description="Every watering, leaf, bloom, repot and note shows up here, newest first."
+          description="Every watering, leaf, bloom, repot, note and photograph shows up here, newest first."
         />
       </div>
     )
@@ -506,6 +654,17 @@ function History({ plant, onEdit }: { plant: Plant; onEdit: (event: PlantEvent) 
         >
           Waterings
         </FilterChip>
+        {/* The timeline, and deliberately not a separate screen: it is the same
+            record, read through the entries that happen to have a picture. */}
+        {photos > 0 ? (
+          <FilterChip
+            selected={filter === 'photo'}
+            onClick={() => setFilter('photo')}
+            count={photos}
+          >
+            Photos
+          </FilterChip>
+        ) : null}
       </div>
 
       {eventsByMonth(shown).map(([key, events]) => (
@@ -596,7 +755,11 @@ function EntryRow({
       className={cn('group', last ? '' : 'border-b border-line')}
     >
       <div className="flex items-center gap-3.5 px-4.5 py-3">
-        <IconChip icon={GLYPH[event.type]} tone={TONE[event.type]} />
+        {event.photo ? (
+          <EntryPhoto event={event} />
+        ) : (
+          <IconChip icon={GLYPH[event.type]} tone={TONE[event.type]} />
+        )}
         <div className="min-w-0 flex-1">
           <div className="text-[0.9375rem] font-medium">{title}</div>
           {detail ? (
@@ -617,6 +780,31 @@ function EntryRow({
   )
 }
 
+/**
+ * The picture in place of the icon chip, at the same size, so a row with a
+ * photograph is the same height as one without and the list does not jump about
+ * as thumbnails arrive.
+ *
+ * A null url means the bytes are not here — most often an entry the other
+ * device logged whose photograph this one has not pulled down yet. The icon
+ * stands in until it does, rather than a broken frame.
+ */
+function EntryPhoto({ event }: { event: PlantEvent }) {
+  const url = usePhoto(event.id)
+
+  if (!url) return <IconChip icon={GLYPH[event.type]} tone={TONE[event.type]} />
+
+  return (
+    <img
+      src={url}
+      alt={`Photographed ${formatDayMonth(event.date)}`}
+      // The chip's own 34, set the way it sets it, so the two are the same box.
+      style={{ width: 34, height: 34 }}
+      className="shrink-0 rounded-full object-cover"
+    />
+  )
+}
+
 function detailOf(event: PlantEvent, state: ReturnType<typeof useStore>): string {
   switch (event.type) {
     case 'water':
@@ -630,6 +818,7 @@ function detailOf(event: PlantEvent, state: ReturnType<typeof useStore>): string
       return event.text
     default:
       return ''
+
   }
 }
 

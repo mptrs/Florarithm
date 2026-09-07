@@ -34,8 +34,14 @@ export default defineConfig({
     },
   ],
   // Tested against the production build, so the service worker is real.
+  //
+  // CI builds in its own job and hands `dist` over, so previewing it here tests
+  // the bytes that would be deployed rather than a second build of the same
+  // source. There is no such job on a laptop, so there the build happens here.
   webServer: {
-    command: `npm run build && npx vite preview --port ${PORT} --strictPort`,
+    command: process.env.CI
+      ? `npx vite preview --port ${PORT} --strictPort`
+      : `npm run build && npx vite preview --port ${PORT} --strictPort`,
     url: BASE_URL,
     reuseExistingServer: false,
     timeout: 120_000,

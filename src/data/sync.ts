@@ -11,6 +11,11 @@
  * writing back — no sha cache, no manifest of "what changed since last time."
  * Correct and simple beats clever at the file counts one person's plants
  * produce; revisit if that stops being true.
+ *
+ * Photographs are the exception, and have to be: re-fetching a hundred JPEGs to
+ * find out they have not changed would be absurd. They are immutable and named
+ * after the event they belong to, so "do I have this one?" is a local key
+ * lookup and a file is never fetched twice. See `syncPhotos`.
  */
 
 import { useSyncExternalStore } from 'react'
@@ -18,6 +23,7 @@ import { nowISO } from '~/lib/date'
 import * as db from './db'
 import type { Snapshot } from './db'
 import type { PlantEvent } from './types'
+import { acceptDownloadedPhoto } from './photos'
 import { getState, replaceEverything, subscribe as subscribeStore } from './store'
 import { mergeSnapshots } from './merge'
 import {
@@ -27,9 +33,11 @@ import {
   GitHubNetworkError,
   type GitHubConfig,
   type RemoteFile,
+  getBinaryFile,
   getDefaultBranch,
   getFile,
   listDir,
+  putBinaryFile,
   putFile,
 } from './githubClient'
 import {
@@ -41,6 +49,7 @@ import {
   parseEventsFile,
   parsePlantsFile,
   parseRemoteMeta,
+  photoFilePath,
 } from './remoteFormat'
 
 export type SyncConfig = GitHubConfig
@@ -310,6 +319,62 @@ async function syncOnce(active: SyncConfig): Promise<void> {
       remoteMonthFiles.get(key) ?? null,
       buildEventsFile(events),
     )
+  }
+
+  // Last, and only once the log that describes them has landed: a photograph
+  // in the repo that no event points at is litter nobody would ever find.
+  await syncPhotos(active, branch, merged.events)
+}
+
+/** How many photographs one round trip will pull down. A device joining a
+ *  collection with years of pictures in it should become useful immediately and
+ *  fill in behind itself, rather than holding the first sync open for a
+ *  thousand requests. The rest arrive on the next rounds. */
+const DOWNLOAD_BUDGET = 25
+
+/**
+ * Move the bytes.
+ *
+ * Both directions lean on the same property: a photograph never changes. Its
+ * path is derived from the event's id and date, so there is nothing to list,
+ * nothing to compare and no sha to track — only "the repo has it" and "this
+ * device has it", each of which is a set membership test.
+ */
+async function syncPhotos(
+  active: SyncConfig,
+  branch: string,
+  events: readonly PlantEvent[],
+): Promise<void> {
+  const byId = new Map(events.map((event) => [event.id, event]))
+
+  // Up: everything taken here that the repo has not been told about. A file
+  // that turns out to be there already counts as done — see `putBinaryFile`.
+  for (const photo of await db.unsyncedPhotos()) {
+    const event = byId.get(photo.eventId)
+    if (!event || event.deleted) continue
+
+    await putBinaryFile(active, photoFilePath(event), photo.bytes, COMMIT_MESSAGE, branch)
+    await db.markPhotoSynced(photo.eventId)
+  }
+
+  // Down: entries whose log says there is a picture, where this device has no
+  // bytes for it.
+  const held = new Set(await db.photoIds())
+  const wanted = events.filter((event) => event.photo && !event.deleted && !held.has(event.id))
+
+  for (const event of wanted.slice(0, DOWNLOAD_BUDGET)) {
+    const file = await getBinaryFile(active, photoFilePath(event))
+    // Absent means the other device logged the entry but has not pushed the
+    // photograph yet. Nothing is wrong; it will be there on a later round.
+    if (!file) continue
+
+    await acceptDownloadedPhoto({
+      eventId: event.id,
+      bytes: file.bytes,
+      type: 'image/jpeg',
+      width: event.photo?.width ?? 0,
+      height: event.photo?.height ?? 0,
+    })
   }
 }
 

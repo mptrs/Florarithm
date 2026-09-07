@@ -27,7 +27,13 @@ import {
   parseRemoteMeta,
   RemoteParseError,
 } from '../src/data/remoteFormat'
-import { BACKUP_VERSION, type Plant, type PlantEvent, type VocabItem } from '../src/data/types'
+import {
+  BACKUP_VERSION,
+  type EventPhoto,
+  type Plant,
+  type PlantEvent,
+  type VocabItem,
+} from '../src/data/types'
 
 function plant(code: string, updatedAt: string, extra: Partial<Plant> = {}): Plant {
   return {
@@ -51,7 +57,11 @@ function plant(code: string, updatedAt: string, extra: Partial<Plant> = {}): Pla
   }
 }
 
-function waterEvent(id: string, date: string, extra: { deleted?: boolean } = {}): PlantEvent {
+function waterEvent(
+  id: string,
+  date: string,
+  extra: { deleted?: boolean; photo?: EventPhoto } = {},
+): PlantEvent {
   return { id, plantCode: 'MON-0001', date, type: 'water', fertilized: false, ...extra }
 }
 
@@ -119,6 +129,30 @@ test.describe('merging events', () => {
     expect(changed).toBe(true)
 
     expect(mergeEvents([shared], [shared]).changed).toBe(false)
+  })
+
+  test('a photograph one side knows about survives, whichever side that is', () => {
+    const photo = { width: 1200, height: 1600 }
+    const without = [waterEvent('e1', '2026-01-01')]
+    const with_ = [waterEvent('e1', '2026-01-01', { photo })]
+
+    // The picture was taken on the other device: this one has to learn about it
+    // rather than keep its own older idea of the entry.
+    expect(mergeEvents(without, with_).merged[0]?.photo).toEqual(photo)
+    expect(mergeEvents(without, with_).changed).toBe(true)
+
+    // And the other way round it is already known, so nothing changed.
+    expect(mergeEvents(with_, without).merged[0]?.photo).toEqual(photo)
+    expect(mergeEvents(with_, without).changed).toBe(false)
+  })
+
+  test('a deleted entry that also gained a photograph keeps both facts', () => {
+    const deleted = [waterEvent('e1', '2026-01-01', { deleted: true })]
+    const photographed = [waterEvent('e1', '2026-01-01', { photo: { width: 8, height: 8 } })]
+
+    const { merged } = mergeEvents(deleted, photographed)
+    expect(merged[0]?.deleted).toBe(true)
+    expect(merged[0]?.photo).toEqual({ width: 8, height: 8 })
   })
 })
 

@@ -14,6 +14,9 @@ import { migrateEvent, migrateVocab } from '../src/data/migrate'
 import { daysBetween, inputValueToISO, isoToInputValue } from '../src/lib/date'
 import { toRoman, fromRoman } from '../src/lib/format'
 import { parseRoute } from '../src/lib/router'
+import { currentPhotoEvent } from '../src/data/selectors'
+import type { State } from '../src/data/store'
+import type { Plant, PlantEvent } from '../src/data/types'
 
 test.describe('plant codes', () => {
   test('the prefix comes from the species, stripped and padded', () => {
@@ -224,5 +227,73 @@ test.describe('routing', () => {
     })
     expect(parseRoute('')).toEqual({ name: 'today' })
     expect(parseRoute('#whatever')).toEqual({ name: 'today' })
+  })
+})
+
+test.describe("the plant's picture", () => {
+  const plant = (extra: Partial<Plant> = {}): Plant => ({
+    code: 'MON-0001',
+    name: 'Gruyère',
+    genus: 'Monstera',
+    species: '',
+    cultivar: '',
+    locationId: null,
+    system: 'soil',
+    potSize: null,
+    mediumId: null,
+    origin: { type: null, from: '', date: null, price: null },
+    parent: null,
+    status: 'active',
+    wish: false,
+    wishNote: '',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+    ...extra,
+  })
+
+  const shot = (id: string, date: string, extra: Partial<PlantEvent> = {}): PlantEvent =>
+    ({
+      id,
+      plantCode: 'MON-0001',
+      type: 'photo',
+      date,
+      photo: { width: 4, height: 4 },
+      ...extra,
+    }) as PlantEvent
+
+  const stateOf = (one: Plant, events: PlantEvent[]): State => ({
+    status: 'ready',
+    plants: [one],
+    events,
+    vocab: [],
+    lastBackupAt: null,
+  })
+
+  const june = shot('june', '2026-06-01T00:00:00.000Z')
+  const august = shot('august', '2026-08-01T00:00:00.000Z')
+
+  test('is the newest photograph when nothing has been chosen', () => {
+    const state = stateOf(plant(), [june, august])
+    expect(currentPhotoEvent(state, 'MON-0001')?.id).toBe('august')
+  })
+
+  test('is the chosen one when there is a choice', () => {
+    const state = stateOf(plant({ photoEventId: 'june' }), [june, august])
+    expect(currentPhotoEvent(state, 'MON-0001')?.id).toBe('june')
+  })
+
+  test('falls back to the newest when the chosen entry is deleted', () => {
+    // The choice is left pointing at nothing rather than rewritten on delete:
+    // the fallback is what makes that safe, from either device's copy.
+    const state = stateOf(plant({ photoEventId: 'june' }), [
+      { ...june, deleted: true } as PlantEvent,
+      august,
+    ])
+    expect(currentPhotoEvent(state, 'MON-0001')?.id).toBe('august')
+  })
+
+  test('is nothing at all when no entry carries a photograph', () => {
+    const state = stateOf(plant({ photoEventId: 'gone' }), [])
+    expect(currentPhotoEvent(state, 'MON-0001')).toBeNull()
   })
 })
