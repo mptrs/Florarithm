@@ -26,6 +26,12 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # Ahead of the tests, which build the app again themselves to run against
+      # it. Playwright starts that build inside `webServer`, whose output it
+      # swallows — so a type error surfaces there as "the web server would not
+      # start" and nothing else. Two seconds buys a step that fails with the
+      # compiler error in it.
+      - run: npm run build
       - run: npx playwright install --with-deps chromium webkit
       - run: npm test
       - uses: actions/upload-artifact@v4
