@@ -1,0 +1,33 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html",    "title": "Today · thirstiest",  "x": 0,    "y": 0,    "w": 390,  "h": 844 },
+    { "file": "ByPlace.dc.html", "title": "Today · by place",    "x": 470,  "y": 0,    "w": 390,  "h": 844 },
+    { "file": "Watered.dc.html", "title": "Today · mid-round",   "x": 940,  "y": 0,    "w": 390,  "h": 844 },
+    { "file": "Desktop.dc.html", "title": "Desktop",             "x": 1410, "y": 0,    "w": 1440, "h": 900 },
+    { "file": "Pieces.dc.html",  "title": "The pieces",          "x": 0,    "y": 1080, "w": 430,  "h": 2130 },
+    { "file": "States.dc.html",  "title": "The states",          "x": 510,  "y": 1080, "w": 430,  "h": 790 }
+  ],
+  "annotations": [
+    {
+      "id": "the-switch",
+      "x": 0, "y": -215, "w": 860,
+      "text": "TODAY, IN TWO ORDERS\n\nThe ledger is the screen; the switch is the only thing that changes. Thirstiest first with never-logged above it is the default and what you land on; By place cuts the same list into rooms with Collection's drawer labels.\n\nOne rule runs through both, and it is Collection's: whatever the list is grouped by never repeats itself inside a row. Sorted thirstiest the row carries the place; grouped by place it carries the species. That is the whole difference — no second component, no second screen."
+    },
+    {
+      "id": "mid-round",
+      "x": 940, "y": -215, "w": 390,
+      "text": "MID-ROUND\n\nThe same screen, halfway through a watering round. A plant that has had water today shows a mark instead of a figure — read out of the log, never written from here.\n\nNothing is lifted out and no count changes: Woonkamer still says 5. A watered plant sinks to the foot of its own room only because it is now on nought days, which is the sort the screen already does."
+    },
+    {
+      "id": "desk",
+      "x": 1410, "y": -215, "w": 700,
+      "text": "DESKTOP\n\nRhythm is gone. What is left is the plant, where it stands, the day it last had water, and how long ago that was.\n\nPlace is a column only in this order. Switch to By place and it moves into the drawer label and the column drops — the same trade the table already makes on Collection."
+    },
+    {
+      "id": "sheets",
+      "x": 0, "y": 950, "w": 940,
+      "text": "Below: the pieces the screen is assembled from, and the two states it has to answer for. Every value is lifted from src/styles.css and the shipped components — the row is Collection's PlantRow, the day count is primitives.tsx, the chips are Chip.tsx, the tab bar is the Collection redesign's."
+    }
+  ],
+  "launch": { "view": "canvas" }
+}

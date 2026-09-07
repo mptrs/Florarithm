@@ -10,6 +10,7 @@ tsconfig.tsbuildinfo
 # into it is not.
 design/florarithm-design-system.html
 design/plant-redesign/plant-page.html
+design/today-redesign/florarithm-today.html
 
 # Impeccable's compiled per-platform engine — downloaded once per machine on
 # first run, not something every clone should carry a darwin-arm64 binary for.

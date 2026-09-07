@@ -267,6 +267,40 @@ test('the collection groups by place, or drops the grouping for A\u2013Z', async
   expect(names[0]).toContain('Gruy\u00e8re')
 })
 
+test('Today sorts by thirst, or cuts the same list into rooms', async ({ page }) => {
+  await addPlant(page, 'Monstera deliciosa', 'Gruy\u00e8re', 'Living room')
+  await addPlant(page, 'Alocasia zebrina', 'Zebra', 'Bedroom')
+
+  await page.goto('#today')
+
+  // Thirstiest first, and with no label above the row it carries its own place.
+  await expect(main(page).getByRole('link', { name: /Gruy\u00e8re/ })).toContainText('Living room')
+
+  await page.getByRole('button', { name: 'By place' }).click()
+
+  // Cut into rooms, the drawer label says where you are and the row goes back
+  // to saying what the plant is.
+  await expect(main(page).getByText('Bedroom', { exact: true })).toBeVisible()
+  await expect(main(page).getByRole('link', { name: /Gruy\u00e8re/ })).toContainText(
+    'Monstera deliciosa',
+  )
+})
+
+test('a plant watered today shows a mark instead of a nought', async ({ page }) => {
+  const code = await addPlant(page, 'Hoya carnosa', 'Nore', 'Living room')
+
+  // Nothing logged is not the same fact as a long time ago, and says so.
+  await page.goto('#today')
+  await expect(main(page).getByRole('link', { name: /Nore/ })).toContainText('never logged')
+
+  await page.goto(`#p=${code}`)
+  await logFromDial(page, 'Watered')
+
+  await page.goto('#today')
+  await expect(main(page).getByRole('link', { name: /Nore/ })).toContainText('watered today')
+  await expect(main(page).getByRole('link', { name: /Nore/ })).not.toContainText('days')
+})
+
 test('an archived plant is out of the way but still findable', async ({ page }) => {
   await addPlant(page, 'Monstera deliciosa', 'Gruy\u00e8re', 'Living room')
   const code = await addPlant(page, 'Calathea orbifolia', 'Wolk', 'Bedroom')

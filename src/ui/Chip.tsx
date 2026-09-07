@@ -76,3 +76,51 @@ export function ChipStrip({ children, className }: { children: ReactNode; classN
     </div>
   )
 }
+
+export type SortOption<T extends string> = { readonly value: T; readonly label: string }
+
+/**
+ * The word for what the chips do, and the chips.
+ *
+ * Collection and Today sort the same plants, and a switch that looked different
+ * on the two screens would read as two different controls. Today puts it on the
+ * title row, where at 390px the word runs the header to within a hair of the
+ * margin and the two chips say what they do without it — hence `labelFrom`,
+ * which is visibility rather than look.
+ */
+export function SortSwitch<T extends string>({
+  value,
+  options,
+  onChange,
+  labelFrom,
+  className,
+}: {
+  value: T
+  options: readonly SortOption<T>[]
+  onChange: (value: T) => void
+  /** Breakpoint from which the word "Sort" appears. Always, when omitted. */
+  labelFrom?: 'lg'
+  className?: string
+}) {
+  return (
+    <div className={cn('flex items-center gap-2', className)}>
+      <span
+        className={cn(
+          'text-label uppercase text-ink-faint',
+          labelFrom === 'lg' ? 'hidden lg:inline' : '',
+        )}
+      >
+        Sort
+      </span>
+      {options.map((option) => (
+        <Chip
+          key={option.value}
+          selected={option.value === value}
+          onClick={() => onChange(option.value)}
+        >
+          {option.label}
+        </Chip>
+      ))}
+    </div>
+  )
+}
