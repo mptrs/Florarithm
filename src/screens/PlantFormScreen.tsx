@@ -4,6 +4,14 @@
  * They are the same record, so they are the same form. What changes is which
  * parts are worth showing: a wish has no pot and no watering to describe, so
  * everything but species, name and the note folds away until it is real.
+ *
+ * It reads in the plant page's own language. That page stopped being a flat
+ * stack where a nine-row fact table and ninety history rows weighed the same;
+ * this was the same stack, twelve fields deep, with one heading in the middle
+ * set in exactly the type of the field labels under it. So the fields are
+ * grouped and each group is named and led by the glyph the plant page uses for
+ * those same facts — `place` for where it stands, `receipt` for what it cost.
+ * Set a fact here, read it back there, under the same mark.
  */
 
 import { useEffect, useState } from 'react'
@@ -30,17 +38,19 @@ import { BackButton, Button, IconButton } from '~/ui/Button'
 import { Chip } from '~/ui/Chip'
 import { useConfirm } from '~/ui/ConfirmDialog'
 import { showToast } from '~/ui/toast'
+import { DatePickerField } from '~/ui/DatePicker'
 import {
-  DateField,
   Field,
   NumberField,
   SegmentedField,
   SelectField,
   SuggestField,
+  TextAreaField,
   TextField,
   ToggleField,
 } from '~/ui/fields'
-import { SectionHeading } from '~/ui/primitives'
+import { Icon, type IconName } from '~/ui/Icon'
+import { CodeBadge } from '~/ui/primitives'
 
 type Props = {
   /** Absent when adding. */
@@ -233,14 +243,17 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
   const title = existing ? (promote ? 'Add to the collection' : `Edit ${existing.name}`) : wish ? 'New wish' : 'New plant'
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-7">
       {/* The way out before you have started. Cancel is still down by Save,
-          where it belongs next to the decision it undoes. */}
+          where it belongs next to the decision it undoes. The code rides
+          alongside the title on an existing plant: it is the one thing on this
+          page that cannot be edited, because it is printed on the pot. */}
       <div className="flex items-center gap-2">
         <BackButton variant="bare" className="-ml-2.5" />
-        <h1 className="min-w-0 font-display text-[2rem] leading-9 font-medium tracking-[-0.015em]">
+        <h1 className="min-w-0 flex-1 font-display text-[2rem] leading-9 font-medium tracking-[-0.015em]">
           {title}
         </h1>
+        {existing ? <CodeBadge code={existing.code} /> : null}
       </div>
 
       <ToggleField
@@ -255,220 +268,240 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
         className="border-y border-line py-1"
       />
 
-      <div className="flex flex-col gap-6 lg:flex-row lg:gap-12">
-        <div className="flex flex-col gap-5 lg:w-[32rem] lg:shrink-0">
-          <div className="flex gap-3">
-            <TextField
-              label="Genus"
-              value={genus}
-              onChange={(event) => setGenus(event.target.value)}
-              placeholder="Monstera"
-              fieldClassName="flex-1"
-              hint={
-                existing
-                  ? undefined
-                  : 'The plant code is drawn from this, not from the name — a sticker cannot be rewritten.'
-              }
-            />
-            <TextField
-              label="Species"
-              value={species}
-              onChange={(event) => setSpecies(event.target.value)}
-              placeholder="deliciosa"
-              fieldClassName="flex-1"
-            />
-          </div>
-
-          <TextField
-            label="Cultivar"
-            value={cultivar}
-            onChange={(event) => setCultivar(event.target.value)}
-            placeholder="Thai Constellation"
-          />
-
-          {wish ? null : (
-            <SelectField
-              label="Cutting or corm of"
-              value={parent}
-              onChange={(event) => setParent(event.target.value)}
-            >
-              <option value="">Not propagated from one of yours</option>
-              {candidates.map((candidate) => (
-                <option key={candidate.code} value={candidate.code}>
-                  {candidate.name} · {candidate.code}
-                </option>
-              ))}
-            </SelectField>
-          )}
-
-          {parentPlant && !wish ? (
-            <Field label="How">
-              <div className="flex flex-wrap gap-2">
-                {PROPAGATION_METHODS.map((candidate) => (
-                  <Chip
-                    key={candidate}
-                    kind="choice"
-                    selected={method === candidate}
-                    onClick={() => setMethod(candidate)}
-                  >
-                    {label(candidate)}
-                  </Chip>
-                ))}
-              </div>
-            </Field>
-          ) : null}
-
-          <Field
-            label="Name"
-            hint={
-              loadProgress ??
-              (parentPlant
-                ? `The dice continues the line from ${parentPlant.name}, so the family tree reads without a diagram.`
-                : 'The dice asks a small AI, running in your browser, for something that fits the genus. It is an offer, not a decision.')
-            }
-          >
-            <div className="flex gap-2.5">
+      <div className="flex flex-col gap-7 lg:flex-row lg:gap-12">
+        <div className="flex flex-col gap-7 lg:w-[32rem] lg:shrink-0">
+          <Section icon="tag" title="What it is">
+            <div className="flex gap-3">
               <TextField
-                aria-label="Name"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
+                label="Genus"
+                value={genus}
+                onChange={(event) => setGenus(event.target.value)}
+                placeholder="Monstera"
                 fieldClassName="flex-1"
-                placeholder="Gruyère"
+                hint={
+                  existing
+                    ? undefined
+                    : 'The plant code is drawn from this, not from the name — a sticker cannot be rewritten.'
+                }
               />
-              <IconButton
-                icon="dice"
-                label="Suggest a name"
-                onClick={rollName}
-                disabled={rolling}
-                className={cn('text-leaf', rolling && 'animate-spin')}
+              <TextField
+                label="Species"
+                value={species}
+                onChange={(event) => setSpecies(event.target.value)}
+                placeholder="deliciosa"
+                fieldClassName="flex-1"
               />
             </div>
-          </Field>
 
-          {wish ? (
             <TextField
-              label="Note"
-              value={wishNote}
-              onChange={(event) => setWishNote(event.target.value)}
-              placeholder="Seen at Wilstra, about €40"
+              label="Cultivar"
+              value={cultivar}
+              onChange={(event) => setCultivar(event.target.value)}
+              placeholder="Thai Constellation"
             />
-          ) : (
-            <>
-              <SuggestField
-                label="Place"
-                options={locations.map((item) => item.name)}
-                value={place}
-                onChange={(event) => setPlace(event.target.value)}
-                placeholder="Pick one, or type a new place"
-              />
 
-              <SegmentedField
-                label="System"
-                options={SYSTEMS.map((value) => ({ value, label: label(value) }))}
-                value={system}
-                onChange={setSystem}
-              />
-
-              <div className="flex gap-3">
-                <NumberField
-                  label="Pot size"
-                  unit="cm"
-                  inputMode="numeric"
-                  value={potSize}
-                  onChange={(event) => setPotSize(event.target.value)}
-                  fieldClassName="w-32"
-                />
-                <SuggestField
-                  label="Medium"
-                  options={mediums.map((item) => item.name)}
-                  value={medium}
-                  onChange={(event) => setMedium(event.target.value)}
-                  placeholder="Pick one, or type a new medium"
+            <Field
+              label="Name"
+              hint={
+                loadProgress ??
+                (parentPlant
+                  ? `The dice continues the line from ${parentPlant.name}, so the family tree reads without a diagram.`
+                  : 'The dice asks a small AI, running in your browser, for something that fits the genus. It is an offer, not a decision.')
+              }
+            >
+              <div className="flex gap-2.5">
+                <TextField
+                  aria-label="Name"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
                   fieldClassName="flex-1"
+                  placeholder="Gruyère"
+                />
+                <IconButton
+                  icon="dice"
+                  label="Suggest a name"
+                  onClick={rollName}
+                  disabled={rolling}
+                  className={cn('text-leaf', rolling && 'animate-spin')}
                 />
               </div>
+            </Field>
+
+            {wish ? (
+              <TextAreaField
+                label="Note"
+                value={wishNote}
+                onChange={(event) => setWishNote(event.target.value)}
+                placeholder="Seen at Wilstra, about €40"
+              />
+            ) : null}
+          </Section>
+
+          {wish ? null : (
+            <>
+              <Section icon="place" title="Where it lives">
+                <SuggestField
+                  label="Place"
+                  options={locations.map((item) => item.name)}
+                  value={place}
+                  onChange={(event) => setPlace(event.target.value)}
+                  placeholder="Pick one, or type a new place"
+                />
+
+                <SegmentedField
+                  label="System"
+                  options={SYSTEMS.map((value) => ({ value, label: label(value) }))}
+                  value={system}
+                  onChange={setSystem}
+                />
+
+                <div className="flex gap-3">
+                  <NumberField
+                    label="Pot size"
+                    unit="cm"
+                    inputMode="numeric"
+                    value={potSize}
+                    onChange={(event) => setPotSize(event.target.value)}
+                    fieldClassName="w-32"
+                  />
+                  <SuggestField
+                    label="Medium"
+                    options={mediums.map((item) => item.name)}
+                    value={medium}
+                    onChange={(event) => setMedium(event.target.value)}
+                    placeholder="Pick one, or type a new medium"
+                    fieldClassName="flex-1"
+                  />
+                </div>
+              </Section>
+
+              {/* The same scissors the plant page draws a parent and a cutting
+                  with, over the field that makes one — and nothing at all until
+                  there is a second plant for it to have come off. */}
+              {candidates.length === 0 && !parentPlant ? null : (
+                <Section icon="scissors" title="Family">
+                  <SelectField
+                    label="Cutting or corm of"
+                    value={parent}
+                    onChange={(event) => setParent(event.target.value)}
+                  >
+                    <option value="">Not propagated from one of yours</option>
+                    {candidates.map((candidate) => (
+                      <option key={candidate.code} value={candidate.code}>
+                        {candidate.name} · {candidate.code}
+                      </option>
+                    ))}
+                  </SelectField>
+
+                  {parentPlant ? (
+                    <Field label="How">
+                      <div className="flex flex-wrap gap-2">
+                        {PROPAGATION_METHODS.map((candidate) => (
+                          <Chip
+                            key={candidate}
+                            kind="choice"
+                            selected={method === candidate}
+                            onClick={() => setMethod(candidate)}
+                          >
+                            {label(candidate)}
+                          </Chip>
+                        ))}
+                      </div>
+                    </Field>
+                  ) : null}
+                </Section>
+              )}
             </>
           )}
         </div>
 
         {wish ? null : (
-          <div className="flex min-w-0 flex-1 flex-col gap-5">
-            <SectionHeading>Where it came from</SectionHeading>
+          <div className="flex min-w-0 flex-1 flex-col gap-7">
+            <Section icon="receipt" title="Where it came from">
+              <div className="flex flex-wrap gap-2">
+                {ORIGIN_TYPES.map((candidate) => (
+                  <Chip
+                    key={candidate}
+                    kind="choice"
+                    selected={originType === candidate}
+                    onClick={() => setOriginType(originType === candidate ? null : candidate)}
+                  >
+                    {label(candidate)}
+                  </Chip>
+                ))}
+              </div>
 
-            <div className="flex flex-wrap gap-2">
-              {ORIGIN_TYPES.map((candidate) => (
-                <Chip
-                  key={candidate}
-                  kind="choice"
-                  selected={originType === candidate}
-                  onClick={() => setOriginType(originType === candidate ? null : candidate)}
-                >
-                  {label(candidate)}
-                </Chip>
-              ))}
-            </div>
+              <div className="flex gap-3">
+                <TextField
+                  label="From whom"
+                  value={originFrom}
+                  onChange={(event) => setOriginFrom(event.target.value)}
+                  placeholder="Plantje.nl"
+                  fieldClassName="flex-1"
+                />
+                <NumberField
+                  label="Price"
+                  unit="€"
+                  inputMode="decimal"
+                  step="0.01"
+                  value={originPrice}
+                  onChange={(event) => setOriginPrice(event.target.value)}
+                  fieldClassName="w-36"
+                />
+              </div>
 
-            <div className="flex gap-3">
-              <TextField
-                label="From whom"
-                value={originFrom}
-                onChange={(event) => setOriginFrom(event.target.value)}
-                placeholder="Plantje.nl"
-                fieldClassName="flex-1"
+              {/* The app's own calendar, the one the log sheet opens. */}
+              <DatePickerField
+                label="In the collection since"
+                value={originDate}
+                onChange={setOriginDate}
+                fieldClassName="w-56"
               />
-              <NumberField
-                label="Price"
-                unit="€"
-                inputMode="decimal"
-                step="0.01"
-                value={originPrice}
-                onChange={(event) => setOriginPrice(event.target.value)}
-                fieldClassName="w-36"
-              />
-            </div>
-
-            <DateField
-              label="In the collection since"
-              value={originDate}
-              onChange={(event) => setOriginDate(event.target.value)}
-              fieldClassName="w-56"
-            />
+            </Section>
 
             {existing ? (
-              <SelectField
-                label="Status"
-                value={status}
-                onChange={(event) => setStatus(event.target.value as PlantStatus)}
-                fieldClassName="w-56"
-              >
-                {PLANT_STATUSES.map((candidate) => (
-                  <option key={candidate} value={candidate}>
-                    {label(candidate)}
-                  </option>
-                ))}
-              </SelectField>
+              <Section icon="clock" title="Status">
+                <SelectField
+                  aria-label="Status"
+                  value={status}
+                  onChange={(event) => setStatus(event.target.value as PlantStatus)}
+                  fieldClassName="w-56"
+                >
+                  {PLANT_STATUSES.map((candidate) => (
+                    <option key={candidate} value={candidate}>
+                      {label(candidate)}
+                    </option>
+                  ))}
+                </SelectField>
+              </Section>
+            ) : null}
+
+            {existing ? (
+              <PhotoChoice
+                photos={photoEventsFor(state, existing.code)}
+                chosen={photoEventId}
+                onChoose={setPhotoEventId}
+              />
             ) : null}
           </div>
         )}
       </div>
 
-      {existing && !wish ? (
-        <PhotoChoice
-          photos={photoEventsFor(state, existing.code)}
-          chosen={photoEventId}
-          onChoose={setPhotoEventId}
-        />
-      ) : null}
-
       <div className="flex flex-wrap items-center gap-3 border-t border-line pt-5">
-        <Button variant="accent" icon="check" disabled={saving} onClick={submit}>
+        <Button
+          variant="accent"
+          icon="check"
+          disabled={saving}
+          onClick={submit}
+          className="flex-1 sm:flex-none"
+        >
           {existing ? 'Save' : wish ? 'Add to the wishlist' : 'Add to the collection'}
         </Button>
         <Button variant="outline" icon="close" onClick={() => window.history.back()}>
           Cancel
         </Button>
         {existing ? null : (
-          <span className="text-[0.8125rem] text-ink-muted">
+          <span className="text-[0.8125rem] leading-5 text-ink-muted text-pretty">
             A code is drawn on save, and you land on the page with the link for the sticker.
           </span>
         )}
@@ -484,6 +517,41 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
 
       {confirmDialog}
     </div>
+  )
+}
+
+/**
+ * A named run of fields.
+ *
+ * Set in the serif, at the size the sheets set their titles. It has to be a
+ * different *kind* of type from the labels under it, not a heavier weight of
+ * the same one — the heading this replaced was `text-label uppercase` sitting
+ * directly above `text-label uppercase`, which is a heading you have to work
+ * out rather than see.
+ *
+ * The glyph is the one the plant page files that fact under, and it is a plain
+ * faint icon rather than a tinted chip on purpose: chips there mark a row you
+ * can act on, and a heading is not one. The hairline does the separating, so
+ * the groups read apart without boxing inputs inside a card the same colour as
+ * the inputs.
+ */
+function Section({
+  icon,
+  title,
+  children,
+}: {
+  icon: IconName
+  title: string
+  children: React.ReactNode
+}) {
+  return (
+    <section className="flex flex-col gap-5">
+      <div className="flex items-center gap-2.5 border-b border-line pb-2.5">
+        <Icon name={icon} size={19} className="text-ink-faint" />
+        <h2 className="font-display text-[1.3125rem] leading-7 font-medium">{title}</h2>
+      </div>
+      {children}
+    </section>
   )
 }
 
@@ -507,16 +575,15 @@ function PhotoChoice({
   if (photos.length < 2) return null
 
   return (
-    <div className="border-t border-line pt-5">
-      <SectionHeading>Photo</SectionHeading>
-      <p className="mt-1 text-[0.8125rem] text-ink-muted">
+    <Section icon="image" title="Photo">
+      <p className="-mt-2 text-[0.8125rem] leading-5 text-ink-muted text-pretty">
         Which one stands for the plant. Every photograph stays in the history either way.
       </p>
 
       <div
         role="radiogroup"
         aria-label="The plant's photo"
-        className="mt-3 flex gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         <Choice selected={chosen === ''} label="Newest" onClick={() => onChoose('')}>
           <span className="flex size-full items-center justify-center text-[0.8125rem] font-medium text-ink-muted">
@@ -535,7 +602,7 @@ function PhotoChoice({
           </Choice>
         ))}
       </div>
-    </div>
+    </Section>
   )
 }
 
