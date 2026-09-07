@@ -176,8 +176,10 @@ test('deleting a plant forever tombstones it rather than erasing it outright', a
   await logFromDial(page, 'Watered')
 
   await page.goto(`#edit/${code}`)
-  page.once('dialog', (dialog) => void dialog.accept())
   await page.getByRole('button', { name: 'Delete this plant' }).click()
+  // A native confirm() is a silent no-op in an installed, standalone PWA on
+  // iOS, so the confirmation is an in-app sheet rather than window.confirm.
+  await page.getByRole('dialog').getByRole('button', { name: 'Delete' }).click()
 
   // Gone from the collection...
   await expect(page.getByRole('heading', { name: 'Collection' })).toBeVisible()

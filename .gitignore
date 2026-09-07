@@ -15,3 +15,7 @@ design/plant-redesign/plant-page.html
 # first run, not something every clone should carry a darwin-arm64 binary for.
 .claude/skills/impeccable/scripts/bin/
 .github/skills/impeccable/scripts/bin/
+
+# Per-session scan cache the design hook writes on every edit — local and
+# disposable, not something a commit should carry.
+.impeccable/hook.cache.json
