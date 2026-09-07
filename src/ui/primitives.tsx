@@ -9,7 +9,6 @@
 
 import type { ReactNode } from 'react'
 import { cn } from '~/lib/cn'
-import { Icon } from './Icon'
 
 /** The accession number. Tracked out so you can read it off a pot without
  *  second-guessing an 8 for a B. */
@@ -105,21 +104,6 @@ export function SectionHeading({
   )
 }
 
-/** Label on the left, value on the right, hairline underneath. The plant
- *  screen's facts are a stack of these. */
-export function FactRow({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="flex items-baseline justify-between gap-4 border-b border-line py-3.5">
-      <dt className="text-[0.9375rem] text-ink-muted">{label}</dt>
-      <dd className="text-right text-[0.9375rem] text-ink">{children}</dd>
-    </div>
-  )
-}
-
-export function FactList({ children }: { children: ReactNode }) {
-  return <dl className="border-t border-line-strong">{children}</dl>
-}
-
 /** A screen title, in the serif, with an optional line of counts beside it. */
 export function ScreenHeader({
   title,
@@ -137,18 +121,6 @@ export function ScreenHeader({
       </h1>
       {meta ? <div className="text-[0.8125rem] text-ink-muted">{meta}</div> : null}
     </div>
-  )
-}
-
-export function BackLink({ label, href }: { label: string; href: string }) {
-  return (
-    <a
-      href={href}
-      className="-ml-2 inline-flex h-touch items-center gap-1 px-2 text-body font-medium text-leaf"
-    >
-      <Icon name="chevronLeft" />
-      {label}
-    </a>
   )
 }
 
