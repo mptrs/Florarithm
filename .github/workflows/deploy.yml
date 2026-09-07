@@ -20,7 +20,15 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
+  # First, because everything after it is pointless if the app does not compile
+  # — and failing here costs half a minute rather than the two it takes to
+  # install browsers and run the suite.
+  #
+  # It also builds exactly once. The tests used to build the app a second time
+  # to have something to serve; they now run against this job's `dist`, which
+  # is the same bytes that get deployed rather than a rebuild of the same
+  # source.
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -29,12 +37,36 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      # Ahead of the tests, which build the app again themselves to run against
-      # it. Playwright starts that build inside `webServer`, whose output it
-      # swallows — so a type error surfaces there as "the web server would not
-      # start" and nothing else. Two seconds buys a step that fails with the
-      # compiler error in it.
       - run: npm run build
+
+      # For the test job.
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: dist
+          retention-days: 1
+
+      # For the deploy job — and packaged on pull requests too, because turning
+      # `dist` into a Pages artifact is its own step that can break on its own.
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist
       - run: npx playwright install --with-deps chromium webkit
       - run: npm test
       - uses: actions/upload-artifact@v7
@@ -44,30 +76,10 @@ jobs:
           path: playwright-report
           retention-days: 7
 
-  # Runs on pull requests too. `npm run build` is already covered by the test
-  # job, but packaging `dist` into a Pages artifact is not, and that is a real
-  # step that can break on its own — an actions bump, a moved output directory.
-  # Leaving it until merge means main is the first place it fails.
-  build:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npm run build
-      - uses: actions/configure-pages@v6
-      - uses: actions/upload-pages-artifact@v5
-        with:
-          path: dist
-
   # The one job that must not run on a pull request: it publishes to the live
   # site, and a pull request is a proposal rather than a decision.
   deploy:
-    needs: build
+    needs: test
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment:
