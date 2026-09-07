@@ -11,9 +11,12 @@ permissions:
   pages: write
   id-token: write
 
-# One deploy at a time; a queued run is always newer than the one it replaces.
+# One run at a time per branch, newest wins. Keyed on the ref rather than a bare
+# "pages": with a single shared group, opening a pull request joins the same
+# queue as a deploy and cancels it half-written, which is the one thing this was
+# supposed to prevent.
 concurrency:
-  group: pages
+  group: pages-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -41,9 +44,12 @@ jobs:
           path: playwright-report
           retention-days: 7
 
+  # Runs on pull requests too. `npm run build` is already covered by the test
+  # job, but packaging `dist` into a Pages artifact is not, and that is a real
+  # step that can break on its own — an actions bump, a moved output directory.
+  # Leaving it until merge means main is the first place it fails.
   build:
     needs: test
-    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -58,6 +64,8 @@ jobs:
         with:
           path: dist
 
+  # The one job that must not run on a pull request: it publishes to the live
+  # site, and a pull request is a proposal rather than a decision.
   deploy:
     needs: build
     if: github.ref == 'refs/heads/main'
