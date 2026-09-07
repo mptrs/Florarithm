@@ -295,19 +295,35 @@ test('an archived plant is out of the way but still findable', async ({ page }) 
 test('the service worker caches what a cold offline start needs', async ({ page }) => {
   await addPlant(page, 'Monstera deliciosa', 'Gruyère')
 
-  // clients.claim() is occasionally slow to land under CI load on WebKit.
-  await page.waitForFunction(() => navigator.serviceWorker?.controller !== null, null, {
-    timeout: 30_000,
-  })
+  /** Everything in the worker's cache, as paths. */
+  const cachedPaths = () =>
+    page.evaluate(async () => {
+      const cache = await caches.open('florarithm-v1')
+      return (await cache.keys()).map((request) => new URL(request.url).pathname)
+    })
 
-  const cached = await page.evaluate(async () => {
-    const cache = await caches.open('florarithm-v1')
-    return (await cache.keys()).map((request) => new URL(request.url).pathname)
-  })
+  const holds = (paths: string[], suffix: string) => paths.some((path) => path.endsWith(suffix))
 
-  expect(cached.some((path) => path.endsWith('/Florarithm/'))).toBe(true)
-  expect(cached.some((path) => path.endsWith('.js'))).toBe(true)
-  expect(cached.some((path) => path.endsWith('.css'))).toBe(true)
+  // Taking control of the page and having finished the precache are two
+  // different moments, so wait for the cache to hold what a cold start reads
+  // rather than for the controller. `expect.poll` rather than
+  // `page.waitForFunction`, because the latter does not await an async
+  // predicate — it sees the returned promise, calls it truthy and moves on.
+  await expect
+    .poll(
+      async () => {
+        const paths = await cachedPaths()
+        return holds(paths, '/Florarithm/') && holds(paths, '.js') && holds(paths, '.css')
+      },
+      { timeout: 30_000, message: 'the worker never finished precaching the shell' },
+    )
+    .toBe(true)
+
+  const cached = await cachedPaths()
+
+  expect(holds(cached, '/Florarithm/')).toBe(true)
+  expect(holds(cached, '.js')).toBe(true)
+  expect(holds(cached, '.css')).toBe(true)
 })
 
 test('logging still works with every request failing', async ({ page, context }) => {
