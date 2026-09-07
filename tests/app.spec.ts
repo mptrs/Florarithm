@@ -7,6 +7,7 @@
  */
 
 import { expect, test, type Page } from '@playwright/test'
+import { png } from './imageFixture'
 
 /** Add a plant through the interface and hand back the code it was given.
  *  `species` is "Genus epithet", split across the two fields. */
@@ -47,12 +48,14 @@ async function logFromDial(page: Page, option: 'Watered' | 'Watered with fertili
  *  row itself carries the pointer handlers, three levels above its title. */
 async function removeEntry(page: Page, title: string, deleteName: RegExp) {
   const row = main(page).getByText(title, { exact: true }).first().locator('../../..')
-  const box = await row.boundingBox()
-  if (!box) throw new Error(`no row to drag for ${title}`)
 
   // A phone drags the row open; a desktop reveals the same action on hover.
-  const y = box.y + box.height / 2
+  // Measured *after* the hover, because hovering scrolls the row into view and
+  // a box read before that is off by however far the page moved.
   await row.hover()
+  const box = await row.boundingBox()
+  if (!box) throw new Error(`no row to drag for ${title}`)
+  const y = box.y + box.height / 2
   await page.mouse.move(box.x + box.width - 24, y)
   await page.mouse.down()
   await page.mouse.move(box.x + box.width - 70, y)
@@ -278,4 +281,112 @@ test('light and dark are both painted, and neither is transparent', async ({ pag
     expect(background).not.toBe('rgba(0, 0, 0, 0)')
     expect(background).not.toBe('transparent')
   }
+})
+
+/** Photograph the plant from the hero's overflow menu. */
+async function addPhotoFromHero(page: Page, buffer: Buffer) {
+  const chooser = page.waitForEvent('filechooser')
+  await page.getByRole('button', { name: 'More' }).click()
+  await page.getByRole('menuitem', { name: 'Add a photo' }).click()
+  await (await chooser).setFiles({ name: 'shot.png', mimeType: 'image/png', buffer })
+}
+
+test('a photograph becomes the plant, and is shrunk on the way in', async ({ page }) => {
+  const code = await addPlant(page, 'Monstera deliciosa', 'Gruyère')
+  await page.goto(`#p=${code}`)
+
+  const photo = page.getByRole('img', { name: /Gruyère, photographed/ })
+  await expect(photo).toBeHidden()
+
+  const chooser = page.waitForEvent('filechooser')
+  await page.getByRole('button', { name: 'More' }).click()
+  await page.getByRole('menuitem', { name: 'Add a photo' }).click()
+  await (await chooser).setFiles({
+    name: 'gruyere.png',
+    mimeType: 'image/png',
+    buffer: png(2400, 1200),
+  })
+
+  await expect(photo).toBeVisible()
+
+  // 2400 pixels went in and 1600 is what is kept: the long edge is capped
+  // before IndexedDB ever sees the file, which is the whole point of resizing.
+  await expect
+    .poll(() => photo.evaluate((image) => (image as HTMLImageElement).naturalWidth))
+    .toBe(1600)
+
+  // Surviving a reload is the difference between a preview and a record.
+  await page.reload()
+  await expect(photo).toBeVisible()
+
+  // The picture is an entry, not a property: it is in the log, and removing it
+  // there is what takes it off the plant.
+  await openHistory(page)
+  await expect(main(page).getByText('Photo', { exact: true })).toBeVisible()
+
+  await removeEntry(page, 'Photo', /Delete photo of/)
+  await expect(photo).toBeHidden()
+})
+
+test('a photo attached to a new leaf is one entry, not two', async ({ page }) => {
+  const code = await addPlant(page, 'Monstera deliciosa', 'Gruyère')
+  await page.goto(`#p=${code}`)
+
+  // Open the sheet the way this viewport offers it.
+  const dial = page.getByRole('button', { name: 'Log activity' })
+  if (await dial.isVisible()) {
+    await dial.click()
+    await page.getByRole('button', { name: 'Log something else' }).click()
+  } else {
+    await page.getByRole('button', { name: 'More' }).click()
+    await page.getByRole('menuitem', { name: 'Log activity' }).click()
+  }
+
+  // Attach the photograph first, then say what it was — the sheet treats it as
+  // a property of the entry, like the date.
+  const chooser = page.waitForEvent('filechooser')
+  await page.getByRole('button', { name: 'Add a photo' }).click()
+  await (await chooser).setFiles({
+    name: 'leaf.png',
+    mimeType: 'image/png',
+    buffer: png(1200, 1600),
+  })
+
+  await page.getByRole('button', { name: 'New leaf', exact: true }).click()
+
+  await openHistory(page)
+  await expect(main(page).getByText('New leaf', { exact: true })).toHaveCount(1)
+  await expect(main(page).getByRole('img', { name: /Photographed/ })).toBeVisible()
+
+  // One entry carrying a picture, so it is also the plant's picture now.
+  await expect(page.getByRole('img', { name: /Gruyère, photographed/ })).toBeVisible()
+})
+
+test('the picture that stands for the plant can be chosen in the edit form', async ({ page }) => {
+  const code = await addPlant(page, 'Monstera deliciosa', 'Gruyère')
+  await page.goto(`#p=${code}`)
+
+  // Two photographs, taken the same day, told apart by their shape: landscape
+  // first, then portrait. Both would print the same date, so the assertion
+  // reads the stored pixels instead.
+  await addPhotoFromHero(page, png(2400, 1200)) // kept at 1600 × 800
+  await addPhotoFromHero(page, png(1200, 2400)) // kept at 800 × 1600
+
+  const hero = page.getByRole('img', { name: /Gruyère, photographed/ })
+  const heroWidth = () => hero.evaluate((image) => (image as HTMLImageElement).naturalWidth)
+
+  // The newest wins on its own, with nothing chosen.
+  await expect.poll(heroWidth).toBe(800)
+
+  await page.goto(`#edit/${code}`)
+  const choices = page.getByRole('radiogroup', { name: "The plant's photo" }).getByRole('radio')
+  await expect(choices).toHaveCount(3) // "Newest", then the two photographs
+
+  // Index 2 is the older, landscape one: the list runs newest first after
+  // "Newest" itself.
+  await choices.nth(2).click()
+  await page.getByRole('button', { name: 'Save', exact: true }).click()
+
+  await expect(hero).toBeVisible()
+  await expect.poll(heroWidth).toBe(1600)
 })

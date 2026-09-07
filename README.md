@@ -27,6 +27,12 @@ step without either of those things.
 - **Family.** Cuttings and corms point at their parent, and the name generator
   continues the line — Fluweel, Fluweel II, Fluweel III — so the family tree
   reads without a diagram.
+- **Photographs, as entries in the log.** A picture belongs to the thing that
+  prompted it — the new leaf, the note, the day it was repotted — so it is a
+  field on an event rather than a gallery of its own. The plant's picture is
+  the newest one unless you pick another in the edit form; a plant without any
+  keeps the drawn plate. The timeline is the history filtered to the entries
+  that have one.
 - **Backup.** One JSON file with everything, through the iOS share sheet into
   Files and so into iCloud Drive.
 - **QR fallback.** Every plant page carries a QR code alongside its written
@@ -55,12 +61,14 @@ src/
   lib/         no dependencies on anything else here
     plantCode  the code algorithm, straight from the Shortcut
     router     hash routing, because that is what a tag can carry
+    image      downscaling a phone photo to something worth keeping
     date, format, nameGenerator, cn, id
   data/        the model and everything that touches storage
     types      the whole data model, in one file
     db         IndexedDB, one record at a time
     store      the in-memory snapshot and every mutation
     selectors  everything derived, computed and never stored
+    photos     the photographs, read on demand and cached by event
     backup     export and import
   ui/          the design system as components
   layout/      the shell: tab bar on a phone, sidebar on a desktop
@@ -83,7 +91,14 @@ the event log, and then there are two answers and no way to tell which is true.
 
 **Events are append-only.** Deleting one sets `deleted: true` rather than
 removing the row, because the sync in M2 merges by union and a forgotten row
-comes straight back.
+comes straight back. The two flags an event can gain after the fact —
+`deleted` and `photo` — both only ever go one way, which is what lets the merge
+resolve them without a timestamp.
+
+**A photograph is written before the entry that claims it.** The bytes go into
+IndexedDB under an id drawn in advance, and only then is the event logged with
+that id. The other order leaves a row promising a picture that never loads if
+the write fails; this one leaves bytes nobody points at, which nobody can see.
 
 **Every mutation a person could regret is reversible where it is visible.**
 `logEvent` still returns an `UndoAction` for callers that want one, but the
@@ -126,9 +141,11 @@ in Chrome on Android. Reading works everywhere, because the tag just holds a URL
 - **M2 — done.** A private repository holding `plants.json`, one
   `events/YYYY-MM.json` per month and `meta.json`, merged with a pure function
   and pushed with a fine-grained token. Sync doubles as the backup.
-- **M3 — in progress.** A QR code on the plant page as a fallback for a dead
-  sticker — done, now behind the plant page's overflow menu. Photos in a
-  separate private repository, one file each — next; the plant page's hero is
-  already shaped for one and shows a drawn plate until then.
+- **M3 — done.** A QR code on the plant page as a fallback for a dead sticker,
+  behind the overflow menu. Photographs attached to log entries, capped at a
+  1600px JPEG on the way in, kept in their own IndexedDB store and synced to
+  the same private repository as `photos/YYYY-MM/<event id>.jpg` — one file
+  each, next to the log that describes them. They are still out of the backup
+  file, which stays a single readable JSON.
 - **M4 — later.** A family tree over several generations, pests with repeat
   treatments, achievements.

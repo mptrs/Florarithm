@@ -95,6 +95,27 @@ export function eventsFor(state: State, code: string): PlantEvent[] {
   return eventsByPlant(state).get(code) ?? []
 }
 
+/** Every entry with a picture, newest first — the timeline, which is just the
+ *  history with the wordless entries left out. */
+export function photoEventsFor(state: State, code: string): PlantEvent[] {
+  return eventsFor(state, code).filter((event) => event.photo)
+}
+
+/**
+ * The plant's picture: the one that was chosen, or the most recent.
+ *
+ * The fallback is the rule and the choice is the exception — a plant that has
+ * never been thought about shows its newest photograph, which is what you want
+ * without ever saying so. `photoEventId` only overrides it, and only while the
+ * entry it names still exists: delete that entry and the newest picture takes
+ * over again, with nothing left pointing at a hole.
+ */
+export function currentPhotoEvent(state: State, code: string): PlantEvent | null {
+  const photos = photoEventsFor(state, code)
+  const chosen = findPlant(state, code)?.photoEventId
+  return (chosen ? photos.find((event) => event.id === chosen) : undefined) ?? photos[0] ?? null
+}
+
 export function lastEventOf(state: State, code: string, type: EventType): PlantEvent | null {
   return eventsFor(state, code).find((event) => event.type === type) ?? null
 }

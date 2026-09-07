@@ -12,6 +12,7 @@
 
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 import { cn } from '~/lib/cn'
+import { routes } from '~/lib/router'
 import { Icon, type IconName } from './Icon'
 
 export type ButtonVariant = 'primary' | 'accent' | 'outline' | 'tinted' | 'quiet' | 'danger'
@@ -105,6 +106,44 @@ export function IconButton({
       {...rest}
     >
       <Icon name={icon} />
+    </button>
+  )
+}
+
+/**
+ * The way back.
+ *
+ * `chip` is the one that sits on a photograph, where the arrow needs a disc
+ * under it to stay legible over whatever the picture happens to be. `bare` is
+ * the same arrow on paper, where all that would buy is a button drawn around a
+ * button. Same glyph, same size, same tap target either way.
+ *
+ * Falling back to Today matters more than it looks: arriving by tapping the
+ * sticker on a pot opens a fresh tab with nothing behind it, and a back button
+ * that does nothing is worse than no back button.
+ */
+export function BackButton({
+  variant = 'chip',
+  className,
+}: {
+  variant?: 'chip' | 'bare'
+  className?: string
+}) {
+  return (
+    <button
+      type="button"
+      aria-label="Back"
+      onClick={() => {
+        if (window.history.length > 1) window.history.back()
+        else window.location.assign(routes.today())
+      }}
+      className={cn(
+        'flex size-10 shrink-0 items-center justify-center rounded-full active:opacity-70',
+        variant === 'chip' ? 'bg-surface/90 text-ink shadow-md' : 'text-ink',
+        className,
+      )}
+    >
+      <Icon name="back" size={19} />
     </button>
   )
 }

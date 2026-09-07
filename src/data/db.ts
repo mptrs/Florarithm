@@ -9,15 +9,16 @@
  */
 
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb'
-import type { Plant, PlantEvent, VocabItem, VocabKind } from './types'
+import type { Plant, PlantEvent, StoredPhoto, VocabItem, VocabKind } from './types'
 
 const DATABASE_NAME = 'florarithm'
-const DATABASE_VERSION = 1
+const DATABASE_VERSION = 2
 
 interface FlorarithmDB extends DBSchema {
   plants: { key: string; value: Plant }
   events: { key: string; value: PlantEvent; indexes: { 'by-plant': string } }
   vocab: { key: string; value: VocabItem; indexes: { 'by-kind': VocabKind } }
+  photos: { key: string; value: StoredPhoto; indexes: { 'by-synced': number } }
   meta: { key: string; value: unknown }
 }
 
@@ -36,6 +37,14 @@ function db(): Promise<IDBPDatabase<FlorarithmDB>> {
         vocab.createIndex('by-kind', 'kind')
 
         database.createObjectStore('meta')
+      }
+
+      // Photographs. Their own store rather than a field on an event: events are
+      // all read into memory at boot, and a collection's worth of JPEGs is not
+      // something to hold there.
+      if (oldVersion < 2) {
+        const photos = database.createObjectStore('photos', { keyPath: 'eventId' })
+        photos.createIndex('by-synced', 'synced')
       }
     },
   })
@@ -95,6 +104,48 @@ export async function deleteVocab(id: string): Promise<void> {
   await (await db()).delete('vocab', id)
 }
 
+// --- photographs ------------------------------------------------------------
+
+/** Read one at a time, on demand — unlike everything above, which is loaded
+ *  whole at boot. Only the screen showing a particular entry wants its picture,
+ *  and reading a thousand JPEGs to display six would be silly. */
+export async function readPhoto(eventId: string): Promise<StoredPhoto | undefined> {
+  return (await db()).get('photos', eventId)
+}
+
+export async function putPhoto(photo: StoredPhoto): Promise<void> {
+  await (await db()).put('photos', photo)
+}
+
+/** Which photographs this device holds. Keys only: the point is to answer
+ *  "do I already have this one?" without touching a single byte of image. */
+export async function photoIds(): Promise<string[]> {
+  return (await db()).getAllKeys('photos')
+}
+
+/** The upload queue — everything not yet known to be in the repo. */
+export async function unsyncedPhotos(): Promise<StoredPhoto[]> {
+  return (await db()).getAllFromIndex('photos', 'by-synced', 0)
+}
+
+export async function markPhotoSynced(eventId: string): Promise<void> {
+  const database = await db()
+  const transaction = database.transaction('photos', 'readwrite')
+  const photo = await transaction.store.get(eventId)
+  if (photo) await transaction.store.put({ ...photo, synced: 1 })
+  await transaction.done
+}
+
+/** A hard delete, and the only one in this file. The tombstone rule exists so a
+ *  merge cannot resurrect a deleted row; a photograph has no row to resurrect —
+ *  its event carries the tombstone, and these are the bytes that event was
+ *  pointing at. */
+export async function deletePhotos(eventIds: readonly string[]): Promise<void> {
+  const database = await db()
+  const transaction = database.transaction('photos', 'readwrite')
+  await Promise.all([...eventIds.map((id) => transaction.store.delete(id)), transaction.done])
+}
+
 /** Events belonging to a plant, including tombstones. Only used when deleting a
  *  plant outright; screens read from the in-memory store instead. */
 export async function eventsForPlant(code: string): Promise<PlantEvent[]> {
@@ -108,7 +159,12 @@ export async function deleteEvents(ids: readonly string[]): Promise<void> {
 }
 
 /** Wipe and refill in one transaction per store, for importing a backup. Either
- *  the whole import lands or the old collection stays. */
+ *  the whole import lands or the old collection stays.
+ *
+ *  Photographs are not touched, because they are not in a backup file. Importing
+ *  a backup of your own collection therefore keeps the pictures you already had,
+ *  which is the case that actually happens; a photo whose plant did not come
+ *  back is left orphaned rather than guessed at. */
 export async function replaceAll(snapshot: Snapshot): Promise<void> {
   const database = await db()
   const transaction = database.transaction(['plants', 'events', 'vocab'], 'readwrite')

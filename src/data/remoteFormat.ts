@@ -97,6 +97,23 @@ export function monthFilePath(monthKey: string): string {
   return `events/${monthKey}.json`
 }
 
+/**
+ * `photos/2026-09/<event id>.jpg`.
+ *
+ * Sharded by the same month key the event files use, for the same reason a
+ * photo library is: a directory listing has a practical ceiling, and one flat
+ * folder of several thousand JPEGs is unpleasant to look at in GitHub's own
+ * file browser — which is the only viewer this data has besides the app.
+ *
+ * The name is the event's id, which makes the file immutable and its path
+ * unguessable-but-derivable: nothing has to be listed or looked up to know
+ * where a photograph belongs, and two devices writing the same photograph
+ * write it to the same place.
+ */
+export function photoFilePath(event: { id: string; date: string }): string {
+  return `photos/${monthKeyOf(event.date)}/${event.id}.jpg`
+}
+
 export function groupEventsByMonth(
   events: readonly PlantEvent[],
 ): Map<string, PlantEvent[]> {

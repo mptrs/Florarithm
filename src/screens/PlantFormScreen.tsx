@@ -7,7 +7,8 @@
  */
 
 import { useEffect, useState } from 'react'
-import { findPlant, ownedPlants, vocabName, vocabOf } from '~/data/selectors'
+import { usePhoto } from '~/data/photos'
+import { findPlant, ownedPlants, photoEventsFor, vocabName, vocabOf } from '~/data/selectors'
 import { deletePlantForever, ensureVocabItem, savePlant, useStore } from '~/data/store'
 import {
   ORIGIN_TYPES,
@@ -17,14 +18,15 @@ import {
   type OriginType,
   type PlantStatus,
   type PropagationMethod,
+  type PlantEvent,
   type System,
 } from '~/data/types'
-import { isoToInputValue, inputValueToISO, todayInputValue } from '~/lib/date'
+import { formatDate, isoToInputValue, inputValueToISO, todayInputValue } from '~/lib/date'
 import { formatSpecies, label } from '~/lib/format'
 import { suggestNameAI } from '~/lib/aiNameGenerator'
 import { cn } from '~/lib/cn'
 import { routes } from '~/lib/router'
-import { Button, IconButton } from '~/ui/Button'
+import { BackButton, Button, IconButton } from '~/ui/Button'
 import { Chip } from '~/ui/Chip'
 import {
   DateField,
@@ -74,6 +76,8 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
   const [originDate, setOriginDate] = useState(todayInputValue())
   const [wishNote, setWishNote] = useState('')
   const [status, setStatus] = useState<PlantStatus>('active')
+  /** Empty string is "whichever is newest" — see `Plant.photoEventId`. */
+  const [photoEventId, setPhotoEventId] = useState('')
   const [saving, setSaving] = useState(false)
   const [rolling, setRolling] = useState(false)
   const [loadProgress, setLoadProgress] = useState<string | null>(null)
@@ -99,6 +103,7 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
       setOriginDate(existing.origin.date ? isoToInputValue(existing.origin.date) : todayInputValue())
       setWishNote(existing.wishNote)
       setStatus(existing.status)
+      setPhotoEventId(existing.photoEventId ?? '')
     } else {
       setWish(startAsWish ?? false)
       setParent(parentCode ?? '')
@@ -170,6 +175,7 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
         },
         parent: parentPlant ? { code: parentPlant.code, method } : null,
         status,
+        photoEventId: photoEventId || null,
         wish,
         wishNote: wishNote.trim(),
       })
@@ -195,7 +201,14 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="font-display text-[2rem] leading-9 font-medium tracking-[-0.015em]">{title}</h1>
+      {/* The way out before you have started. Cancel is still down by Save,
+          where it belongs next to the decision it undoes. */}
+      <div className="flex items-center gap-2">
+        <BackButton variant="bare" className="-ml-2.5" />
+        <h1 className="min-w-0 font-display text-[2rem] leading-9 font-medium tracking-[-0.015em]">
+          {title}
+        </h1>
+      </div>
 
       <ToggleField
         label="This is still a wish"
@@ -406,6 +419,14 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
         )}
       </div>
 
+      {existing && !wish ? (
+        <PhotoChoice
+          photos={photoEventsFor(state, existing.code)}
+          chosen={photoEventId}
+          onChoose={setPhotoEventId}
+        />
+      ) : null}
+
       <div className="flex flex-wrap items-center gap-3 border-t border-line pt-5">
         <Button variant="accent" disabled={saving} onClick={submit}>
           {existing ? 'Save' : wish ? 'Add to the wishlist' : 'Add to the collection'}
@@ -429,4 +450,93 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
       ) : null}
     </div>
   )
+}
+
+/**
+ * Which photograph stands for the plant.
+ *
+ * Nothing to choose until there are at least two — with one picture the newest
+ * is the only one, and a control offering a decision that has already been made
+ * is just noise. "Newest" stays first and selected by default, so the plant
+ * keeps looking after itself unless you say otherwise.
+ */
+function PhotoChoice({
+  photos,
+  chosen,
+  onChoose,
+}: {
+  photos: readonly PlantEvent[]
+  chosen: string
+  onChoose: (eventId: string) => void
+}) {
+  if (photos.length < 2) return null
+
+  return (
+    <div className="border-t border-line pt-5">
+      <SectionHeading>Photo</SectionHeading>
+      <p className="mt-1 text-[0.8125rem] text-ink-muted">
+        Which one stands for the plant. Every photograph stays in the history either way.
+      </p>
+
+      <div
+        role="radiogroup"
+        aria-label="The plant's photo"
+        className="mt-3 flex gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        <Choice selected={chosen === ''} label="Newest" onClick={() => onChoose('')}>
+          <span className="flex size-full items-center justify-center text-[0.8125rem] font-medium text-ink-muted">
+            Newest
+          </span>
+        </Choice>
+
+        {photos.map((event) => (
+          <Choice
+            key={event.id}
+            selected={chosen === event.id}
+            label={`Photographed ${formatDate(event.date)}`}
+            onClick={() => onChoose(event.id)}
+          >
+            <Thumbnail event={event} />
+          </Choice>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function Choice({
+  selected,
+  label: name,
+  onClick,
+  children,
+}: {
+  selected: boolean
+  label: string
+  onClick: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={selected}
+      aria-label={name}
+      onClick={onClick}
+      className={cn(
+        'size-20 shrink-0 overflow-hidden rounded-lg border-2 bg-sunk',
+        selected ? 'border-leaf' : 'border-transparent',
+      )}
+    >
+      {children}
+    </button>
+  )
+}
+
+/** Null while the bytes are still coming off disk, or when this device has not
+ *  pulled them down yet — the empty tile is still selectable, because the
+ *  choice is about which entry, not about what has finished loading. */
+function Thumbnail({ event }: { event: PlantEvent }) {
+  const url = usePhoto(event.id)
+  if (!url) return null
+  return <img src={url} alt="" className="size-full object-cover" />
 }

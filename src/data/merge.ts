@@ -46,13 +46,21 @@ export function mergeVocab(a: readonly VocabItem[], b: readonly VocabItem[]): Me
 }
 
 /**
- * Events never change after creation except the `deleted` tombstone flag, so
- * the only possible disagreement between two copies of the same id is that
- * flag — resolved with a monotonic OR, never flipping a tombstone back off.
+ * Events never change after creation except two flags, and both of them only
+ * ever go one way: `deleted`, and `photo` once a picture is taken for an entry.
+ * So the only possible disagreement between two copies of the same id is
+ * resolved with a monotonic OR on each — a tombstone is never flipped back off,
+ * and a photograph one device knows about is never dropped because the other
+ * had not heard of it yet.
  *
  * Nothing removes an event outright any more — deleting one sets the flag and
  * the row stays — so a push can go out at any moment without a merge handing
  * back something a person has already taken away.
+ *
+ * Two devices photographing the same entry before either has synced is the one
+ * case this does not resolve cleanly: both carry a `photo`, `a` keeps its own,
+ * and whichever file reached the repo first is the one everybody ends up
+ * looking at. The result is still one entry with one picture.
  */
 export function mergeEvents(a: readonly PlantEvent[], b: readonly PlantEvent[]): MergeResult<PlantEvent> {
   const fromA = new Map<string, PlantEvent>()
@@ -63,14 +71,26 @@ export function mergeEvents(a: readonly PlantEvent[], b: readonly PlantEvent[]):
     const existing = merged.get(event.id)
     if (!existing) {
       merged.set(event.id, event)
-    } else if (event.deleted && !existing.deleted) {
-      merged.set(event.id, { ...existing, deleted: true } as PlantEvent)
+      continue
     }
+
+    const deleted = existing.deleted || event.deleted
+    const photo = existing.photo ?? event.photo
+    if (deleted === existing.deleted && photo === existing.photo) continue
+
+    merged.set(event.id, {
+      ...existing,
+      ...(deleted ? { deleted: true } : {}),
+      ...(photo ? { photo } : {}),
+    } as PlantEvent)
   }
 
   const changed =
     merged.size !== fromA.size ||
-    [...merged].some(([id, event]) => fromA.get(id)?.deleted !== event.deleted)
+    [...merged].some(([id, event]) => {
+      const before = fromA.get(id)
+      return before?.deleted !== event.deleted || before?.photo !== event.photo
+    })
 
   return { merged: [...merged.values()], changed }
 }

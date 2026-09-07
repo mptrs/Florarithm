@@ -6,11 +6,12 @@
  * worth a dependency.
  */
 
-import { base64ToUtf8, utf8ToBase64 } from './base64'
+import { base64ToBytes, base64ToUtf8, bytesToBase64, utf8ToBase64 } from './base64'
 
 export type GitHubConfig = { owner: string; repo: string; token: string }
 
 export type RemoteFile = { content: string; sha: string }
+export type RemoteBytes = { bytes: ArrayBuffer; sha: string }
 export type DirEntry = { name: string; sha: string }
 
 /** The `fetch` itself threw — offline, DNS, a captive portal. */
@@ -132,6 +133,50 @@ export async function putFile(
 
   const body = (await response.json()) as { content: ContentsResponse }
   return { sha: body.content.sha }
+}
+
+/**
+ * The same two calls for a file that is not text.
+ *
+ * Separate rather than a flag on the pair above, because the difference is not
+ * a flag: `getFile` decodes to a string, and a JPEG put through a UTF-8 decoder
+ * comes back corrupted rather than wrong-looking. Both go through the Contents
+ * API's ordinary JSON body, which is why photographs are kept under the 1 MB
+ * that endpoint will encode — past that GitHub demands the Git Data API and a
+ * three-step blob dance.
+ */
+export async function getBinaryFile(
+  config: GitHubConfig,
+  path: string,
+): Promise<RemoteBytes | null> {
+  const response = await call(config, path)
+  if (response.status === 404) return null
+  if (!response.ok) throw new GitHubApiError(`GET ${path} failed`, response.status)
+
+  const body = (await response.json()) as ContentsResponse
+  return { bytes: base64ToBytes(body.content), sha: body.sha }
+}
+
+export async function putBinaryFile(
+  config: GitHubConfig,
+  path: string,
+  bytes: ArrayBuffer,
+  message: string,
+  branch: string,
+): Promise<void> {
+  const response = await call(config, path, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message, content: bytesToBase64(bytes), branch }),
+  })
+
+  // No `sha` is ever sent, so this only ever creates. A path that already
+  // exists comes back 422, which is not a failure here: the file is immutable
+  // and named after the event it belongs to, so "already there" is the outcome
+  // we wanted. Anything else is a real error.
+  if (!response.ok && response.status !== 422) {
+    throw new GitHubApiError(`PUT ${path} failed`, response.status)
+  }
 }
 
 /** `null` for "the directory doesn't exist yet" — the normal shape of a
