@@ -20,7 +20,7 @@ import { nowISO } from '~/lib/date'
 import { newId } from '~/lib/id'
 import { Icon, type IconName } from '~/ui/Icon'
 import { DateChip, DatePicker } from '~/ui/DatePicker'
-import { NumberField, SuggestField, TextField } from '~/ui/fields'
+import { NumberField, SuggestField, TextAreaField, TextField } from '~/ui/fields'
 import { Sheet } from '~/ui/Sheet'
 import { GroupLabel, type ChipTone } from '~/ui/Card'
 import { cn } from '~/lib/cn'
@@ -373,13 +373,13 @@ function NoteForm({
   return (
     <div className="pt-1">
       <DateChip value={date} onClick={onPickDate} />
-      <textarea
+      <TextAreaField
         aria-label="Note"
         value={text}
         autoFocus={!editing}
         onChange={(event) => setText(event.target.value)}
         placeholder="What happened?"
-        className="mt-5 h-32 w-full resize-none rounded-lg border border-line-strong bg-transparent px-4 py-3.5 text-body leading-6 text-ink outline-none placeholder:text-ink-faint focus:border-leaf"
+        fieldClassName="mt-5"
       />
       <button
         type="button"

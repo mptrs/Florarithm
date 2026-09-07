@@ -8,11 +8,18 @@
  *
  * You cannot log forwards. Future days are shown but not reachable — greying
  * them says "not this" far better than a month that simply stops.
+ *
+ * One calendar, two ways in: a chip in the log sheet, a field on the plant
+ * form. Both open this, so a date is picked the same way wherever you are —
+ * the form used to hand that job to `<input type="date">` and the operating
+ * system, which looked like nothing else in the app.
  */
 
-import { useState } from 'react'
+import { useId, useState, type ReactNode } from 'react'
 import { cn } from '~/lib/cn'
 import { isoToInputValue, inputValueToISO, nowISO } from '~/lib/date'
+import { CONTROL, Field } from './fields'
+import { Sheet } from './Sheet'
 import { Icon } from './Icon'
 
 const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
@@ -176,16 +183,24 @@ function Quick({
   )
 }
 
+const DAY_MONTH_YEAR = new Intl.DateTimeFormat('en-GB', {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+})
+
+/** How a held date reads on the control that opens the picker. Shared, so the
+ *  chip in the log sheet and the field on the plant form never word the same
+ *  day two different ways. */
+function dateLabel(iso: string): string {
+  return isoToInputValue(iso) === isoToInputValue(nowISO())
+    ? 'Today'
+    : DAY_MONTH_YEAR.format(new Date(iso))
+}
+
 /** The chip that opens the picker, showing the date it currently holds. */
 export function DateChip({ value, onClick }: { value: string; onClick: () => void }) {
-  const label =
-    isoToInputValue(value) === isoToInputValue(nowISO())
-      ? 'Today'
-      : new Intl.DateTimeFormat('en-GB', {
-          day: 'numeric',
-          month: 'short',
-          year: 'numeric',
-        }).format(new Date(value))
+  const label = dateLabel(value)
 
   return (
     <div className="flex justify-center">
@@ -199,5 +214,76 @@ export function DateChip({ value, onClick }: { value: string; onClick: () => voi
         <Icon name="chevronDown" size={16} className="text-ink-muted" />
       </button>
     </div>
+  )
+}
+
+/**
+ * The picker as a form field.
+ *
+ * Same calendar as the log sheet — same shortcuts, same mono numerals, same
+ * refusal to date something forwards — reached through a control that is drawn
+ * exactly like the text fields either side of it. It used to be
+ * `<input type="date">`, which meant the two places you pick a date in this app
+ * looked nothing alike and one of them was the operating system's.
+ *
+ * It speaks `yyyy-mm-dd` rather than ISO, because that is the shape a form
+ * holds a date in; the picker's own ISO is converted at this boundary.
+ */
+export function DatePickerField({
+  label,
+  hint,
+  value,
+  onChange,
+  fieldClassName,
+}: {
+  label: string
+  hint?: ReactNode
+  /** `yyyy-mm-dd`. */
+  value: string
+  onChange: (value: string) => void
+  /** Placement only. */
+  fieldClassName?: string
+}) {
+  const id = useId()
+  const labelId = `${id}-label`
+  const [open, setOpen] = useState(false)
+
+  // Held here rather than pushed straight out, so leaving the sheet by the
+  // scrim or Escape leaves the field on the date it had. `Use this date` is
+  // what commits it.
+  const [draft, setDraft] = useState(nowISO)
+
+  const iso = inputValueToISO(value) ?? nowISO()
+
+  return (
+    <Field label={label} labelId={labelId} hint={hint} className={fieldClassName}>
+      <button
+        id={id}
+        type="button"
+        aria-labelledby={`${labelId} ${id}`}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        onClick={() => {
+          setDraft(iso)
+          setOpen(true)
+        }}
+        className={cn(CONTROL, 'flex items-center gap-2.5 text-left font-mono active:opacity-70')}
+      >
+        <Icon name="calendar" size={17} className="shrink-0 text-ink-muted" />
+        <span className="flex-1">{dateLabel(iso)}</span>
+        <Icon name="chevronDown" size={17} className="shrink-0 text-ink-muted" />
+      </button>
+
+      <Sheet open={open} onClose={() => setOpen(false)} title="When?">
+        <DatePicker
+          value={draft}
+          onChange={setDraft}
+          onDone={() => {
+            onChange(isoToInputValue(draft))
+            setOpen(false)
+          }}
+        />
+      </Sheet>
+    </Field>
   )
 }

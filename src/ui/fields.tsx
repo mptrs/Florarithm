@@ -11,21 +11,52 @@
  * second. That is the difference between an app you fill in and an app you use.
  */
 
-import { useId, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from 'react'
+import {
+  useId,
+  type InputHTMLAttributes,
+  type ReactNode,
+  type SelectHTMLAttributes,
+  type TextareaHTMLAttributes,
+} from 'react'
 import { cn } from '~/lib/cn'
 import { Icon } from './Icon'
 
-const CONTROL = cn(
-  'h-control w-full rounded-sm border border-line-strong bg-surface px-3.5 text-body text-ink',
+/**
+ * What every control in the app is drawn as, minus its height.
+ *
+ * Split from the height because a textarea is the one control that is not
+ * `h-control` high, and `cn` joins rather than merges — a taller class passed
+ * in alongside `h-control` is a coin toss decided by CSS order, not by which
+ * one was written last (see `lib/cn.ts`).
+ */
+const CONTROL_FACE = cn(
+  'w-full rounded-sm border border-line-strong bg-surface px-3.5 text-body text-ink',
   'placeholder:text-ink-faint',
   'focus:border-leaf focus:outline-none',
 )
 
+/**
+ * The standard control.
+ *
+ * Exported because one of them is not an `<input>` at all: the date field is a
+ * button that opens the app's own picker, and it has to be indistinguishable
+ * from the fields either side of it.
+ */
+export const CONTROL = cn('h-control', CONTROL_FACE)
+
 // --- wrapper ----------------------------------------------------------------
 
-export function Label({ children, htmlFor }: { children: ReactNode; htmlFor?: string }) {
+export function Label({
+  children,
+  htmlFor,
+  id,
+}: {
+  children: ReactNode
+  htmlFor?: string
+  id?: string
+}) {
   return (
-    <label htmlFor={htmlFor} className="text-label uppercase text-ink-muted">
+    <label id={id} htmlFor={htmlFor} className="text-label uppercase text-ink-muted">
       {children}
     </label>
   )
@@ -35,6 +66,7 @@ export function Field({
   label,
   hint,
   htmlFor,
+  labelId,
   className,
   children,
 }: {
@@ -42,12 +74,15 @@ export function Field({
   /** One line under the control explaining a rule, not repeating the label. */
   hint?: ReactNode
   htmlFor?: string
+  /** For a control `<label for>` cannot reach — a button, say — which names
+   *  itself with `aria-labelledby` pointing back here instead. */
+  labelId?: string
   className?: string
   children: ReactNode
 }) {
   return (
     <div className={cn('flex flex-col gap-1.5', className)}>
-      {label ? <Label htmlFor={htmlFor}>{label}</Label> : null}
+      {label ? <Label id={labelId} htmlFor={htmlFor}>{label}</Label> : null}
       {children}
       {hint ? <p className="text-[0.8125rem] leading-5 text-ink-muted">{hint}</p> : null}
     </div>
@@ -130,11 +165,31 @@ export function NumberField({
   )
 }
 
-export function DateField({ label, hint, fieldClassName, className, ...rest }: TextFieldProps) {
+/**
+ * Several lines rather than one, for anything a person writes in sentences.
+ *
+ * The same border, ground and 16px floor as every other control — only the
+ * height is its own, since a note is not one line high.
+ */
+export function TextAreaField({
+  label,
+  hint,
+  fieldClassName,
+  className,
+  ...rest
+}: Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'size'> & {
+  label?: string
+  hint?: ReactNode
+  fieldClassName?: string
+}) {
   const id = useId()
   return (
     <Field label={label} hint={hint} htmlFor={id} className={fieldClassName}>
-      <input id={id} type="date" className={cn(CONTROL, 'font-mono', className)} {...rest} />
+      <textarea
+        id={id}
+        className={cn(CONTROL_FACE, 'h-28 resize-none py-3 leading-6', className)}
+        {...rest}
+      />
     </Field>
   )
 }
