@@ -29,22 +29,21 @@ type NavItem = {
   shortLabel?: string
   icon: IconName
   href: string
-  /** The wishlist is a filter of the collection; on a phone it lives behind a
-   *  chip rather than taking a quarter of the tab bar. */
-  desktopOnly?: boolean
 }
 
+/**
+ * Four places and one action, in that order.
+ *
+ * Adding a plant is the only item here that does something rather than goes
+ * somewhere, so on a phone it sits in the middle where a thumb rests and is
+ * drawn as the action it is. The wishlist earned a stop of its own when it
+ * stopped being a filter on the collection.
+ */
 const NAV_ITEMS: readonly NavItem[] = [
   { key: 'today', label: 'Today', icon: 'droplet', href: routes.today() },
   { key: 'collection', label: 'Collection', icon: 'rows', href: routes.collection() },
-  {
-    key: 'wishlist',
-    label: 'Wishlist',
-    icon: 'bookmark',
-    href: routes.collection('wishlist'),
-    desktopOnly: true,
-  },
   { key: 'new', label: 'New plant', shortLabel: 'New', icon: 'plus', href: routes.new() },
+  { key: 'wishlist', label: 'Wishlist', icon: 'bookmark', href: routes.wishlist() },
   { key: 'settings', label: 'Settings', icon: 'sliders', href: routes.settings() },
 ]
 
@@ -148,8 +147,13 @@ function Sidebar({ active }: { active: NavKey | null }) {
 function BottomNav({ active }: { active: NavKey | null }) {
   return (
     <nav className="safe-bottom fixed inset-x-0 bottom-0 z-30 flex border-t border-line bg-surface pt-2.5 md:hidden">
-      {NAV_ITEMS.filter((item) => !item.desktopOnly).map((item) => {
+      {NAV_ITEMS.map((item) => {
         const isActive = item.key === active
+
+        // The one action on a bar of destinations: a filled leaf disc that
+        // cuts the bar's own hairline rather than sitting politely inside it,
+        // so it reads as a button and not as a fifth place to be.
+        const isAction = item.key === 'new'
 
         return (
           <a
@@ -158,10 +162,16 @@ function BottomNav({ active }: { active: NavKey | null }) {
             aria-current={isActive ? 'page' : undefined}
             className={cn(
               'flex flex-1 flex-col items-center gap-1 pb-2.5',
-              isActive ? 'text-leaf' : 'text-ink-faint',
+              isAction || isActive ? 'text-leaf' : 'text-ink-faint',
             )}
           >
-            <Icon name={item.icon} size={23} />
+            {isAction ? (
+              <span className="-mt-4.5 flex size-12 items-center justify-center rounded-full bg-leaf text-on-accent">
+                <Icon name={item.icon} size={26} />
+              </span>
+            ) : (
+              <Icon name={item.icon} size={23} />
+            )}
             <span className={cn('text-[0.6875rem]', isActive ? 'font-semibold' : '')}>
               {item.shortLabel ?? item.label}
             </span>

@@ -34,6 +34,9 @@ export const routes = {
   plant: (code: string) => `#p=${code}`,
   collection: (filter: CollectionFilter = 'all') =>
     filter === 'all' ? '#collection' : `#collection/${filter}`,
+  /** Its own screen, so its own hash. `#collection/wishlist` still parses to
+   *  the same place: a link written down before the move must not rot. */
+  wishlist: () => '#wishlist',
   new: () => '#new',
   newWish: () => '#new/wish',
   newFrom: (parentCode: string) => `#new/from/${parentCode}`,
@@ -60,6 +63,8 @@ export function parseRoute(hash: string): Route {
       const filter = candidate && COLLECTION_FILTERS.includes(candidate) ? candidate : 'all'
       return { name: 'collection', filter }
     }
+    case 'wishlist':
+      return { name: 'collection', filter: 'wishlist' }
     case 'new': {
       if (rest[0] === 'wish') return { name: 'new', wish: true, parentCode: null }
       if (rest[0] === 'from' && rest[1]) {

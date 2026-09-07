@@ -243,6 +243,55 @@ test('the collection searches on name, species, code and place', async ({ page }
   await expect(page.getByRole('link', { name: /Drakenkop/ })).toBeVisible()
 })
 
+test('the collection groups by place, or drops the grouping for A\u2013Z', async ({ page }) => {
+  await addPlant(page, 'Monstera deliciosa', 'Gruy\u00e8re', 'Living room')
+  await addPlant(page, 'Alocasia zebrina', 'Zebra', 'Bedroom')
+
+  await page.goto('#collection')
+
+  // Grouped by place, the drawer label carries the room and the tile is free
+  // to say what the plant is.
+  await expect(main(page).getByText('Living room', { exact: true })).toBeVisible()
+  await expect(main(page).getByRole('link', { name: /Gruy\u00e8re/ })).toContainText(
+    'Monstera deliciosa',
+  )
+
+  await page.getByRole('button', { name: 'A\u2013Z' }).click()
+
+  // Sorted A\u2013Z there is no label to carry it, so the place moves into the row.
+  await expect(main(page).getByRole('link', { name: /Gruy\u00e8re/ })).toContainText('Living room')
+  const names = await main(page)
+    .getByRole('link')
+    .filter({ hasText: /Gruy\u00e8re|Zebra/ })
+    .allInnerTexts()
+  expect(names[0]).toContain('Gruy\u00e8re')
+})
+
+test('an archived plant is out of the way but still findable', async ({ page }) => {
+  await addPlant(page, 'Monstera deliciosa', 'Gruy\u00e8re', 'Living room')
+  const code = await addPlant(page, 'Calathea orbifolia', 'Wolk', 'Bedroom')
+
+  await page.goto(`#edit/${code}`)
+  await page.getByLabel('Status').selectOption('died')
+  await page.getByRole('button', { name: 'Save' }).click()
+  await expect(main(page).getByText('Last watered')).toBeVisible()
+
+  await page.goto('#collection')
+  const search = page.getByLabel('Search the collection')
+
+  // Gone from the list you water from...
+  await expect(main(page).getByRole('link', { name: /Wolk/ })).toBeHidden()
+
+  // ...reachable by the word...
+  await search.fill('archive')
+  await expect(main(page).getByRole('link', { name: /Wolk/ })).toBeVisible()
+  await expect(main(page).getByRole('link', { name: /Gruy\u00e8re/ })).toBeHidden()
+
+  // ...and by its own name, without knowing there is a word.
+  await search.fill('Wolk')
+  await expect(main(page).getByRole('link', { name: /Wolk/ })).toContainText('Died')
+})
+
 test('the service worker caches what a cold offline start needs', async ({ page }) => {
   await addPlant(page, 'Monstera deliciosa', 'Gruyère')
 
