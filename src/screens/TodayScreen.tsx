@@ -68,7 +68,7 @@ export function TodayScreen() {
     : [['', plants]]
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 lg:gap-8">
       <SyncStatusPill status={syncStatus} className="md:hidden" />
 
       <ScreenHeader
@@ -100,12 +100,14 @@ export function TodayScreen() {
         <div>
           {/* The table header only exists once there are columns to head, and
               Place is a column only while nothing above the row is saying it. */}
-          <div className="hidden items-center gap-4 border-b border-line-strong pb-2.5 lg:flex">
+          <div className="hidden items-center gap-4 border-b border-line-strong px-2.5 pb-2.5 lg:flex">
             <span className="w-10 shrink-0" />
             <ColumnHeader className="flex-1">Plant</ColumnHeader>
-            {byPlace ? null : <ColumnHeader className="w-44">Place</ColumnHeader>}
-            <ColumnHeader className="w-24">Last water</ColumnHeader>
-            <ColumnHeader className="w-16 text-right">Days</ColumnHeader>
+            <div className="flex items-center gap-8">
+              {byPlace ? null : <ColumnHeader className="w-44">Place</ColumnHeader>}
+              <ColumnHeader className="w-24">Last water</ColumnHeader>
+              <ColumnHeader className="w-16 text-right">Days</ColumnHeader>
+            </div>
           </div>
 
           {runs.map(([place, members]) => (
@@ -159,13 +161,15 @@ function TodayRow({ plant, showPlace }: { plant: Plant; showPlace: boolean }) {
         ) : null}
       </div>
 
-      {showPlace ? <Cell className="hidden w-44 lg:block">{place}</Cell> : null}
-      <Cell className="hidden w-24 lg:block" mono>
-        {last ? formatDayMonth(last) : '—'}
-      </Cell>
+      <div className="flex shrink-0 items-center gap-8">
+        {showPlace ? <Cell className="hidden w-44 lg:block">{place}</Cell> : null}
+        <Cell className="hidden w-24 lg:block" mono>
+          {last ? formatDayMonth(last) : '—'}
+        </Cell>
 
-      <div className="min-w-16 shrink-0 lg:text-right">
-        <DaysSinceWater days={days} thirsty={isThirsty(days)} />
+        <div className="min-w-16 shrink-0 lg:text-right">
+          <DaysSinceWater days={days} thirsty={isThirsty(days)} />
+        </div>
       </div>
     </RowLink>
   )

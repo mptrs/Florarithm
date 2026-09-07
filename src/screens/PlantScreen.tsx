@@ -233,10 +233,18 @@ function Hero({ plant, onLog }: { plant: Plant; onLog: () => void }) {
     }
   }
 
+  // A photograph belongs to an event; `photo` and `photoEvent` are read from
+  // two different places and can go out of step for a render or two — most
+  // often the moment an event carrying the plant's current photo is deleted,
+  // where `photoEvent` clears immediately but the cached object URL for the
+  // id it used to point at has not been evicted yet. Showing the plate for
+  // that one frame beats reading `.date` off an event that is already gone.
+  const shownPhoto = photoEvent ? photo : null
+
   // Both layers are the same box. The picture sticks to the top of the window
   // while the sheet below slides up over it; the controls sit in that same
   // space but scroll away with the page, so they never hang over the record.
-  const box = photo ? 'h-[21.25rem] md:h-72' : 'h-[13.5rem] md:h-56'
+  const box = shownPhoto ? 'h-[21.25rem] md:h-72' : 'h-[13.5rem] md:h-56'
 
   // Clamped to the slack the picture actually has, so its bottom edge never
   // lifts off the frame and shows the paper behind it.
@@ -249,12 +257,12 @@ function Hero({ plant, onLog }: { plant: Plant; onLog: () => void }) {
         ref={frame}
         className={cn('sticky top-0 z-0 overflow-hidden bg-sunk md:static md:rounded-xl', box)}
       >
-        {photo ? (
+        {shownPhoto ? (
           // Taller than the frame it sits in, and pulled up through that slack
           // at a fraction of the page's speed: the sheet moves, the picture
           // drifts, and the gap between the two reads as depth.
           <img
-            src={photo}
+            src={shownPhoto}
             alt={`${plant.name}, photographed ${formatDate(photoEvent!.date)}`}
             style={{ transform: `translate3d(0, ${-drift}px, 0)` }}
             className="h-[130%] w-full object-cover will-change-transform"
@@ -287,13 +295,10 @@ function Hero({ plant, onLog }: { plant: Plant; onLog: () => void }) {
               Copied
             </span>
           ) : null}
-          {/* A desktop keeps everything behind the ellipsis — there is room
-              for a menu there, and the page is for managing rather than for
-              one-handed reach. */}
           <a
             href={routes.edit(plant.code)}
             aria-label="Edit this plant"
-            className="flex size-10 items-center justify-center rounded-full bg-surface/90 text-ink shadow-md active:opacity-70 md:hidden"
+            className="flex size-10 items-center justify-center rounded-full bg-surface/90 text-ink shadow-md transition-colors active:opacity-70 md:hover:bg-surface"
           >
             <Icon name="edit" size={19} />
           </a>
@@ -302,7 +307,7 @@ function Hero({ plant, onLog }: { plant: Plant; onLog: () => void }) {
             onClick={() => setMenuOpen(true)}
             aria-label="More"
             aria-haspopup="menu"
-            className="flex size-10 items-center justify-center rounded-full bg-surface/90 text-ink shadow-md active:opacity-70"
+            className="flex size-10 items-center justify-center rounded-full bg-surface/90 text-ink shadow-md transition-colors active:opacity-70 md:hover:bg-surface"
           >
             <Icon name="more" size={19} />
           </button>
@@ -356,7 +361,7 @@ function Hero({ plant, onLog }: { plant: Plant; onLog: () => void }) {
       {/* One line at the foot of the photograph. A failed photo displaces the
           place, because they want the same line and only one of them is news. */}
       {photoError ? (
-        <div className="absolute inset-x-4 bottom-9">
+        <div className="absolute inset-x-4 bottom-4">
           <span
             role="status"
             className="inline-flex items-center gap-1.5 rounded-full bg-ember px-3.5 py-2 text-[0.875rem] font-semibold text-on-accent shadow-md"
@@ -366,7 +371,7 @@ function Hero({ plant, onLog }: { plant: Plant; onLog: () => void }) {
           </span>
         </div>
       ) : place && place !== '—' ? (
-        <div className="absolute inset-x-4 bottom-9">
+        <div className="absolute inset-x-4 bottom-4">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-surface/90 px-3.5 py-2 text-[0.875rem] font-semibold text-ink shadow-md">
             <Icon name="place" size={16} className="text-leaf" />
             {place}
@@ -689,9 +694,10 @@ function FilterChip({
       onClick={onClick}
       className={cn(
         'inline-flex h-9 shrink-0 items-center gap-2 rounded-full px-3.5 text-[0.875rem] whitespace-nowrap',
+        'transition-colors active:opacity-70',
         selected
           ? 'bg-ink font-semibold text-paper'
-          : 'border border-line-strong font-medium text-ink-muted',
+          : 'border border-line-strong font-medium text-ink-muted md:hover:bg-sunk',
       )}
     >
       {children}
@@ -819,7 +825,7 @@ function Family({ plant }: { plant: Plant }) {
         {parent && plant.parent ? (
           <a
             href={routes.plant(parent.code)}
-            className="flex min-h-touch items-center gap-3.5 border-b border-line py-3 last:border-b-0"
+            className="flex min-h-touch items-center gap-3.5 border-b border-line py-3 transition-colors last:border-b-0 md:hover:bg-sunk"
           >
             <Icon name="scissors" size={19} className="text-ink-faint" />
             <span className="flex-1 font-display text-[1.125rem] font-medium text-leaf">
@@ -835,7 +841,7 @@ function Family({ plant }: { plant: Plant }) {
           <a
             key={child.code}
             href={routes.plant(child.code)}
-            className="flex min-h-touch items-center gap-3.5 border-b border-line py-3 last:border-b-0"
+            className="flex min-h-touch items-center gap-3.5 border-b border-line py-3 transition-colors last:border-b-0 md:hover:bg-sunk"
           >
             <Icon name="scissors" size={19} className="text-ink-faint" />
             <span className="flex-1 font-display text-[1.125rem] font-medium text-leaf">

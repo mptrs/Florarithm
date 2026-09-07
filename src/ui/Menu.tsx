@@ -39,7 +39,7 @@ export function Menu({
         type="button"
         aria-label="Close menu"
         onClick={onClose}
-        className="fixed inset-0 z-40 bg-ink/30"
+        className="fixed inset-0 z-40 bg-ink/45"
       />
       <div
         role="menu"

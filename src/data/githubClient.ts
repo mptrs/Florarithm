@@ -164,16 +164,29 @@ export async function putBinaryFile(
   message: string,
   branch: string,
 ): Promise<void> {
-  const response = await call(config, path, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message, content: bytesToBase64(bytes), branch }),
-  })
+  const attempt = () =>
+    call(config, path, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message, content: bytesToBase64(bytes), branch }),
+    })
 
-  // No `sha` is ever sent, so this only ever creates. A path that already
-  // exists comes back 422, which is not a failure here: the file is immutable
-  // and named after the event it belongs to, so "already there" is the outcome
-  // we wanted. Anything else is a real error.
+  let response: Response
+  try {
+    response = await attempt()
+  } catch (error) {
+    if (!(error instanceof GitHubConflictError)) throw error
+
+    // No `sha` is ever sent, so this create can never lose real content the
+    // way `putFile` can — a 409 here is the branch ref moving under a plain
+    // create, not two devices fighting over the same bytes. One retry is
+    // enough to land behind whatever else just committed.
+    response = await attempt()
+  }
+
+  // A path that already exists comes back 422, which is not a failure here:
+  // the file is immutable and named after the event it belongs to, so
+  // "already there" is the outcome we wanted. Anything else is a real error.
   if (!response.ok && response.status !== 422) {
     throw new GitHubApiError(`PUT ${path} failed`, response.status)
   }

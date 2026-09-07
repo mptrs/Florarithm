@@ -39,7 +39,7 @@ export function SyncStatusPill({
         {variant === 'compact' ? (
           <a
             href={routes.settings()}
-            className="flex h-touch shrink-0 items-center self-end rounded-sm px-3.5 text-[0.8125rem] font-semibold text-ember"
+            className="flex h-touch shrink-0 items-center self-end rounded-sm px-3.5 text-[0.8125rem] font-semibold text-ember transition-colors active:opacity-70 md:hover:bg-ember/10"
           >
             Fix
           </a>
