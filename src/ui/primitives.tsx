@@ -40,7 +40,12 @@ export function CodeBadge({
 
   if (onClick) {
     return (
-      <button type="button" onClick={onClick} aria-label={label} className={cn(shared, 'active:opacity-70')}>
+      <button
+        type="button"
+        onClick={onClick}
+        aria-label={label}
+        className={cn(shared, 'transition-opacity active:opacity-70 md:hover:opacity-70')}
+      >
         {code}
       </button>
     )

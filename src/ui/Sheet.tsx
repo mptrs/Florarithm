@@ -80,7 +80,7 @@ export function Sheet({ open, onClose, title, onBack, children }: SheetProps) {
               type="button"
               onClick={onBack}
               aria-label="Back"
-              className="-ml-2.5 flex size-touch items-center justify-center text-ink-muted active:opacity-70"
+              className="-ml-2.5 flex size-touch items-center justify-center rounded-full text-ink-muted transition-colors active:opacity-70 md:hover:bg-sunk"
             >
               <Icon name="chevronLeft" size={23} />
             </button>
@@ -92,7 +92,7 @@ export function Sheet({ open, onClose, title, onBack, children }: SheetProps) {
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="-mr-2.5 flex size-touch items-center justify-center text-ink-muted active:opacity-70"
+            className="-mr-2.5 flex size-touch items-center justify-center rounded-full text-ink-muted transition-colors active:opacity-70 md:hover:bg-sunk"
           >
             <Icon name="close" size={22} />
           </button>

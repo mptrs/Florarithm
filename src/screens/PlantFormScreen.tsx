@@ -262,7 +262,7 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
         onChange={setWish}
         hint={
           wish
-            ? 'Only species, name and a note are kept. Turn this off when you actually have it.'
+            ? 'A wish only records what it is and why you want it — no place or care yet. Turn this off once you actually have it.'
             : undefined
         }
         className="border-y border-line py-1"
@@ -279,7 +279,7 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
                 placeholder="Monstera"
                 fieldClassName="flex-1"
                 hint={
-                  existing
+                  existing || wish
                     ? undefined
                     : 'The plant code is drawn from this, not from the name — a sticker cannot be rewritten.'
                 }
@@ -300,32 +300,34 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
               placeholder="Thai Constellation"
             />
 
-            <Field
-              label="Name"
-              hint={
-                loadProgress ??
-                (parentPlant
-                  ? `The dice continues the line from ${parentPlant.name}, so the family tree reads without a diagram.`
-                  : 'The dice asks a small AI, running in your browser, for something that fits the genus. It is an offer, not a decision.')
-              }
-            >
-              <div className="flex gap-2.5">
-                <TextField
-                  aria-label="Name"
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                  fieldClassName="flex-1"
-                  placeholder="Gruyère"
-                />
-                <IconButton
-                  icon="dice"
-                  label="Suggest a name"
-                  onClick={rollName}
-                  disabled={rolling}
-                  className={cn('text-leaf', rolling && 'animate-spin')}
-                />
-              </div>
-            </Field>
+            {wish ? null : (
+              <Field
+                label="Name"
+                hint={
+                  loadProgress ??
+                  (parentPlant
+                    ? `The dice continues the line from ${parentPlant.name}, so the family tree reads without a diagram.`
+                    : 'The dice asks a small AI, running in your browser, for something that fits the genus. It is an offer, not a decision.')
+                }
+              >
+                <div className="flex gap-2.5">
+                  <TextField
+                    aria-label="Name"
+                    value={name}
+                    onChange={(event) => setName(event.target.value)}
+                    fieldClassName="flex-1"
+                    placeholder="Gruyère"
+                  />
+                  <IconButton
+                    icon="dice"
+                    label="Suggest a name"
+                    onClick={rollName}
+                    disabled={rolling}
+                    className={cn('text-leaf', rolling && 'animate-spin')}
+                  />
+                </div>
+              </Field>
+            )}
 
             {wish ? (
               <TextAreaField
@@ -490,21 +492,16 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
       <div className="flex flex-wrap items-center gap-3 border-t border-line pt-5">
         <Button
           variant="accent"
-          icon="check"
+          icon={existing ? 'check' : 'plus'}
           disabled={saving}
           onClick={submit}
           className="flex-1 sm:flex-none"
         >
-          {existing ? 'Save' : wish ? 'Add to the wishlist' : 'Add to the collection'}
+          {existing ? 'Save' : wish ? 'Add to wishlist' : 'Add to the collection'}
         </Button>
         <Button variant="outline" icon="close" onClick={() => window.history.back()}>
           Cancel
         </Button>
-        {existing ? null : (
-          <span className="text-[0.8125rem] leading-5 text-ink-muted text-pretty">
-            A code is drawn on save, and you land on the page with the link for the sticker.
-          </span>
-        )}
       </div>
 
       {existing ? (
@@ -625,8 +622,8 @@ function Choice({
       aria-label={name}
       onClick={onClick}
       className={cn(
-        'size-20 shrink-0 overflow-hidden rounded-lg border-2 bg-sunk',
-        selected ? 'border-leaf' : 'border-transparent',
+        'size-20 shrink-0 overflow-hidden rounded-lg border-2 bg-sunk transition-colors active:opacity-70',
+        selected ? 'border-leaf' : 'border-transparent md:hover:border-line-strong',
       )}
     >
       {children}

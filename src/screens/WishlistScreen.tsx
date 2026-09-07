@@ -15,14 +15,13 @@ import { formatSpecies } from '~/lib/format'
 import { routes } from '~/lib/router'
 import { Button } from '~/ui/Button'
 import { EmptyState, Rows, ScreenHeader } from '~/ui/primitives'
-import { Row } from '~/ui/rows'
 
 export function WishlistScreen() {
   const state = useStore()
   const wishes = wishlist(state)
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 lg:gap-8">
       <ScreenHeader
         title="Wishlist"
         meta={
@@ -38,7 +37,7 @@ export function WishlistScreen() {
           title="No wishes yet"
           description="Plants you want but do not have. One button turns a wish into a plant, keeping its code and its name."
           action={
-            <Button variant="accent" onClick={() => window.location.assign(routes.newWish())}>
+            <Button variant="accent" icon="plus" onClick={() => window.location.assign(routes.newWish())}>
               Add a wish
             </Button>
           }
@@ -58,11 +57,12 @@ export function WishlistScreen() {
 
           <Button
             variant="outline"
+            icon="plus"
             block
             className="mt-2 border-dashed"
             onClick={() => window.location.assign(routes.newWish())}
           >
-            + Add a wish
+            Add a wish
           </Button>
         </>
       )}
@@ -70,26 +70,30 @@ export function WishlistScreen() {
   )
 }
 
-/** Species in the serif, the note under it, and the one button that matters. */
+/** A wish is only ever the species and a note — no photo, no name, no page of
+ *  its own to visit. The one thing to do with it is the button. */
 function WishRow({ plant }: { plant: Plant }) {
   return (
-    <Row className="gap-3">
-      <a href={routes.plant(plant.code)} className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="truncate font-display text-[1.1875rem] leading-6 font-medium">
-          {formatSpecies(plant) || plant.name}
+    <div className="flex min-h-touch items-center gap-4 border-b border-line py-2.5 last:border-b-0 lg:px-2.5">
+      <div className="flex min-w-0 flex-1 flex-col">
+        <span className="truncate font-display text-[1.09375rem] leading-[1.375rem] font-medium">
+          {formatSpecies(plant)}
         </span>
         {plant.wishNote ? (
-          <span className="truncate text-[0.8125rem] text-ink-muted">{plant.wishNote}</span>
+          <span className="truncate text-[0.8125rem] leading-[1.0625rem] text-ink-muted">
+            {plant.wishNote}
+          </span>
         ) : null}
-      </a>
+      </div>
       <Button
         size="sm"
         variant="outline"
-        className="rounded-full border-leaf text-leaf"
+        icon="plus"
+        className="shrink-0 rounded-full border-leaf text-leaf"
         onClick={() => window.location.assign(routes.have(plant.code))}
       >
-        I have this
+        Add to collection
       </Button>
-    </Row>
+    </div>
   )
 }

@@ -36,7 +36,7 @@ import { Chip, ChipStrip, SortSwitch, type SortOption } from '~/ui/Chip'
 import { SearchField } from '~/ui/fields'
 import { PlantThumb, PlantTile } from '~/ui/plantPicture'
 import { EmptyState, ScreenHeader } from '~/ui/primitives'
-import { ColumnHeader, DrawerLabel } from '~/ui/rows'
+import { ColumnHeader, DrawerLabel, RowLink } from '~/ui/rows'
 
 /** The systems, and nothing else: the wishlist has its own page now, and the
  *  archive is a word you type rather than a tab stop you pass every day. */
@@ -72,7 +72,7 @@ export function CollectionScreen({ filter }: { filter: CollectionFilter }) {
   const nothing = plants.length === 0 && archived.length === 0
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 lg:gap-8">
       <ScreenHeader
         title="Collection"
         meta={
@@ -152,13 +152,15 @@ function PlantRuns({
   return (
     <div>
       {/* The table header exists only where there are columns to head. */}
-      <div className="hidden items-center gap-4 border-b border-line-strong pb-2.5 lg:flex">
+      <div className="hidden items-center gap-4 border-b border-line-strong px-2.5 pb-2.5 lg:flex">
         <span className="w-10 shrink-0" />
         <ColumnHeader className="flex-1">Plant</ColumnHeader>
-        {showPlace ? <ColumnHeader className="w-32">Place</ColumnHeader> : null}
-        <ColumnHeader className="w-26">System</ColumnHeader>
-        <ColumnHeader className="w-11 text-right">Pot</ColumnHeader>
-        <ColumnHeader className="w-16 text-right">Days</ColumnHeader>
+        <div className="flex items-center gap-8">
+          {showPlace ? <ColumnHeader className="w-32">Place</ColumnHeader> : null}
+          <ColumnHeader className="w-26">System</ColumnHeader>
+          <ColumnHeader className="w-11 text-right">Pot</ColumnHeader>
+          <ColumnHeader className="w-16 text-right">Days</ColumnHeader>
+        </div>
       </div>
 
       {runs.map(([place, members]) => (
@@ -194,10 +196,7 @@ function PlantRow({ plant, showPlace }: { plant: Plant; showPlace: boolean }) {
   const species = formatSpecies(plant)
 
   return (
-    <a
-      href={routes.plant(plant.code)}
-      className="flex min-h-touch items-center gap-4 border-b border-line py-2.5 transition-colors hover:bg-sunk"
-    >
+    <RowLink href={routes.plant(plant.code)}>
       <PlantThumb plant={plant} />
 
       <div className="flex min-w-0 flex-1 flex-col">
@@ -211,26 +210,28 @@ function PlantRow({ plant, showPlace }: { plant: Plant; showPlace: boolean }) {
         ) : null}
       </div>
 
-      {showPlace ? (
-        <span className="w-32 shrink-0 truncate text-[0.875rem] text-ink-muted">
-          {vocabName(state, plant.locationId)}
+      <div className="flex shrink-0 items-center gap-8">
+        {showPlace ? (
+          <span className="w-32 shrink-0 truncate text-[0.875rem] text-ink-muted">
+            {vocabName(state, plant.locationId)}
+          </span>
+        ) : null}
+        <span className="w-26 shrink-0 truncate text-[0.875rem] text-ink-muted">
+          {label(plant.system)}
         </span>
-      ) : null}
-      <span className="w-26 shrink-0 truncate text-[0.875rem] text-ink-muted">
-        {label(plant.system)}
-      </span>
-      <span className="w-11 shrink-0 text-right font-mono text-[0.875rem] text-ink-muted">
-        {plant.potSize ?? '—'}
-      </span>
-      <span
-        className={cn(
-          'w-16 shrink-0 text-right font-mono text-[0.875rem]',
-          isThirsty(days) ? 'font-semibold text-ember' : 'text-ink',
-        )}
-      >
-        {days ?? '—'}
-      </span>
-    </a>
+        <span className="w-11 shrink-0 text-right font-mono text-[0.875rem] text-ink-muted">
+          {plant.potSize ?? '—'}
+        </span>
+        <span
+          className={cn(
+            'w-16 shrink-0 text-right font-mono text-[0.875rem]',
+            isThirsty(days) ? 'font-semibold text-ember' : 'text-ink',
+          )}
+        >
+          {days ?? '—'}
+        </span>
+      </div>
+    </RowLink>
   )
 }
 
@@ -258,11 +259,7 @@ function Archive({ plants, query }: { plants: readonly Plant[]; query: string })
 
       <div className="hidden lg:block">
         {plants.map((plant) => (
-          <a
-            key={plant.code}
-            href={routes.plant(plant.code)}
-            className="flex min-h-touch items-center gap-4 border-b border-line py-2.5 transition-colors hover:bg-sunk"
-          >
+          <RowLink key={plant.code} href={routes.plant(plant.code)}>
             <span className="opacity-70 grayscale">
               <PlantThumb plant={plant} />
             </span>
@@ -275,7 +272,7 @@ function Archive({ plants, query }: { plants: readonly Plant[]; query: string })
               </span>
             </div>
             <span className="shrink-0 text-[0.875rem] text-ink-faint">{label(plant.status)}</span>
-          </a>
+          </RowLink>
         ))}
       </div>
 

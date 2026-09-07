@@ -45,7 +45,7 @@ export function Chip({
           ? isChoice
             ? 'bg-water text-on-accent font-semibold'
             : 'bg-ink text-paper font-semibold'
-          : 'border border-line-strong text-ink-muted font-medium',
+          : 'border border-line-strong text-ink-muted font-medium md:hover:bg-sunk',
         className,
       )}
       {...rest}

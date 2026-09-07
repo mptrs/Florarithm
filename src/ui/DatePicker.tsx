@@ -84,7 +84,7 @@ export function DatePicker({
           type="button"
           aria-label="Previous month"
           onClick={() => setCursor(new Date(year, month - 1, 1))}
-          className="-ml-2 flex size-touch items-center justify-center text-ink-muted active:opacity-70"
+          className="-ml-2 flex size-touch items-center justify-center rounded-full text-ink-muted transition-colors active:opacity-70 md:hover:bg-sunk"
         >
           <Icon name="chevronLeft" size={21} />
         </button>
@@ -96,7 +96,7 @@ export function DatePicker({
           aria-label="Next month"
           disabled={atLatest}
           onClick={() => setCursor(new Date(year, month + 1, 1))}
-          className="-mr-2 flex size-touch items-center justify-center text-ink-muted disabled:opacity-30 active:opacity-70"
+          className="-mr-2 flex size-touch items-center justify-center rounded-full text-ink-muted transition-colors disabled:opacity-30 active:opacity-70 md:hover:bg-sunk"
         >
           <Icon name="chevronRight" size={21} />
         </button>
@@ -131,12 +131,12 @@ export function DatePicker({
               onClick={() => pick(day)}
               aria-current={isSelected ? 'date' : undefined}
               className={cn(
-                'flex h-10 items-center justify-center rounded-lg font-mono text-[0.9375rem]',
+                'flex h-10 items-center justify-center rounded-lg font-mono text-[0.9375rem] transition-colors',
                 isSelected
                   ? 'bg-ink font-semibold text-paper'
                   : isFuture
                     ? 'text-ink-faint opacity-40'
-                    : 'text-ink active:bg-sunk',
+                    : 'text-ink active:bg-sunk md:hover:bg-sunk',
               )}
             >
               {day}
@@ -148,7 +148,7 @@ export function DatePicker({
       <button
         type="button"
         onClick={onDone}
-        className="mt-4 flex h-control w-full items-center justify-center rounded-lg bg-ink text-body font-semibold text-paper active:opacity-70"
+        className="mt-4 flex h-control w-full items-center justify-center rounded-lg bg-ink text-body font-semibold text-paper transition-opacity active:opacity-70 md:hover:opacity-90"
       >
         Use this date
       </button>
@@ -172,10 +172,10 @@ function Quick({
       aria-pressed={selected}
       onClick={onClick}
       className={cn(
-        'inline-flex h-9 items-center rounded-full px-3.5 text-[0.875rem]',
+        'inline-flex h-9 items-center rounded-full px-3.5 text-[0.875rem] transition-colors',
         selected
           ? 'bg-ink font-semibold text-paper'
-          : 'border border-line-strong font-medium text-ink-muted',
+          : 'border border-line-strong font-medium text-ink-muted md:hover:bg-sunk',
       )}
     >
       {label}
@@ -207,7 +207,7 @@ export function DateChip({ value, onClick }: { value: string; onClick: () => voi
       <button
         type="button"
         onClick={onClick}
-        className="inline-flex h-9 items-center gap-2 rounded-full border border-line bg-sunk px-4 text-[0.875rem] font-medium text-ink active:opacity-70"
+        className="inline-flex h-9 items-center gap-2 rounded-full border border-line bg-sunk px-4 text-[0.875rem] font-medium text-ink transition-colors active:opacity-70 md:hover:bg-line"
       >
         <Icon name="calendar" size={16} className="text-ink-muted" />
         {label}
@@ -267,7 +267,10 @@ export function DatePickerField({
           setDraft(iso)
           setOpen(true)
         }}
-        className={cn(CONTROL, 'flex items-center gap-2.5 text-left font-mono active:opacity-70')}
+        className={cn(
+          CONTROL,
+          'flex items-center gap-2.5 text-left font-mono transition-colors active:opacity-70 md:hover:bg-sunk',
+        )}
       >
         <Icon name="calendar" size={17} className="shrink-0 text-ink-muted" />
         <span className="flex-1">{dateLabel(iso)}</span>

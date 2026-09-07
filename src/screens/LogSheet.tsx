@@ -248,7 +248,7 @@ export function LogSheet({
                         else picker.current?.click()
                       } else setMode(action.mode)
                     }}
-                    className="flex flex-col items-center gap-2.5 active:opacity-70"
+                    className="flex flex-col items-center gap-2.5 transition-opacity active:opacity-70 md:hover:opacity-80"
                   >
                     <span
                       className={cn(
@@ -307,7 +307,7 @@ function PhotoChip({
       <button
         type="button"
         onClick={onPick}
-        className="inline-flex h-9 items-center gap-2 rounded-full border border-line bg-sunk px-4 text-[0.875rem] font-medium text-ink active:opacity-70"
+        className="inline-flex h-9 items-center gap-2 rounded-full border border-line bg-sunk px-4 text-[0.875rem] font-medium text-ink transition-colors active:opacity-70 md:hover:bg-line"
       >
         <Icon name="image" size={16} className="text-ink-muted" />
         Add a photo
@@ -317,7 +317,11 @@ function PhotoChip({
 
   return (
     <span className="inline-flex h-9 items-center gap-2 rounded-full border border-line bg-sunk py-0 pr-2 pl-1">
-      <button type="button" onClick={onPick} className="flex items-center gap-2 active:opacity-70">
+      <button
+        type="button"
+        onClick={onPick}
+        className="flex items-center gap-2 transition-opacity active:opacity-70 md:hover:opacity-80"
+      >
         <img src={photo.previewUrl} alt="" className="size-7 rounded-full object-cover" />
         <span className="text-[0.875rem] font-medium text-ink">Photo</span>
       </button>
@@ -325,7 +329,7 @@ function PhotoChip({
         type="button"
         onClick={onClear}
         aria-label="Remove this photo"
-        className="flex size-6 items-center justify-center rounded-full text-ink-muted active:opacity-70"
+        className="flex size-6 items-center justify-center rounded-full text-ink-muted transition-colors active:opacity-70 md:hover:bg-line"
       >
         <Icon name="close" size={15} />
       </button>
@@ -385,7 +389,7 @@ function NoteForm({
         type="button"
         disabled={!text.trim()}
         onClick={() => void save()}
-        className="mt-4 flex h-control w-full items-center justify-center rounded-lg bg-ink text-body font-semibold text-paper disabled:opacity-40 active:opacity-70"
+        className="mt-4 flex h-control w-full items-center justify-center rounded-lg bg-ink text-body font-semibold text-paper transition-opacity disabled:opacity-40 active:opacity-70 enabled:md:hover:opacity-90"
       >
         {editing ? 'Save changes' : 'Save note'}
       </button>
@@ -487,7 +491,7 @@ function RepotForm({
       <button
         type="button"
         onClick={() => void save()}
-        className="flex h-control w-full items-center justify-center rounded-lg bg-ink text-body font-semibold text-paper active:opacity-70"
+        className="flex h-control w-full items-center justify-center rounded-lg bg-ink text-body font-semibold text-paper transition-opacity active:opacity-70 md:hover:opacity-90"
       >
         {editing ? 'Save changes' : 'Log repot'}
       </button>

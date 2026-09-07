@@ -20,14 +20,14 @@ export type ButtonSize = 'lg' | 'md' | 'sm'
 
 const VARIANTS: Record<ButtonVariant, string> = {
   /** The WATER button. The only filled, saturated thing on the plant screen. */
-  primary: 'bg-water text-on-accent border border-transparent',
+  primary: 'bg-water text-on-accent border border-transparent md:hover:opacity-90',
   /** Everything that adds to the collection. */
-  accent: 'bg-leaf text-on-accent border border-transparent',
-  outline: 'border border-line-strong text-ink',
+  accent: 'bg-leaf text-on-accent border border-transparent md:hover:opacity-90',
+  outline: 'border border-line-strong text-ink md:hover:bg-sunk',
   /** Already done — a filled state that does not shout. */
-  tinted: 'bg-water-tint text-water border border-transparent',
-  quiet: 'border border-transparent text-ink-muted',
-  danger: 'border border-ember text-ember',
+  tinted: 'bg-water-tint text-water border border-transparent md:hover:opacity-80',
+  quiet: 'border border-transparent text-ink-muted md:hover:bg-sunk',
+  danger: 'border border-ember text-ember md:hover:bg-ember-tint',
 }
 
 const SIZES: Record<ButtonSize, string> = {
@@ -60,7 +60,7 @@ export function Button({
       type={type}
       className={cn(
         'inline-flex items-center justify-center gap-2 rounded-md font-ui',
-        'transition-opacity active:opacity-70',
+        'transition-[opacity,background-color] active:opacity-70',
         'disabled:opacity-40 disabled:pointer-events-none',
         'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-leaf',
         VARIANTS[variant],
@@ -98,7 +98,7 @@ export function IconButton({
       title={label}
       className={cn(
         'inline-flex size-control shrink-0 items-center justify-center rounded-md',
-        'transition-opacity active:opacity-70',
+        'transition-[opacity,background-color] active:opacity-70',
         'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-leaf',
         VARIANTS[variant],
         className,
@@ -138,8 +138,8 @@ export function BackButton({
         else window.location.assign(routes.today())
       }}
       className={cn(
-        'flex size-10 shrink-0 items-center justify-center rounded-full active:opacity-70',
-        variant === 'chip' ? 'bg-surface/90 text-ink shadow-md' : 'text-ink',
+        'flex size-10 shrink-0 items-center justify-center rounded-full transition-colors active:opacity-70',
+        variant === 'chip' ? 'bg-surface/90 text-ink shadow-md md:hover:bg-surface' : 'text-ink md:hover:bg-sunk',
         className,
       )}
     >
