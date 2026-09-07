@@ -7,8 +7,16 @@ export default defineConfig({
   testDir: './tests',
   fullyParallel: true,
   retries: process.env.CI ? 1 : 0,
-  reporter: [['list']],
-  use: { baseURL: BASE_URL, trace: 'retain-on-failure' },
+  // `list` for the log you actually read while it runs, and the HTML report
+  // for the failure you have to read afterwards: it is the thing CI uploads as
+  // an artifact, and without this reporter that directory is never written and
+  // the upload has nothing to take.
+  reporter: [['list'], ['html', { open: 'never' }]],
+  use: {
+    baseURL: BASE_URL,
+    trace: 'retain-on-failure',
+    screenshot: 'only-on-failure',
+  },
   projects: [
     { name: 'logic', testMatch: /logic\.spec\.ts/ },
     { name: 'merge', testMatch: /merge\.spec\.ts/ },
