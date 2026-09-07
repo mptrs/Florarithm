@@ -9,6 +9,7 @@
 
 import type { ReactNode } from 'react'
 import { cn } from '~/lib/cn'
+import { Icon } from './Icon'
 
 /** The accession number. Tracked out so you can read it off a pot without
  *  second-guessing an 8 for a B. */
@@ -54,6 +55,11 @@ export function CodeBadge({
  * Thirst is carried by colour and weight — no badge, no bar, no stripe down the
  * side. A plant that has never been logged says so in words, because a zero
  * there would be a lie.
+ *
+ * A plant watered today gets a mark instead of a nought. A column of figures
+ * with a few zeroes in it still has to be read; a mark is seen — which is the
+ * whole point on the one screen you scan while walking a room. `leaf` because
+ * the system already spends it on checkmarks.
  */
 export function DaysSinceWater({
   days,
@@ -66,7 +72,25 @@ export function DaysSinceWater({
 }) {
   if (days === null) {
     return (
-      <span className="font-display text-[0.875rem] italic text-ink-faint">never logged</span>
+      <span className="font-display text-[0.875rem] whitespace-nowrap italic text-ink-faint">
+        never logged
+      </span>
+    )
+  }
+
+  // The same height as the figure and its unit, so a mixed column keeps one
+  // baseline rather than jumping wherever a plant has just had water.
+  if (days === 0) {
+    return (
+      <span
+        className={cn(
+          'flex h-[2.3125rem] items-center text-leaf',
+          align === 'end' ? 'justify-end' : '',
+        )}
+      >
+        <Icon name="check" size={20} />
+        <span className="sr-only">watered today</span>
+      </span>
     )
   }
 
@@ -104,22 +128,37 @@ export function SectionHeading({
   )
 }
 
-/** A screen title, in the serif, with an optional line of counts beside it. */
+/**
+ * A screen title, in the serif, with either a line of counts or one control
+ * beside it.
+ *
+ * Counts sit on the title's baseline; a control sits on its centre, because a
+ * 36px chip hung from a baseline reads as having slipped.
+ */
 export function ScreenHeader({
   title,
   meta,
+  action,
   className,
 }: {
   title: string
   meta?: ReactNode
+  /** A control in the slot the counts would use. Wins over `meta`. */
+  action?: ReactNode
   className?: string
 }) {
   return (
-    <div className={cn('flex items-baseline justify-between gap-4', className)}>
+    <div
+      className={cn(
+        'flex justify-between gap-4',
+        action ? 'items-center' : 'items-baseline',
+        className,
+      )}
+    >
       <h1 className="font-display text-[2rem] leading-9 font-medium tracking-[-0.015em] md:text-[2.125rem]">
         {title}
       </h1>
-      {meta ? <div className="text-[0.8125rem] text-ink-muted">{meta}</div> : null}
+      {action ?? (meta ? <div className="text-[0.8125rem] text-ink-muted">{meta}</div> : null)}
     </div>
   )
 }

@@ -1,0 +1,119 @@
+/* Florarithm tokens, lifted from src/styles.css — light theme, exact values. */
+:root {
+  --paper: oklch(0.968 0.008 85);
+  --surface: oklch(0.995 0.003 85);
+  --sunk: oklch(0.944 0.01 85);
+  --line: oklch(0.886 0.01 80);
+  --line-strong: oklch(0.8 0.012 80);
+  --ink: oklch(0.255 0.014 65);
+  --ink-muted: oklch(0.51 0.014 68);
+  --ink-faint: oklch(0.655 0.012 72);
+  --leaf: oklch(0.455 0.098 152);
+  --leaf-tint: oklch(0.944 0.026 152);
+  --water: oklch(0.455 0.104 236);
+  --water-tint: oklch(0.944 0.028 236);
+  --ember: oklch(0.52 0.13 47);
+  --ember-tint: oklch(0.948 0.034 47);
+  --on-accent: oklch(0.985 0.004 85);
+  --ui: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --display: 'Newsreader', Georgia, 'Times New Roman', serif;
+  --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--ui);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--water); text-decoration: none; }
+a:hover { color: var(--leaf); }
+
+/* --- the phone --- */
+.phone { position: relative; width: 390px; height: 844px; overflow: hidden; background: var(--paper); }
+.body { padding: 24px 16px 0; }
+
+/* --- screen header --- */
+.head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+.head h1 {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 32px; line-height: 36px; font-weight: 500; letter-spacing: -0.015em;
+}
+.head .meta { font-size: 13px; line-height: 18px; color: var(--ink-muted); }
+.head .meta b { font-family: var(--mono); font-weight: 500; font-variant-numeric: tabular-nums; }
+
+/* --- the drawer label, as on Collection --- */
+.drawer { display: flex; align-items: center; gap: 10px; margin: 20px 0 10px; }
+.drawer .nm {
+  font-size: 12px; line-height: 16px; font-weight: 600;
+  letter-spacing: 0.09em; text-transform: uppercase; color: var(--ink-faint);
+}
+.drawer .rule { height: 1px; flex: 1; background: var(--line); }
+.drawer .ct { font-family: var(--mono); font-size: 12px; line-height: 16px; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+.drawer.warn .nm, .drawer.warn .ct { color: var(--ember); }
+
+/* --- a plant row --- */
+.row { display: flex; align-items: center; gap: 16px; min-height: 44px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.thumb { width: 40px; height: 40px; flex: none; border-radius: 6px; background: var(--sunk); overflow: hidden; }
+.thumb svg { display: block; width: 100%; height: 100%; color: var(--line-strong); }
+.who { min-width: 0; flex: 1; display: flex; flex-direction: column; }
+.who .n { font-family: var(--display); font-size: 17.5px; line-height: 22px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.who .s { font-size: 13px; line-height: 17px; color: var(--ink-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* --- days since water --- */
+.days { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 1px; }
+.days .v { font-family: var(--mono); font-size: 22px; line-height: 24px; font-weight: 500; font-variant-numeric: tabular-nums; color: var(--ink); }
+.days .u { font-size: 11px; line-height: 12px; color: var(--ink-faint); }
+.days.thirsty .v { color: var(--ember); font-weight: 600; }
+.days.thirsty .u { color: var(--ember); }
+.never { font-family: var(--display); font-size: 14px; font-style: italic; color: var(--ink-faint); flex: none; }
+
+/* --- the quiet tail: a row you are not reading closely --- */
+.trow { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0; border-bottom: 1px solid var(--line); }
+.trow .n { font-family: var(--display); font-size: 16px; line-height: 44px; font-weight: 500; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.trow .p { font-size: 13px; color: var(--ink-faint); flex: none; }
+.trow .d { font-family: var(--mono); font-size: 14px; font-variant-numeric: tabular-nums; color: var(--ink-muted); flex: none; width: 34px; text-align: right; }
+.trow .d.thirsty { color: var(--ember); font-weight: 600; }
+.trow.done .n { color: var(--ink-muted); }
+
+/* --- card, exactly as ui/Card.tsx --- */
+.card { border-radius: 16px; border: 1px solid var(--line); background: var(--surface); }
+.crow { display: flex; align-items: center; gap: 14px; padding: 14px 18px; }
+.chip { width: 38px; height: 38px; flex: none; border-radius: 9999px; display: flex; align-items: center; justify-content: center; }
+.chip.water { background: var(--water-tint); color: var(--water); }
+.chip.leaf { background: var(--leaf-tint); color: var(--leaf); }
+.chip.ink { background: var(--sunk); color: var(--ink-muted); }
+.crow .t { min-width: 0; flex: 1; }
+.crow .t .l { font-size: 15px; font-weight: 500; }
+.crow .t .d { margin-top: 1px; font-size: 13px; color: var(--ink-faint); }
+.crow .r { flex: none; font-family: var(--mono); font-size: 14px; font-variant-numeric: tabular-nums; color: var(--ink-muted); text-align: right; }
+
+/* --- banner, exactly as ui/Banner.tsx --- */
+.banner { display: flex; align-items: center; gap: 10px; min-height: 44px; border-radius: 6px; border: 1px solid var(--ember); background: var(--ember-tint); padding: 8px 12px; }
+.banner .tx { flex: 1; font-size: 13px; line-height: 18px; color: var(--ink); }
+.banner .btn { flex: none; height: 36px; display: flex; align-items: center; padding: 0 12px; border-radius: 6px; border: 1px solid var(--ember); color: var(--ember); font-size: 13px; font-weight: 600; }
+
+/* --- empty state --- */
+.empty { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); padding: 28px 20px; }
+.empty h2 { margin: 0; font-family: var(--display); font-size: 24px; line-height: 29px; font-weight: 500; }
+.empty p { margin: 0; max-width: 46ch; font-size: 15px; line-height: 24px; color: var(--ink-muted); text-wrap: pretty; }
+.empty .go { height: 48px; display: inline-flex; align-items: center; padding: 0 20px; border-radius: 6px; background: var(--leaf); color: var(--on-accent); font-size: 15px; font-weight: 600; }
+
+/* --- the tab bar, with the leaf disc from the Collection redesign --- */
+.tabs { position: absolute; left: 0; right: 0; bottom: 0; display: flex; background: var(--surface); border-top: 1px solid var(--line); padding: 10px 0 14px; }
+.tab { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--ink-faint); }
+.tab.on { color: var(--leaf); }
+.tab .lbl { font-size: 11px; line-height: 14px; }
+.tab.on .lbl { font-weight: 600; }
+.tab .disc { margin-top: -18px; width: 48px; height: 48px; border-radius: 9999px; background: var(--leaf); color: var(--on-accent); display: flex; align-items: center; justify-content: center; }
+
+/* --- a label above a group of variants (canvas chrome, not app chrome) --- */
+.note { font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ink-faint); }
+.cap { margin-top: 6px; font-size: 13px; line-height: 18px; color: var(--ink-muted); text-wrap: pretty; }

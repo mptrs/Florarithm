@@ -28,7 +28,7 @@ export function RowLink({
     <a
       href={href}
       className={cn(
-        'flex min-h-touch items-center gap-4 border-b border-line py-3.5',
+        'flex min-h-touch items-center gap-4 border-b border-line py-2.5',
         'transition-colors active:bg-sunk md:hover:bg-sunk',
         className,
       )}
@@ -44,42 +44,6 @@ export function Row({ children, className }: { children: ReactNode; className?: 
   return (
     <div className={cn('flex min-h-touch items-center gap-4 border-b border-line py-3.5', className)}>
       {children}
-    </div>
-  )
-}
-
-/**
- * The plant's identity: name in the serif, one muted line under it.
- *
- * On wide layouts the second line usually moves out into its own column, so it
- * takes a breakpoint at which to disappear.
- */
-export function RowName({
-  name,
-  secondary,
-  hideSecondaryFrom,
-  className,
-}: {
-  name: string
-  secondary?: string
-  /** Tailwind breakpoint at which the second line is replaced by columns. */
-  hideSecondaryFrom?: 'md' | 'lg'
-  className?: string
-}) {
-  return (
-    <div className={cn('flex min-w-0 flex-1 flex-col gap-0.5', className)}>
-      <span className="truncate font-display text-[1.1875rem] leading-6 font-medium">{name}</span>
-      {secondary ? (
-        <span
-          className={cn(
-            'truncate text-[0.8125rem] leading-[1.0625rem] text-ink-muted',
-            hideSecondaryFrom === 'md' ? 'md:hidden' : '',
-            hideSecondaryFrom === 'lg' ? 'lg:hidden' : '',
-          )}
-        >
-          {secondary}
-        </span>
-      ) : null}
     </div>
   )
 }
@@ -124,5 +88,31 @@ export function Cell({
 export function ColumnHeader({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <span className={cn('shrink-0 text-label uppercase text-ink-muted', className)}>{children}</span>
+  )
+}
+
+/**
+ * A place, drawn as a drawer in a cabinet: the name, a hairline running out to
+ * the count. No box — the label is doing the work.
+ *
+ * Shared, because Collection and Today cut the same plants into the same rooms
+ * and a room that looked different on the two screens would read as a different
+ * kind of thing.
+ */
+export function DrawerLabel({
+  name,
+  count,
+  className,
+}: {
+  name: string
+  count: number
+  className?: string
+}) {
+  return (
+    <div className={cn('mt-5 mb-2.5 flex items-center gap-2.5 lg:mt-6 lg:mb-1.5', className)}>
+      <span className="text-label text-ink-faint uppercase">{name}</span>
+      <span className="h-px flex-1 bg-line" />
+      <span className="font-mono text-micro text-ink-faint">{count}</span>
+    </div>
   )
 }

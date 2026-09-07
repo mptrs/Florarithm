@@ -32,11 +32,11 @@ import { cn } from '~/lib/cn'
 import { formatSpecies, label } from '~/lib/format'
 import { COLLECTION_FILTERS, routes, type CollectionFilter } from '~/lib/router'
 import { Button } from '~/ui/Button'
-import { Chip, ChipStrip } from '~/ui/Chip'
+import { Chip, ChipStrip, SortSwitch, type SortOption } from '~/ui/Chip'
 import { SearchField } from '~/ui/fields'
 import { PlantThumb, PlantTile } from '~/ui/plantPicture'
 import { EmptyState, ScreenHeader } from '~/ui/primitives'
-import { ColumnHeader } from '~/ui/rows'
+import { ColumnHeader, DrawerLabel } from '~/ui/rows'
 
 /** The systems, and nothing else: the wishlist has its own page now, and the
  *  archive is a word you type rather than a tab stop you pass every day. */
@@ -54,6 +54,11 @@ const FILTER_LABELS: Record<CollectionFilter, string> = {
 }
 
 type Sort = 'place' | 'name'
+
+const SORTS = [
+  { value: 'place', label: 'By place' },
+  { value: 'name', label: 'A–Z' },
+] as const satisfies readonly SortOption<Sort>[]
 
 export function CollectionScreen({ filter }: { filter: CollectionFilter }) {
   const state = useStore()
@@ -101,7 +106,7 @@ export function CollectionScreen({ filter }: { filter: CollectionFilter }) {
         </ChipStrip>
 
         <div className="hidden lg:block lg:flex-1" />
-        <SortSwitch sort={sort} onChange={setSort} />
+        <SortSwitch value={sort} options={SORTS} onChange={setSort} />
       </div>
 
       {nothing ? (
@@ -124,20 +129,6 @@ export function CollectionScreen({ filter }: { filter: CollectionFilter }) {
       ) : null}
 
       {archived.length > 0 ? <Archive plants={archived} query={query} /> : null}
-    </div>
-  )
-}
-
-function SortSwitch({ sort, onChange }: { sort: Sort; onChange: (sort: Sort) => void }) {
-  return (
-    <div className="flex items-center gap-2">
-      <span className="text-label text-ink-faint uppercase">Sort</span>
-      <Chip selected={sort === 'place'} onClick={() => onChange('place')}>
-        By place
-      </Chip>
-      <Chip selected={sort === 'name'} onClick={() => onChange('name')}>
-        A–Z
-      </Chip>
     </div>
   )
 }
@@ -191,18 +182,6 @@ function PlantRuns({
           </div>
         </section>
       ))}
-    </div>
-  )
-}
-
-/** A place reads as a drawer in a cabinet: the name, a hairline running out to
- *  the count. No box — the label is doing the work. */
-function DrawerLabel({ name, count }: { name: string; count: number }) {
-  return (
-    <div className="mt-5 mb-2.5 flex items-center gap-2.5 lg:mt-6 lg:mb-1.5">
-      <span className="text-label text-ink-faint uppercase">{name}</span>
-      <span className="h-px flex-1 bg-line" />
-      <span className="font-mono text-micro text-ink-faint">{count}</span>
     </div>
   )
 }

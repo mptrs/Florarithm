@@ -1,0 +1,159 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400..700;1,6..72,400..500&display=swap">
+  <style>
+/* Florarithm tokens, lifted from src/styles.css — light theme, exact values. */
+:root {
+  --paper: oklch(0.968 0.008 85);
+  --surface: oklch(0.995 0.003 85);
+  --sunk: oklch(0.944 0.01 85);
+  --line: oklch(0.886 0.01 80);
+  --line-strong: oklch(0.8 0.012 80);
+  --ink: oklch(0.255 0.014 65);
+  --ink-muted: oklch(0.51 0.014 68);
+  --ink-faint: oklch(0.655 0.012 72);
+  --leaf: oklch(0.455 0.098 152);
+  --leaf-tint: oklch(0.944 0.026 152);
+  --water: oklch(0.455 0.104 236);
+  --water-tint: oklch(0.944 0.028 236);
+  --ember: oklch(0.52 0.13 47);
+  --ember-tint: oklch(0.948 0.034 47);
+  --on-accent: oklch(0.985 0.004 85);
+  --ui: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --display: 'Newsreader', Georgia, 'Times New Roman', serif;
+  --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--ui);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--water); text-decoration: none; }
+a:hover { color: var(--leaf); }
+
+/* --- the phone --- */
+.phone { position: relative; width: 390px; height: 844px; overflow: hidden; background: var(--paper); }
+.body { padding: 24px 16px 0; }
+
+/* --- screen header --- */
+.head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+.head h1 {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 32px; line-height: 36px; font-weight: 500; letter-spacing: -0.015em;
+}
+.head .meta { font-size: 13px; line-height: 18px; color: var(--ink-muted); }
+.head .meta b { font-family: var(--mono); font-weight: 500; font-variant-numeric: tabular-nums; }
+
+/* --- the drawer label, as on Collection --- */
+.drawer { display: flex; align-items: center; gap: 10px; margin: 20px 0 10px; }
+.drawer .nm {
+  font-size: 12px; line-height: 16px; font-weight: 600;
+  letter-spacing: 0.09em; text-transform: uppercase; color: var(--ink-faint);
+}
+.drawer .rule { height: 1px; flex: 1; background: var(--line); }
+.drawer .ct { font-family: var(--mono); font-size: 12px; line-height: 16px; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+.drawer.warn .nm, .drawer.warn .ct { color: var(--ember); }
+
+/* --- a plant row --- */
+.row { display: flex; align-items: center; gap: 16px; min-height: 44px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.thumb { width: 40px; height: 40px; flex: none; border-radius: 6px; background: var(--sunk); overflow: hidden; }
+.thumb svg { display: block; width: 100%; height: 100%; color: var(--line-strong); }
+.who { min-width: 0; flex: 1; display: flex; flex-direction: column; }
+.who .n { font-family: var(--display); font-size: 17.5px; line-height: 22px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.who .s { font-size: 13px; line-height: 17px; color: var(--ink-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* --- days since water --- */
+.days { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 1px; }
+.days .v { font-family: var(--mono); font-size: 22px; line-height: 24px; font-weight: 500; font-variant-numeric: tabular-nums; color: var(--ink); }
+.days .u { font-size: 11px; line-height: 12px; color: var(--ink-faint); }
+.days.thirsty .v { color: var(--ember); font-weight: 600; }
+.days.thirsty .u { color: var(--ember); }
+.never { font-family: var(--display); font-size: 14px; font-style: italic; color: var(--ink-faint); flex: none; }
+
+/* --- the quiet tail: a row you are not reading closely --- */
+.trow { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0; border-bottom: 1px solid var(--line); }
+.trow .n { font-family: var(--display); font-size: 16px; line-height: 44px; font-weight: 500; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.trow .p { font-size: 13px; color: var(--ink-faint); flex: none; }
+.trow .d { font-family: var(--mono); font-size: 14px; font-variant-numeric: tabular-nums; color: var(--ink-muted); flex: none; width: 34px; text-align: right; }
+.trow .d.thirsty { color: var(--ember); font-weight: 600; }
+.trow.done .n { color: var(--ink-muted); }
+
+/* --- card, exactly as ui/Card.tsx --- */
+.card { border-radius: 16px; border: 1px solid var(--line); background: var(--surface); }
+.crow { display: flex; align-items: center; gap: 14px; padding: 14px 18px; }
+.chip { width: 38px; height: 38px; flex: none; border-radius: 9999px; display: flex; align-items: center; justify-content: center; }
+.chip.water { background: var(--water-tint); color: var(--water); }
+.chip.leaf { background: var(--leaf-tint); color: var(--leaf); }
+.chip.ink { background: var(--sunk); color: var(--ink-muted); }
+.crow .t { min-width: 0; flex: 1; }
+.crow .t .l { font-size: 15px; font-weight: 500; }
+.crow .t .d { margin-top: 1px; font-size: 13px; color: var(--ink-faint); }
+.crow .r { flex: none; font-family: var(--mono); font-size: 14px; font-variant-numeric: tabular-nums; color: var(--ink-muted); text-align: right; }
+
+/* --- banner, exactly as ui/Banner.tsx --- */
+.banner { display: flex; align-items: center; gap: 10px; min-height: 44px; border-radius: 6px; border: 1px solid var(--ember); background: var(--ember-tint); padding: 8px 12px; }
+.banner .tx { flex: 1; font-size: 13px; line-height: 18px; color: var(--ink); }
+.banner .btn { flex: none; height: 36px; display: flex; align-items: center; padding: 0 12px; border-radius: 6px; border: 1px solid var(--ember); color: var(--ember); font-size: 13px; font-weight: 600; }
+
+/* --- empty state --- */
+.empty { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); padding: 28px 20px; }
+.empty h2 { margin: 0; font-family: var(--display); font-size: 24px; line-height: 29px; font-weight: 500; }
+.empty p { margin: 0; max-width: 46ch; font-size: 15px; line-height: 24px; color: var(--ink-muted); text-wrap: pretty; }
+.empty .go { height: 48px; display: inline-flex; align-items: center; padding: 0 20px; border-radius: 6px; background: var(--leaf); color: var(--on-accent); font-size: 15px; font-weight: 600; }
+
+/* --- the tab bar, with the leaf disc from the Collection redesign --- */
+.tabs { position: absolute; left: 0; right: 0; bottom: 0; display: flex; background: var(--surface); border-top: 1px solid var(--line); padding: 10px 0 14px; }
+.tab { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--ink-faint); }
+.tab.on { color: var(--leaf); }
+.tab .lbl { font-size: 11px; line-height: 14px; }
+.tab.on .lbl { font-weight: 600; }
+.tab .disc { margin-top: -18px; width: 48px; height: 48px; border-radius: 9999px; background: var(--leaf); color: var(--on-accent); display: flex; align-items: center; justify-content: center; }
+
+/* --- a label above a group of variants (canvas chrome, not app chrome) --- */
+.note { font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ink-faint); }
+.cap { margin-top: 6px; font-size: 13px; line-height: 18px; color: var(--ink-muted); text-wrap: pretty; }
+
+.sw { display: flex; align-items: center; gap: 8px; }
+.sw .lb { font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.09em;
+  text-transform: uppercase; color: var(--ink-faint); }
+.chipf { display: inline-flex; align-items: center; height: 36px; padding: 0 14px;
+  border-radius: 9999px; font-size: 14px; font-weight: 500; white-space: nowrap;
+  border: 1px solid var(--line-strong); color: var(--ink-muted); }
+.chipf.on { background: var(--ink); color: var(--paper); font-weight: 600;
+  border-color: var(--ink); }
+.headrow { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.headrow h1 { margin: 0; font-family: var(--display); font-size: 32px; line-height: 36px;
+  font-weight: 500; letter-spacing: -0.015em; }
+
+  </style>
+</helmet>
+<div class="phone"><div class="body">
+<div class="headrow"><h1>Today</h1><div class="sw"><span class="chipf">Thirstiest</span><span class="chipf on">By place</span></div></div><div class="drawer"><span class="nm">Woonkamer</span><span class="rule"></span><span class="ct">5</span></div><div class="row"><span class="thumb"><svg viewBox="0 0 240 160" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.4" vector-effect="non-scaling-stroke" stroke-linecap="round" opacity="0.62"><path d="M120 150c-31 0-53-25-53-57 0-26 16-47 35-61 8-6 14-11 18-16 4 5 10 10 18 16 19 14 35 35 35 61 0 32-22 57-53 57Z"/><path d="M120 150V26"/><path d="M120 66c-11-3-21-9-29-17M120 66c11-3 21-9 29-17"/><path d="M120 100c-13-3-25-9-35-18M120 100c13-3 25-9 35-18"/><path d="M120 132c-11-2-22-7-31-14M120 132c11-2 22-7 31-14"/></g></svg></span><span class="who"><span class="n">Wassily</span><span class="s">Monstera deliciosa</span></span><div class="days thirsty"><span class="v">21</span><span class="u">days</span></div></div><div class="row"><span class="thumb"><svg viewBox="0 0 240 160" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.4" vector-effect="non-scaling-stroke" stroke-linecap="round" opacity="0.62"><path d="M120 148c-26 0-46-22-46-52 0-34 22-62 46-84 24 22 46 50 46 84 0 30-20 52-46 52Z"/><path d="M120 148V22"/><path d="M120 60c-10-6-20-10-32-11M120 60c10-6 20-10 32-11"/><path d="M120 92c-13-7-26-11-40-12M120 92c13-7 26-11 40-12"/><path d="M120 124c-11-6-22-9-34-10M120 124c11-6 22-9 34-10"/></g></svg></span><span class="who"><span class="n">Olga</span><span class="s">Calathea orbifolia</span></span><div class="days thirsty"><span class="v">14</span><span class="u">days</span></div></div><div class="row"><span class="thumb"><svg viewBox="0 0 240 160" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.4" vector-effect="non-scaling-stroke" stroke-linecap="round" opacity="0.62"><path d="M120 150c-31 0-53-25-53-57 0-26 16-47 35-61 8-6 14-11 18-16 4 5 10 10 18 16 19 14 35 35 35 61 0 32-22 57-53 57Z"/><path d="M120 150V26"/><path d="M120 66c-11-3-21-9-29-17M120 66c11-3 21-9 29-17"/><path d="M120 100c-13-3-25-9-35-18M120 100c13-3 25-9 35-18"/><path d="M120 132c-11-2-22-7-31-14M120 132c11-2 22-7 31-14"/></g></svg></span><span class="who"><span class="n">Fluweel</span><span class="s">Anthurium clarinervium</span></span><div class="days"><span class="v">9</span><span class="u">days</span></div></div><div class="row"><span class="thumb"><svg viewBox="0 0 240 160" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.4" vector-effect="non-scaling-stroke" stroke-linecap="round" opacity="0.62"><path d="M120 148c-26 0-46-22-46-52 0-34 22-62 46-84 24 22 46 50 46 84 0 30-20 52-46 52Z"/><path d="M120 148V22"/><path d="M120 60c-10-6-20-10-32-11M120 60c10-6 20-10 32-11"/><path d="M120 92c-13-7-26-11-40-12M120 92c13-7 26-11 40-12"/><path d="M120 124c-11-6-22-9-34-10M120 124c11-6 22-9 34-10"/></g></svg></span><span class="who"><span class="n">Gruyère</span><span class="s">Monstera adansonii</span></span><div class="days"><span class="v">6</span><span class="u">days</span></div></div><div class="row"><span class="thumb"><svg viewBox="0 0 240 160" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.4" vector-effect="non-scaling-stroke" stroke-linecap="round" opacity="0.62"><path d="M120 150c-31 0-53-25-53-57 0-26 16-47 35-61 8-6 14-11 18-16 4 5 10 10 18 16 19 14 35 35 35 61 0 32-22 57-53 57Z"/><path d="M120 150V26"/><path d="M120 66c-11-3-21-9-29-17M120 66c11-3 21-9 29-17"/><path d="M120 100c-13-3-25-9-35-18M120 100c13-3 25-9 35-18"/><path d="M120 132c-11-2-22-7-31-14M120 132c11-2 22-7 31-14"/></g></svg></span><span class="who"><span class="n">Bertha</span><span class="s">Ficus lyrata</span></span><div class="days"><span class="v">3</span><span class="u">days</span></div></div><div class="drawer"><span class="nm">Keuken</span><span class="rule"></span><span class="ct">3</span></div><div class="row"><span class="thumb"><svg viewBox="0 0 240 160" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.4" vector-effect="non-scaling-stroke" stroke-linecap="round" opacity="0.62"><path d="M120 150c-31 0-53-25-53-57 0-26 16-47 35-61 8-6 14-11 18-16 4 5 10 10 18 16 19 14 35 35 35 61 0 32-22 57-53 57Z"/><path d="M120 150V26"/><path d="M120 66c-11-3-21-9-29-17M120 66c11-3 21-9 29-17"/><path d="M120 100c-13-3-25-9-35-18M120 100c13-3 25-9 35-18"/><path d="M120 132c-11-2-22-7-31-14M120 132c11-2 22-7 31-14"/></g></svg></span><span class="who"><span class="n">Kees</span><span class="s">Alocasia zebrina</span></span><div class="days thirsty"><span class="v">16</span><span class="u">days</span></div></div><div class="row"><span class="thumb"><svg viewBox="0 0 240 160" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.4" vector-effect="non-scaling-stroke" stroke-linecap="round" opacity="0.62"><path d="M120 148c-26 0-46-22-46-52 0-34 22-62 46-84 24 22 46 50 46 84 0 30-20 52-46 52Z"/><path d="M120 148V22"/><path d="M120 60c-10-6-20-10-32-11M120 60c10-6 20-10 32-11"/><path d="M120 92c-13-7-26-11-40-12M120 92c13-7 26-11 40-12"/><path d="M120 124c-11-6-22-9-34-10M120 124c11-6 22-9 34-10"/></g></svg></span><span class="who"><span class="n">Sien</span><span class="s">Philodendron 'Birkin'</span></span><div class="days"><span class="v">8</span><span class="u">days</span></div></div><div class="row"><span class="thumb"><svg viewBox="0 0 240 160" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.4" vector-effect="non-scaling-stroke" stroke-linecap="round" opacity="0.62"><path d="M92 150c-9-29-9-60-4-88"/><path d="M106 150c-6-35-4-71 4-105"/><path d="M120 150c-1-38 0-79 2-118"/><path d="M136 150c6-36 7-73 3-107"/><path d="M150 150c9-30 11-62 8-90"/><path d="M78 150h84"/></g></svg></span><span class="who"><span class="n">Dikkie</span><span class="s">Zamioculcas zamiifolia</span></span><div class="days"><span class="v">5</span><span class="u">days</span></div></div><div class="drawer"><span class="nm">Slaapkamer</span><span class="rule"></span><span class="ct">4</span></div><div class="row"><span class="thumb"><svg viewBox="0 0 240 160" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.4" vector-effect="non-scaling-stroke" stroke-linecap="round" opacity="0.62"><path d="M120 150c0-40-2-85 0-130"/><path d="M120 42c-10-5-19-7-28-7M120 42c10-5 19-7 28-7"/><path d="M120 68c-12-5-24-8-35-8M120 68c12-5 24-8 35-8"/><path d="M120 94c-13-5-26-8-38-8M120 94c13-5 26-8 38-8"/><path d="M120 120c-11-4-22-6-32-6M120 120c11-4 22-6 32-6"/></g></svg></span><span class="who"><span class="n">Nore</span><span class="s">Hoya carnosa</span></span><span class="never">never logged</span></div><div class="row"><span class="thumb"><svg viewBox="0 0 240 160" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.4" vector-effect="non-scaling-stroke" stroke-linecap="round" opacity="0.62"><path d="M92 150c-9-29-9-60-4-88"/><path d="M106 150c-6-35-4-71 4-105"/><path d="M120 150c-1-38 0-79 2-118"/><path d="M136 150c6-36 7-73 3-107"/><path d="M150 150c9-30 11-62 8-90"/><path d="M78 150h84"/></g></svg></span><span class="who"><span class="n">Boris</span><span class="s">Sansevieria trifasciata</span></span><div class="days"><span class="v">11</span><span class="u">days</span></div></div>
+</div>
+<nav class="tabs">
+  <span class="tab on"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/></svg><span class="lbl">Today</span></span>
+  <span class="tab"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M21 9H3"/><path d="M21 15H3"/></svg><span class="lbl">Collection</span></span>
+  <span class="tab"><span class="disc"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg></span><span class="lbl">New</span></span>
+  <span class="tab"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2 2 0 0 1 2 2v15a1 1 0 0 1-1.496.868l-4.512-2.578a2 2 0 0 0-1.984 0l-4.512 2.578A1 1 0 0 1 5 20V5a2 2 0 0 1 2-2z"/></svg><span class="lbl">Wishlist</span></span>
+  <span class="tab"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 5H3"/><path d="M12 19H3"/><path d="M14 3v4"/><path d="M16 17v4"/><path d="M21 12h-9"/><path d="M21 19h-5"/><path d="M21 5h-7"/><path d="M8 10v4"/><path d="M8 12H3"/></svg><span class="lbl">Settings</span></span>
+</nav>
+</div>
+</x-dc>
+</body>
+</html>
