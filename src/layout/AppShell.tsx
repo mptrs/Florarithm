@@ -18,6 +18,7 @@ import { useSyncStatus } from '~/data/sync'
 import { routes, type Route } from '~/lib/router'
 import { Icon, type IconName } from '~/ui/Icon'
 import { SyncStatusPill } from '~/ui/SyncStatusPill'
+import { ToastHost } from '~/ui/toast'
 
 type NavKey = 'today' | 'collection' | 'wishlist' | 'new' | 'settings'
 
@@ -82,6 +83,7 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
       </main>
 
       <BottomNav active={active} />
+      <ToastHost />
     </div>
   )
 }

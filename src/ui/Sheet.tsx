@@ -63,8 +63,11 @@ export function Sheet({ open, onClose, title, onBack, children }: SheetProps) {
         tabIndex={-1}
         className={cn(
           'relative max-h-[88vh] w-full overflow-y-auto bg-surface outline-none',
-          'safe-bottom rounded-t-[1.625rem] border-t border-line px-5 pt-2.5 pb-7',
-          'md:max-w-lg md:rounded-xl md:border md:px-6 md:pb-6',
+          // The device inset adds to the resting padding rather than replacing
+          // it — `safe-bottom` alone would leave the last row flush with the
+          // edge on a phone with no home-indicator inset to speak of.
+          'rounded-t-[1.625rem] border-t border-line px-5 pt-2.5 pb-[calc(env(safe-area-inset-bottom,0px)+1.75rem)]',
+          'md:max-w-lg md:rounded-xl md:border md:px-6 md:pb-[calc(env(safe-area-inset-bottom,0px)+1.5rem)]',
         )}
       >
         <div className="mx-auto h-1 w-9 rounded-full bg-line-strong md:hidden" />

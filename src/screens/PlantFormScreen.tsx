@@ -25,9 +25,11 @@ import { formatDate, isoToInputValue, inputValueToISO, todayInputValue } from '~
 import { formatSpecies, label } from '~/lib/format'
 import { suggestNameAI } from '~/lib/aiNameGenerator'
 import { cn } from '~/lib/cn'
-import { routes } from '~/lib/router'
+import { redirect, routes } from '~/lib/router'
 import { BackButton, Button, IconButton } from '~/ui/Button'
 import { Chip } from '~/ui/Chip'
+import { useConfirm } from '~/ui/ConfirmDialog'
+import { showToast } from '~/ui/toast'
 import {
   DateField,
   Field,
@@ -81,6 +83,7 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
   const [saving, setSaving] = useState(false)
   const [rolling, setRolling] = useState(false)
   const [loadProgress, setLoadProgress] = useState<string | null>(null)
+  const { confirm, dialog: confirmDialog } = useConfirm()
 
   // Fill the form once the record is in memory. Keyed on the plant's identity
   // so switching plants refills, while typing never gets overwritten.
@@ -180,7 +183,32 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
         wishNote: wishNote.trim(),
       })
 
-      window.location.assign(routes.plant(plant.code))
+      showToast(
+        existing && !promote
+          ? 'Saved'
+          : promote
+            ? `${plant.name} added to the collection`
+            : wish
+              ? `${plant.name} added to the wishlist`
+              : `${plant.name} added to the collection`,
+      )
+
+      if (existing && !promote) {
+        // Editing an already-owned plant always arrived by pushing this form
+        // on top of that exact plant's page, so the entry underneath already
+        // *is* the page to land on — going there with `back()` costs nothing
+        // and, crucially, doesn't leave two adjacent history entries with the
+        // same hash. A `replace` to that same hash would: the hash string
+        // wouldn't change, so `hashchange` never fires and the first press of
+        // the real back button silently does nothing, only working on the
+        // second press once it reaches a genuinely different entry.
+        window.history.back()
+      } else {
+        // A new plant, a cutting, or a promoted wish lands on a page that
+        // didn't exist before saving — there is nothing to go back to, so
+        // this replaces the form instead of pushing on top of it.
+        redirect(routes.plant(plant.code))
+      }
     } finally {
       setSaving(false)
     }
@@ -188,13 +216,18 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
 
   const remove = async () => {
     if (!existing) return
-    const confirmed = window.confirm(
-      `Delete ${existing.name} and its whole history? This cannot be undone.`,
-    )
+    const confirmed = await confirm({
+      title: `Delete ${existing.name}?`,
+      message: `Its whole history goes with it — every watering, photo and note. This cannot be undone.`,
+      confirmLabel: 'Delete',
+      danger: true,
+    })
     if (!confirmed) return
 
+    const name = existing.name
     await deletePlantForever(existing.code)
-    window.location.assign(routes.collection())
+    showToast(`${name} deleted`)
+    redirect(routes.collection())
   }
 
   const title = existing ? (promote ? 'Add to the collection' : `Edit ${existing.name}`) : wish ? 'New wish' : 'New plant'
@@ -428,10 +461,10 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
       ) : null}
 
       <div className="flex flex-wrap items-center gap-3 border-t border-line pt-5">
-        <Button variant="accent" disabled={saving} onClick={submit}>
+        <Button variant="accent" icon="check" disabled={saving} onClick={submit}>
           {existing ? 'Save' : wish ? 'Add to the wishlist' : 'Add to the collection'}
         </Button>
-        <Button variant="outline" onClick={() => window.history.back()}>
+        <Button variant="outline" icon="close" onClick={() => window.history.back()}>
           Cancel
         </Button>
         {existing ? null : (
@@ -443,11 +476,13 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
 
       {existing ? (
         <div className="mt-4 border-t border-line pt-5">
-          <Button variant="danger" onClick={remove}>
+          <Button variant="danger" icon="trash" onClick={remove}>
             Delete this plant
           </Button>
         </div>
       ) : null}
+
+      {confirmDialog}
     </div>
   )
 }
