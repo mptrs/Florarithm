@@ -25,7 +25,9 @@ import { daysSince, formatDate } from '~/lib/date'
 import { label, plural } from '~/lib/format'
 import { Banner } from '~/ui/Banner'
 import { Button, IconButton } from '~/ui/Button'
+import { useConfirm } from '~/ui/ConfirmDialog'
 import { Field, TextField } from '~/ui/fields'
+import { showToast } from '~/ui/toast'
 import { Icon } from '~/ui/Icon'
 import { Rows, ScreenHeader, SectionHeading } from '~/ui/primitives'
 import { Row } from '~/ui/rows'
@@ -197,6 +199,7 @@ function BackupSection() {
   const fileInput = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const { confirm, dialog: confirmDialog } = useConfirm()
 
   const synced = syncStatus.kind !== 'unconfigured'
   const days = state.lastBackupAt === null ? null : daysSince(state.lastBackupAt)
@@ -219,12 +222,15 @@ function BackupSection() {
     try {
       const backup = await readBackupFile(file)
 
-      const confirmed = window.confirm(
-        `Replace everything on this device?\n\n` +
+      const confirmed = await confirm({
+        title: 'Replace everything on this device?',
+        message:
           `In the file: ${backup.plants.length} plants, ${backup.events.length} events.\n` +
           `Here now: ${state.plants.length} plants, ${state.events.length} events.\n\n` +
           `This cannot be undone.`,
-      )
+        confirmLabel: 'Replace',
+        danger: true,
+      })
       if (!confirmed) return
 
       await replaceEverything({
@@ -232,6 +238,7 @@ function BackupSection() {
         events: backup.events,
         vocab: backup.vocab,
       })
+      showToast('Replaced')
     } catch (cause) {
       setError(cause instanceof BackupParseError ? cause.message : 'That file could not be read.')
     } finally {
@@ -294,6 +301,8 @@ function BackupSection() {
         Importing replaces everything here with what is in the file. Safari also clears storage for
         sites left untouched for seven days, so a long holiday is exactly when this matters.
       </p>
+
+      {confirmDialog}
     </details>
   )
 }
