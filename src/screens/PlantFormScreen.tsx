@@ -49,8 +49,7 @@ import {
   TextField,
   ToggleField,
 } from '~/ui/fields'
-import { Icon, type IconName } from '~/ui/Icon'
-import { CodeBadge } from '~/ui/primitives'
+import { CodeBadge, Section } from '~/ui/primitives'
 
 type Props = {
   /** Absent when adding. */
@@ -517,40 +516,6 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
   )
 }
 
-/**
- * A named run of fields.
- *
- * Set in the serif, at the size the sheets set their titles. It has to be a
- * different *kind* of type from the labels under it, not a heavier weight of
- * the same one — the heading this replaced was `text-label uppercase` sitting
- * directly above `text-label uppercase`, which is a heading you have to work
- * out rather than see.
- *
- * The glyph is the one the plant page files that fact under, and it is a plain
- * faint icon rather than a tinted chip on purpose: chips there mark a row you
- * can act on, and a heading is not one. The hairline does the separating, so
- * the groups read apart without boxing inputs inside a card the same colour as
- * the inputs.
- */
-function Section({
-  icon,
-  title,
-  children,
-}: {
-  icon: IconName
-  title: string
-  children: React.ReactNode
-}) {
-  return (
-    <section className="flex flex-col gap-5">
-      <div className="flex items-center gap-2.5 border-b border-line pb-2.5">
-        <Icon name={icon} size={19} className="text-ink-faint" />
-        <h2 className="font-display text-[1.3125rem] leading-7 font-medium">{title}</h2>
-      </div>
-      {children}
-    </section>
-  )
-}
 
 /**
  * Which photograph stands for the plant.

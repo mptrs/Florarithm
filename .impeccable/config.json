@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "low-contrast",
+        "value": "*",
+        "files": [
+          "design/SettingsPhone.dc.html"
+        ],
+        "createdAt": "2026-09-08T12:35:48.584Z",
+        "reason": "ink-faint on surface is the app's real placeholder/archived-item convention (fields.tsx CONTROL_FACE placeholder:text-ink-faint; VocabList archived rows) — intentional low-emphasis text, not a mistake"
+      }
+    ]
+  }
+}
