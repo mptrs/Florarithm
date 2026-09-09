@@ -15,7 +15,12 @@
  * Photographs are the exception, and have to be: re-fetching a hundred JPEGs to
  * find out they have not changed would be absurd. They are immutable and named
  * after the event they belong to, so "do I have this one?" is a local key
- * lookup and a file is never fetched twice. See `syncPhotos`.
+ * lookup and a file is never fetched twice. See `downloadPhotos`.
+ *
+ * A round writes once. Everything it changed — the lists, the month files and
+ * any photographs — goes up as a single commit through the Git Data API, not
+ * a commit per file. That is what stopped this app from generating conflicts
+ * against itself; `commitFiles` in `githubClient.ts` tells that story.
  */
 
 import { useSyncExternalStore } from 'react'
@@ -29,16 +34,15 @@ import { mergeSnapshots } from './merge'
 import {
   GitHubApiError,
   GitHubAuthError,
-  GitHubConflictError,
   GitHubNetworkError,
+  type FileToCommit,
   type GitHubConfig,
   type RemoteFile,
+  commitFiles,
   getBinaryFile,
   getDefaultBranch,
   getFile,
   listDir,
-  putBinaryFile,
-  putFile,
 } from './githubClient'
 import {
   buildEventsFile,
@@ -365,23 +369,65 @@ async function syncOnce(active: SyncConfig): Promise<void> {
     }
   }
 
-  await pushIfChanged(active, branch, 'meta.json', remoteMetaFile, buildMetaFile(merged.vocab))
-  await pushIfChanged(active, branch, 'plants.json', remotePlantsFile, buildPlantsFile(merged.plants))
+  // Everything this round changes, gathered before anything is written. One
+  // commit lands the lot — see `commitFiles` for why that is the whole point.
+  const writes: FileToCommit[] = []
+
+  addIfChanged(writes, 'meta.json', remoteMetaFile, buildMetaFile(merged.vocab))
+  addIfChanged(writes, 'plants.json', remotePlantsFile, buildPlantsFile(merged.plants))
 
   const mergedMonths = groupEventsByMonth(merged.events)
   for (const [key, events] of mergedMonths) {
-    await pushIfChanged(
-      active,
-      branch,
-      monthFilePath(key),
-      remoteMonthFiles.get(key) ?? null,
-      buildEventsFile(events),
-    )
+    const path = monthFilePath(key)
+    addIfChanged(writes, path, remoteMonthFiles.get(key) ?? null, buildEventsFile(events))
   }
 
-  // Last, and only once the log that describes them has landed: a photograph
-  // in the repo that no event points at is litter nobody would ever find.
-  await syncPhotos(active, branch, merged.events)
+  // Photographs ride in the same commit as the log that describes them, so a
+  // picture is never in the repo without its entry, or the other way round.
+  const uploaded = await photosToUpload(merged.events)
+  for (const photo of uploaded) writes.push({ path: photo.path, bytes: photo.bytes })
+
+  await commitFiles(active, branch, writes, COMMIT_MESSAGE)
+
+  // Only once the commit has actually landed: a photograph marked synced that
+  // never made it up would never be offered again.
+  for (const photo of uploaded) await db.markPhotoSynced(photo.eventId)
+
+  await downloadPhotos(active, merged.events)
+}
+
+function addIfChanged(
+  writes: FileToCommit[],
+  path: string,
+  existing: RemoteFile | null,
+  content: string,
+): void {
+  if (existing?.content === content) return
+  writes.push({ path, text: content })
+}
+
+const COMMIT_MESSAGE = 'Sync from Florarithm'
+
+/** How many photographs one round trip will push up. The same reasoning as
+ *  `DOWNLOAD_BUDGET`, and it also keeps a single commit a sane size. */
+const UPLOAD_BUDGET = 25
+
+/** Everything photographed here that the repo has not been told about. */
+async function photosToUpload(
+  events: readonly PlantEvent[],
+): Promise<{ eventId: string; path: string; bytes: ArrayBuffer }[]> {
+  const byId = new Map(events.map((event) => [event.id, event]))
+  const ready = []
+
+  for (const photo of await db.unsyncedPhotos()) {
+    const event = byId.get(photo.eventId)
+    if (!event || event.deleted) continue
+
+    ready.push({ eventId: photo.eventId, path: photoFilePath(event), bytes: photo.bytes })
+    if (ready.length === UPLOAD_BUDGET) break
+  }
+
+  return ready
 }
 
 /** How many photographs one round trip will pull down. A device joining a
@@ -391,32 +437,16 @@ async function syncOnce(active: SyncConfig): Promise<void> {
 const DOWNLOAD_BUDGET = 25
 
 /**
- * Move the bytes.
+ * Pull down the pictures this device does not have.
  *
- * Both directions lean on the same property: a photograph never changes. Its
- * path is derived from the event's id and date, so there is nothing to list,
- * nothing to compare and no sha to track — only "the repo has it" and "this
- * device has it", each of which is a set membership test.
+ * A photograph never changes. Its path is derived from the event's id and
+ * date, so there is nothing to list, nothing to compare and no sha to track —
+ * only "the repo has it" and "this device has it", each a set membership test.
  */
-async function syncPhotos(
+async function downloadPhotos(
   active: SyncConfig,
-  branch: string,
   events: readonly PlantEvent[],
 ): Promise<void> {
-  const byId = new Map(events.map((event) => [event.id, event]))
-
-  // Up: everything taken here that the repo has not been told about. A file
-  // that turns out to be there already counts as done — see `putBinaryFile`.
-  for (const photo of await db.unsyncedPhotos()) {
-    const event = byId.get(photo.eventId)
-    if (!event || event.deleted) continue
-
-    await putBinaryFile(active, photoFilePath(event), photo.bytes, COMMIT_MESSAGE, branch)
-    await db.markPhotoSynced(photo.eventId)
-  }
-
-  // Down: entries whose log says there is a picture, where this device has no
-  // bytes for it.
   const held = new Set(await db.photoIds())
   const wanted = events.filter((event) => event.photo && !event.deleted && !held.has(event.id))
 
@@ -435,40 +465,3 @@ async function syncPhotos(
     })
   }
 }
-
-const COMMIT_MESSAGE = 'Sync from Florarithm'
-
-async function pushIfChanged(
-  active: SyncConfig,
-  branch: string,
-  path: string,
-  existing: RemoteFile | null,
-  content: string,
-): Promise<void> {
-  let known = existing
-
-  // Someone else wrote first — take their latest and push again on top of it.
-  // More than one attempt because the "someone else" is usually this very
-  // sync round: the writes of one round are several commits to one branch
-  // within a second, and the Contents API hands back the sha it had a moment
-  // ago for a little while after each. A single retry lost that race often
-  // enough to fail an ordinary edit.
-  for (let attempt = 1; ; attempt++) {
-    if (known && known.content === content) return
-
-    try {
-      await putFile(active, path, content, known?.sha ?? null, COMMIT_MESSAGE, branch)
-      return
-    } catch (error) {
-      if (!(error instanceof GitHubConflictError) || attempt === CONFLICT_ATTEMPTS) throw error
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, CONFLICT_BACKOFF_MS * attempt))
-    known = await getFile(active, path)
-  }
-}
-
-/** Four tries, widening the gap each time, is enough for the stale sha the
- *  Contents API serves right after a write to catch up. */
-const CONFLICT_ATTEMPTS = 4
-const CONFLICT_BACKOFF_MS = 400

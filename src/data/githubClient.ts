@@ -1,12 +1,15 @@
 /**
- * A thin wrapper over the GitHub Contents API — the whole sync transport.
- * Plain `fetch` straight from the browser to `api.github.com` (GitHub's API
- * answers CORS preflights, so no server sits in between) with a fine-grained
- * personal access token scoped to one repo. No SDK: three endpoints is not
+ * A thin wrapper over the GitHub API — the whole sync transport. Plain
+ * `fetch` straight from the browser to `api.github.com` (GitHub's API answers
+ * CORS preflights, so no server sits in between) with a fine-grained personal
+ * access token scoped to one repo. No SDK: a handful of endpoints is not
  * worth a dependency.
+ *
+ * Reading uses the Contents API, which hands back a file's bytes in one
+ * request. Writing does not: see `commitFiles`.
  */
 
-import { base64ToBytes, base64ToUtf8, bytesToBase64, utf8ToBase64 } from './base64'
+import { base64ToBytes, base64ToUtf8, bytesToBase64 } from './base64'
 
 export type GitHubConfig = { owner: string; repo: string; token: string }
 
@@ -162,40 +165,136 @@ export async function getFile(config: GitHubConfig, path: string): Promise<Remot
   return { content: base64ToUtf8(body.content), sha: body.sha }
 }
 
-export async function putFile(
-  config: GitHubConfig,
-  path: string,
-  content: string,
-  sha: string | null,
-  message: string,
-  branch: string,
-): Promise<{ sha: string }> {
-  const response = await call(config, path, {
-    method: 'PUT',
+/**
+ * Every change of one sync round, as a single commit.
+ *
+ * The Contents API was the obvious transport and the wrong one: it commits
+ * per file, so one ordinary round trip — `meta.json`, `plants.json`, a file
+ * per month, a photograph or two — was half a dozen commits racing each
+ * other onto one branch within a second. GitHub answers that race with 409s
+ * even when, as here, there is only ever one device writing. The conflicts
+ * were never between two people; they were this app against itself.
+ *
+ * The Git Data API builds the whole round as one tree and moves the branch
+ * once. Nothing races, because there is only one write. It is also atomic:
+ * a round either lands whole or not at all, so the repo is never left
+ * holding an event whose photograph never arrived.
+ */
+export type FileToCommit = { path: string; text: string } | { path: string; bytes: ArrayBuffer }
+
+type Ref = { object: { sha: string } }
+
+/** The branch head, or `null` for a repository with no commits at all —
+ *  which GitHub reports as a 409 rather than a 404. */
+async function getHead(config: GitHubConfig, branch: string): Promise<string | null> {
+  let response: Response
+  try {
+    response = await request(config, `git/ref/heads/${branch}`)
+  } catch (error) {
+    if (error instanceof GitHubConflictError) return null
+    throw error
+  }
+
+  if (response.status === 404) return null
+  if (!response.ok) throw new GitHubApiError('GET ref failed', response.status)
+
+  const body = (await response.json()) as Ref
+  return body.object.sha
+}
+
+async function post<T>(config: GitHubConfig, path: string, body: unknown): Promise<T> {
+  const response = await request(config, path, {
+    method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      message,
-      content: utf8ToBase64(content),
-      branch,
-      ...(sha ? { sha } : {}),
-    }),
+    body: JSON.stringify(body),
   })
+  if (!response.ok) throw new GitHubApiError(`POST ${path} failed`, response.status)
+  return (await response.json()) as T
+}
 
-  if (!response.ok) throw new GitHubApiError(`PUT ${path} failed`, response.status)
+async function treeOfCommit(config: GitHubConfig, sha: string): Promise<string> {
+  const response = await request(config, `git/commits/${sha}`)
+  if (!response.ok) throw new GitHubApiError('GET commit failed', response.status)
 
-  const body = (await response.json()) as { content: ContentsResponse }
-  return { sha: body.content.sha }
+  const body = (await response.json()) as { tree: { sha: string } }
+  return body.tree.sha
+}
+
+/** How many times to rebuild the commit on top of a head that moved while we
+ *  were building it. With one device this never happens; with two it is the
+ *  one place a conflict can still occur, and it is a re-do, not a failure. */
+const COMMIT_ATTEMPTS = 3
+
+export async function commitFiles(
+  config: GitHubConfig,
+  branch: string,
+  files: readonly FileToCommit[],
+  message: string,
+): Promise<void> {
+  if (files.length === 0) return
+
+  for (let attempt = 1; ; attempt++) {
+    const head = await getHead(config, branch)
+
+    // A photograph has to become a blob of its own: a tree entry can carry
+    // text inline, but not bytes that aren't valid UTF-8.
+    const entries = await Promise.all(
+      files.map(async (file) => {
+        const base = { path: file.path, mode: '100644' as const, type: 'blob' as const }
+        if ('text' in file) return { ...base, content: file.text }
+
+        const blob = await post<{ sha: string }>(config, 'git/blobs', {
+          content: bytesToBase64(file.bytes),
+          encoding: 'base64',
+        })
+        return { ...base, sha: blob.sha }
+      }),
+    )
+
+    const tree = await post<{ sha: string }>(config, 'git/trees', {
+      ...(head ? { base_tree: await treeOfCommit(config, head) } : {}),
+      tree: entries,
+    })
+
+    const commit = await post<{ sha: string }>(config, 'git/commits', {
+      message,
+      tree: tree.sha,
+      parents: head ? [head] : [],
+    })
+
+    // A branch with no commits yet has no ref to move — it has to be created.
+    const response = head
+      ? await request(config, `git/refs/heads/${branch}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sha: commit.sha }),
+        })
+      : await request(config, 'git/refs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ref: `refs/heads/${branch}`, sha: commit.sha }),
+        })
+
+    if (response.ok) return
+
+    // 422 on a ref update is "that would not be a fast-forward" — the head
+    // moved under us. Build the commit again on top of wherever it went.
+    const movedUnderUs = response.status === 422
+    if (!movedUnderUs || attempt === COMMIT_ATTEMPTS) {
+      throw new GitHubApiError('Updating the branch failed', response.status)
+    }
+    await wait(BASE_DELAY_MS * 2 ** attempt)
+  }
 }
 
 /**
- * The same two calls for a file that is not text.
+ * Reading a file that is not text.
  *
- * Separate rather than a flag on the pair above, because the difference is not
- * a flag: `getFile` decodes to a string, and a JPEG put through a UTF-8 decoder
- * comes back corrupted rather than wrong-looking. Both go through the Contents
- * API's ordinary JSON body, which is why photographs are kept under the 1 MB
- * that endpoint will encode — past that GitHub demands the Git Data API and a
- * three-step blob dance.
+ * Separate from `getFile` rather than a flag on it, because the difference is
+ * not a flag: `getFile` decodes to a string, and a JPEG put through a UTF-8
+ * decoder comes back corrupted rather than wrong-looking. This goes through
+ * the Contents API's ordinary JSON body, which is why photographs are kept
+ * under the 1 MB that endpoint will encode.
  */
 export async function getBinaryFile(
   config: GitHubConfig,
@@ -207,43 +306,6 @@ export async function getBinaryFile(
 
   const body = (await response.json()) as ContentsResponse
   return { bytes: base64ToBytes(body.content), sha: body.sha }
-}
-
-export async function putBinaryFile(
-  config: GitHubConfig,
-  path: string,
-  bytes: ArrayBuffer,
-  message: string,
-  branch: string,
-): Promise<void> {
-  const attempt = () =>
-    call(config, path, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message, content: bytesToBase64(bytes), branch }),
-    })
-
-  // No `sha` is ever sent, so this create can never lose real content the way
-  // `putFile` can — a 409 here is the branch ref moving under a plain create,
-  // not two devices fighting over the same bytes. Retrying behind whatever
-  // else just committed is always the right move.
-  let response: Response
-  for (let tries = 1; ; tries++) {
-    try {
-      response = await attempt()
-      break
-    } catch (error) {
-      if (!(error instanceof GitHubConflictError) || tries === MAX_ATTEMPTS) throw error
-      await wait(BASE_DELAY_MS * 2 ** tries)
-    }
-  }
-
-  // A path that already exists comes back 422, which is not a failure here:
-  // the file is immutable and named after the event it belongs to, so
-  // "already there" is the outcome we wanted. Anything else is a real error.
-  if (!response.ok && response.status !== 422) {
-    throw new GitHubApiError(`PUT ${path} failed`, response.status)
-  }
 }
 
 /** `null` for "the directory doesn't exist yet" — the normal shape of a
