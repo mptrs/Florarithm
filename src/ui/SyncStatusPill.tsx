@@ -34,7 +34,15 @@ export function SyncStatusPill({
       >
         <div className="flex items-start gap-2.5">
           <Icon name="alert" size={15} className="mt-0.5 shrink-0 text-ember" />
-          <span className="flex-1 text-[0.8125rem] leading-5 text-ink">{status.message}</span>
+          <div className="flex-1">
+            <span className="text-[0.8125rem] leading-5 text-ink">{status.message}</span>
+            {status.pendingCount > 0 ? (
+              <p className="mt-0.5 text-[0.8125rem] leading-5 text-ink-muted">
+                {status.pendingCount} change{status.pendingCount === 1 ? '' : 's'} still waiting to
+                sync — nothing has been lost.
+              </p>
+            ) : null}
+          </div>
         </div>
         {/* The hover fills rather than tints: this sits on the ember-tinted
             panel itself, and a tint on a tint is a state nobody can see —

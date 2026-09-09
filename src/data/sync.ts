@@ -15,7 +15,12 @@
  * Photographs are the exception, and have to be: re-fetching a hundred JPEGs to
  * find out they have not changed would be absurd. They are immutable and named
  * after the event they belong to, so "do I have this one?" is a local key
- * lookup and a file is never fetched twice. See `syncPhotos`.
+ * lookup and a file is never fetched twice. See `downloadPhotos`.
+ *
+ * A round writes once. Everything it changed — the lists, the month files and
+ * any photographs — goes up as a single commit through the Git Data API, not
+ * a commit per file. That is what stopped this app from generating conflicts
+ * against itself; `commitFiles` in `githubClient.ts` tells that story.
  */
 
 import { useSyncExternalStore } from 'react'
@@ -29,16 +34,15 @@ import { mergeSnapshots } from './merge'
 import {
   GitHubApiError,
   GitHubAuthError,
-  GitHubConflictError,
   GitHubNetworkError,
+  type FileToCommit,
   type GitHubConfig,
   type RemoteFile,
+  commitFiles,
   getBinaryFile,
   getDefaultBranch,
   getFile,
   listDir,
-  putBinaryFile,
-  putFile,
 } from './githubClient'
 import {
   buildEventsFile,
@@ -62,7 +66,10 @@ export type SyncStatus =
   | { kind: 'idle'; lastSyncedAt: string | null; eventCount: number }
   | { kind: 'syncing' }
   | { kind: 'offline-pending'; count: number }
-  | { kind: 'error'; message: string }
+  // The count rides along with the message: "something went wrong" on its own
+  // leaves a person wondering whether the edit they just made still exists
+  // anywhere. It does, it is waiting, and the line should say so.
+  | { kind: 'error'; message: string; pendingCount: number }
 
 const CONFIG_KEY = 'syncConfig'
 const STATE_KEY = 'syncState'
@@ -96,7 +103,7 @@ let cachedStatus: SyncStatus = { kind: 'unconfigured' }
 function computeStatus(): SyncStatus {
   if (!config) return { kind: 'unconfigured' }
   if (phase === 'syncing') return { kind: 'syncing' }
-  if (phase === 'error') return { kind: 'error', message: errorMessage }
+  if (phase === 'error') return { kind: 'error', message: errorMessage, pendingCount }
   if (phase === 'offline' || pendingCount > 0) return { kind: 'offline-pending', count: pendingCount }
 
   const eventCount = getState().events.filter((event) => !event.deleted).length
@@ -175,14 +182,56 @@ function onStoreChange(): void {
   scheduleSync(DEBOUNCE_MS)
 }
 
-function scheduleSync(delayMs: number): void {
+/**
+ * How long to wait before trying again after a round that failed, and how
+ * many times to bother.
+ *
+ * A failed sync that never retries leaves an edit sitting until someone
+ * notices; a failed sync that retries eagerly is a script pointing at
+ * `api.github.com`, and GitHub blocks those. So: four attempts, each gap
+ * several times the last, roughly an hour of cover in total, and then
+ * silence until a person does something. At this spacing a whole day of
+ * failure costs fewer requests than one ordinary afternoon of watering.
+ */
+const RETRY_DELAYS_MS = [60_000, 5 * 60_000, 15 * 60_000, 30 * 60_000]
+
+/** A refused token is not going to un-refuse itself. Retrying that on a
+ *  timer is exactly the traffic GitHub blocks accounts for, so it doesn't
+ *  get one — but an edit shouldn't fire a round trip each either. */
+const AUTH_COOLDOWN_MS = 30 * 60_000
+
+let retryAttempt = 0
+/** Nothing automatic may reach GitHub before this moment. Pressing "Sync
+ *  now" or saving Settings is a person asking, and passes straight through. */
+let cooldownUntil = 0
+
+/** `force` is for the two things a person does deliberately. Everything else
+ *  — an edit, coming back online, a scheduled retry — waits out the cooldown
+ *  a failure left behind. */
+function scheduleSync(delayMs: number, force = false): void {
   if (!config) return
+
+  const waitFor = force ? delayMs : Math.max(delayMs, cooldownUntil - Date.now())
   if (debounceTimer) clearTimeout(debounceTimer)
 
   debounceTimer = setTimeout(() => {
     debounceTimer = null
     void runSync()
-  }, delayMs)
+  }, waitFor)
+}
+
+/** Back off, and say whether it is worth waking up again on our own. */
+function beginCooldown(kind: 'auth' | 'transient'): void {
+  if (kind === 'auth') {
+    cooldownUntil = Date.now() + AUTH_COOLDOWN_MS
+    return
+  }
+
+  const delay = RETRY_DELAYS_MS[Math.min(retryAttempt, RETRY_DELAYS_MS.length - 1)] ?? 30 * 60_000
+  retryAttempt += 1
+  cooldownUntil = Date.now() + delay
+
+  if (retryAttempt <= RETRY_DELAYS_MS.length) scheduleSync(delay)
 }
 
 /** Save the repository and token, then try a sync right away. */
@@ -191,13 +240,19 @@ export async function configureSync(next: SyncConfig): Promise<void> {
   await db.writeMeta(CONFIG_KEY, next)
   phase = 'idle'
   errorMessage = ''
+  retryAttempt = 0
+  cooldownUntil = 0
   emit()
-  scheduleSync(0)
+  scheduleSync(0, true)
 }
 
 /** The "Sync now" button. Coalesces with anything already running or queued. */
 export function syncNow(): void {
-  scheduleSync(0)
+  // A person pressing the button is allowed to skip the queue, and they
+  // deserve the full run of automatic retries again if this one fails too.
+  retryAttempt = 0
+  cooldownUntil = 0
+  scheduleSync(0, true)
 }
 
 function runSync(): Promise<void> {
@@ -230,14 +285,20 @@ async function performSync(): Promise<void> {
     lastSyncedAt = nowISO()
     pendingCount = 0
     errorMessage = ''
+    retryAttempt = 0
+    cooldownUntil = 0
   } catch (error) {
     if (error instanceof GitHubAuthError) {
       phase = 'error'
       errorMessage = 'Your access token expired. Sync is paused.'
+      beginCooldown('auth')
     } else if (error instanceof GitHubNetworkError) {
       // Actually offline, or GitHub is unreachable — nobody's fault, sync
-      // will simply try again once a connection comes back.
+      // will simply try again once a connection comes back. The `online`
+      // event is the real signal; the backoff is only there for the case
+      // where the browser thinks it is online and GitHub disagrees.
       phase = 'offline'
+      beginCooldown('transient')
     } else {
       // A 404/403 GitHub actually returned, a conflict that didn't resolve
       // after a retry, a remote file that doesn't parse: these are real
@@ -251,6 +312,7 @@ async function performSync(): Promise<void> {
           : error instanceof Error
             ? `Sync failed: ${error.message}`
             : 'Sync failed for an unknown reason.'
+      beginCooldown('transient')
     }
   }
 
@@ -307,23 +369,65 @@ async function syncOnce(active: SyncConfig): Promise<void> {
     }
   }
 
-  await pushIfChanged(active, branch, 'meta.json', remoteMetaFile, buildMetaFile(merged.vocab))
-  await pushIfChanged(active, branch, 'plants.json', remotePlantsFile, buildPlantsFile(merged.plants))
+  // Everything this round changes, gathered before anything is written. One
+  // commit lands the lot — see `commitFiles` for why that is the whole point.
+  const writes: FileToCommit[] = []
+
+  addIfChanged(writes, 'meta.json', remoteMetaFile, buildMetaFile(merged.vocab))
+  addIfChanged(writes, 'plants.json', remotePlantsFile, buildPlantsFile(merged.plants))
 
   const mergedMonths = groupEventsByMonth(merged.events)
   for (const [key, events] of mergedMonths) {
-    await pushIfChanged(
-      active,
-      branch,
-      monthFilePath(key),
-      remoteMonthFiles.get(key) ?? null,
-      buildEventsFile(events),
-    )
+    const path = monthFilePath(key)
+    addIfChanged(writes, path, remoteMonthFiles.get(key) ?? null, buildEventsFile(events))
   }
 
-  // Last, and only once the log that describes them has landed: a photograph
-  // in the repo that no event points at is litter nobody would ever find.
-  await syncPhotos(active, branch, merged.events)
+  // Photographs ride in the same commit as the log that describes them, so a
+  // picture is never in the repo without its entry, or the other way round.
+  const uploaded = await photosToUpload(merged.events)
+  for (const photo of uploaded) writes.push({ path: photo.path, bytes: photo.bytes })
+
+  await commitFiles(active, branch, writes, COMMIT_MESSAGE)
+
+  // Only once the commit has actually landed: a photograph marked synced that
+  // never made it up would never be offered again.
+  for (const photo of uploaded) await db.markPhotoSynced(photo.eventId)
+
+  await downloadPhotos(active, merged.events)
+}
+
+function addIfChanged(
+  writes: FileToCommit[],
+  path: string,
+  existing: RemoteFile | null,
+  content: string,
+): void {
+  if (existing?.content === content) return
+  writes.push({ path, text: content })
+}
+
+const COMMIT_MESSAGE = 'Sync from Florarithm'
+
+/** How many photographs one round trip will push up. The same reasoning as
+ *  `DOWNLOAD_BUDGET`, and it also keeps a single commit a sane size. */
+const UPLOAD_BUDGET = 25
+
+/** Everything photographed here that the repo has not been told about. */
+async function photosToUpload(
+  events: readonly PlantEvent[],
+): Promise<{ eventId: string; path: string; bytes: ArrayBuffer }[]> {
+  const byId = new Map(events.map((event) => [event.id, event]))
+  const ready = []
+
+  for (const photo of await db.unsyncedPhotos()) {
+    const event = byId.get(photo.eventId)
+    if (!event || event.deleted) continue
+
+    ready.push({ eventId: photo.eventId, path: photoFilePath(event), bytes: photo.bytes })
+    if (ready.length === UPLOAD_BUDGET) break
+  }
+
+  return ready
 }
 
 /** How many photographs one round trip will pull down. A device joining a
@@ -333,32 +437,16 @@ async function syncOnce(active: SyncConfig): Promise<void> {
 const DOWNLOAD_BUDGET = 25
 
 /**
- * Move the bytes.
+ * Pull down the pictures this device does not have.
  *
- * Both directions lean on the same property: a photograph never changes. Its
- * path is derived from the event's id and date, so there is nothing to list,
- * nothing to compare and no sha to track — only "the repo has it" and "this
- * device has it", each of which is a set membership test.
+ * A photograph never changes. Its path is derived from the event's id and
+ * date, so there is nothing to list, nothing to compare and no sha to track —
+ * only "the repo has it" and "this device has it", each a set membership test.
  */
-async function syncPhotos(
+async function downloadPhotos(
   active: SyncConfig,
-  branch: string,
   events: readonly PlantEvent[],
 ): Promise<void> {
-  const byId = new Map(events.map((event) => [event.id, event]))
-
-  // Up: everything taken here that the repo has not been told about. A file
-  // that turns out to be there already counts as done — see `putBinaryFile`.
-  for (const photo of await db.unsyncedPhotos()) {
-    const event = byId.get(photo.eventId)
-    if (!event || event.deleted) continue
-
-    await putBinaryFile(active, photoFilePath(event), photo.bytes, COMMIT_MESSAGE, branch)
-    await db.markPhotoSynced(photo.eventId)
-  }
-
-  // Down: entries whose log says there is a picture, where this device has no
-  // bytes for it.
   const held = new Set(await db.photoIds())
   const wanted = events.filter((event) => event.photo && !event.deleted && !held.has(event.id))
 
@@ -375,31 +463,5 @@ async function syncPhotos(
       width: event.photo?.width ?? 0,
       height: event.photo?.height ?? 0,
     })
-  }
-}
-
-const COMMIT_MESSAGE = 'Sync from Florarithm'
-
-async function pushIfChanged(
-  active: SyncConfig,
-  branch: string,
-  path: string,
-  existing: RemoteFile | null,
-  content: string,
-): Promise<void> {
-  if (existing && existing.content === content) return
-
-  try {
-    await putFile(active, path, content, existing?.sha ?? null, COMMIT_MESSAGE, branch)
-  } catch (error) {
-    if (!(error instanceof GitHubConflictError)) throw error
-
-    // Someone else wrote first — take their latest and push again on top of
-    // it. One retry only; a second conflict means this sync round is out of
-    // luck and will simply try again next time.
-    const fresh = await getFile(active, path)
-    if (fresh?.content !== content) {
-      await putFile(active, path, content, fresh?.sha ?? null, COMMIT_MESSAGE, branch)
-    }
   }
 }

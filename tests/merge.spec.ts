@@ -8,11 +8,10 @@ import { expect, test } from '@playwright/test'
 import { base64ToUtf8, utf8ToBase64 } from '../src/data/base64'
 import {
   GitHubAuthError,
-  GitHubConflictError,
   getDefaultBranch,
   getFile,
   listDir,
-  putFile,
+  commitFiles,
 } from '../src/data/githubClient'
 import { mergeEvents, mergePlants, mergeSnapshots, mergeVocab } from '../src/data/merge'
 import {
@@ -270,22 +269,114 @@ test.describe('the GitHub Contents API client', () => {
     await expect(getFile(config, 'plants.json')).rejects.toThrow('Could not reach GitHub.')
   })
 
-  test('a 409 on a write is a conflict, so the caller can re-fetch and retry', async () => {
-    global.fetch = (async () => new Response(null, { status: 409 })) as typeof fetch
-    await expect(
-      putFile(config, 'plants.json', '[]', 'sha1', 'sync', 'main'),
-    ).rejects.toBeInstanceOf(GitHubConflictError)
-  })
-
-  test('a write always names an explicit branch, so it can create the very first commit on a repo with none yet', async () => {
-    let body: unknown
-    global.fetch = (async (_url, init) => {
-      body = JSON.parse(init?.body as string)
-      return new Response(JSON.stringify({ content: { sha: 'new-sha' } }), { status: 201 })
+  test('a 5xx is waited out rather than surfaced — the same request a moment later works', async () => {
+    let calls = 0
+    global.fetch = (async () => {
+      calls += 1
+      return calls < 3
+        ? new Response(null, { status: 502 })
+        : new Response(JSON.stringify({ content: utf8ToBase64('[]'), sha: 'new-sha' }), {
+            status: 200,
+          })
     }) as typeof fetch
 
-    await putFile(config, 'plants.json', '[]', null, 'sync', 'main')
-    expect((body as { branch: string }).branch).toBe('main')
+    expect(await getFile(config, 'plants.json')).toEqual({ content: '[]', sha: 'new-sha' })
+    expect(calls).toBe(3)
+  })
+
+  test('a secondary rate limit is a wait, not a revoked token', async () => {
+    let calls = 0
+    global.fetch = (async () => {
+      calls += 1
+      return calls < 2
+        ? new Response('{"message":"You have exceeded a secondary rate limit"}', {
+            status: 403,
+            headers: { 'x-ratelimit-remaining': '4900' },
+          })
+        : new Response(JSON.stringify({ content: utf8ToBase64('[]'), sha: 'abc123' }), {
+            status: 200,
+          })
+    }) as typeof fetch
+
+    expect(await getFile(config, 'plants.json')).toEqual({ content: '[]', sha: 'abc123' })
+  })
+
+  test('a whole round goes up as one commit, not one commit per file', async () => {
+    const posted: string[] = []
+    global.fetch = (async (url, init) => {
+      const path = new URL(String(url)).pathname
+      posted.push(`${init?.method ?? 'GET'} ${path}`)
+
+      if (path.endsWith('/git/ref/heads/main')) {
+        return new Response(JSON.stringify({ object: { sha: 'head' } }), { status: 200 })
+      }
+      if (path.endsWith('/git/commits/head')) {
+        return new Response(JSON.stringify({ tree: { sha: 'base-tree' } }), { status: 200 })
+      }
+      return new Response(JSON.stringify({ sha: 'new' }), { status: 201 })
+    }) as typeof fetch
+
+    await commitFiles(
+      config,
+      'main',
+      [
+        { path: 'meta.json', text: '{}' },
+        { path: 'plants.json', text: '[]' },
+        { path: 'events/2026-09.json', text: '[]' },
+      ],
+      'sync',
+    )
+
+    // Three files, one commit and one move of the branch — the writes that
+    // used to race each other are now a single tree.
+    expect(posted.filter((entry) => entry.includes('/git/commits') && entry.startsWith('POST'))).toHaveLength(1)
+    expect(posted.filter((entry) => entry.startsWith('PATCH'))).toHaveLength(1)
+  })
+
+  test('an empty repository is given its first commit, ref and all', async () => {
+    const posted: string[] = []
+    global.fetch = (async (url, init) => {
+      const path = new URL(String(url)).pathname
+      const method = init?.method ?? 'GET'
+      posted.push(`${method} ${path}`)
+
+      // GitHub reports a repository with no commits as a 409, not a 404.
+      if (path.endsWith('/git/ref/heads/main')) return new Response(null, { status: 409 })
+      return new Response(JSON.stringify({ sha: 'new' }), { status: 201 })
+    }) as typeof fetch
+
+    await commitFiles(config, 'main', [{ path: 'meta.json', text: '{}' }], 'sync')
+
+    // No base tree to build on, no parent to hang off, and the ref has to be
+    // created rather than moved.
+    expect(posted).toContain('POST /repos/mptrs/florarithm-data/git/refs')
+    expect(posted.some((entry) => entry.startsWith('PATCH'))).toBe(false)
+  })
+
+  test('a photograph becomes a blob, so its bytes survive the trip', async () => {
+    let blobBody: { encoding: string } | undefined
+    global.fetch = (async (url, init) => {
+      const path = new URL(String(url)).pathname
+      if (path.endsWith('/git/ref/heads/main')) {
+        return new Response(JSON.stringify({ object: { sha: 'head' } }), { status: 200 })
+      }
+      if (path.endsWith('/git/commits/head')) {
+        return new Response(JSON.stringify({ tree: { sha: 'base-tree' } }), { status: 200 })
+      }
+      if (path.endsWith('/git/blobs')) {
+        blobBody = JSON.parse(init?.body as string) as { encoding: string }
+      }
+      return new Response(JSON.stringify({ sha: 'new' }), { status: 201 })
+    }) as typeof fetch
+
+    await commitFiles(
+      config,
+      'main',
+      [{ path: 'photos/2026-09/a.jpg', bytes: new Uint8Array([0xff, 0xd8, 0xff]).buffer }],
+      'sync',
+    )
+
+    expect(blobBody?.encoding).toBe('base64')
   })
 
   test('a successful get decodes the base64 body and hands back its sha', async () => {
