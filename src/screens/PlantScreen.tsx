@@ -960,12 +960,17 @@ function KinRow({ plant, note, own = false }: { plant: Plant; note: string; own?
   )
 }
 
-/** Off the same parent, not on your line down: present, and quiet about it. */
+/**
+ * Off the same parent, not on your line down: present, and quiet about it.
+ *
+ * Quiet is the type and the colour, never the reach — it is a link to another
+ * plant like every other row here, so it keeps the 44px floor.
+ */
 function SiblingRow({ plant }: { plant: Plant }) {
   return (
     <a
       href={routes.plant(plant.code)}
-      className="warm relative flex min-h-[2.5rem] items-center gap-2 py-1.5 hover:opacity-80"
+      className="warm relative flex min-h-touch items-center gap-2 py-1.5 hover:opacity-80"
     >
       <Bead kind="sibling" />
       <span className="min-w-0 truncate font-display text-[1rem] leading-[1.375rem] text-ink-muted">

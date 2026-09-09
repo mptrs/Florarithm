@@ -14,7 +14,14 @@ import { migrateEvent, migrateVocab } from '../src/data/migrate'
 import { daysBetween, inputValueToISO, isoToInputValue } from '../src/lib/date'
 import { toRoman, fromRoman } from '../src/lib/format'
 import { parseRoute } from '../src/lib/router'
-import { currentPhotoEvent } from '../src/data/selectors'
+import {
+  ancestorsOf,
+  childrenOf,
+  currentPhotoEvent,
+  descendantCodes,
+  descendantsOf,
+  lineageOf,
+} from '../src/data/selectors'
 import type { State } from '../src/data/store'
 import type { Plant, PlantEvent } from '../src/data/types'
 
@@ -296,5 +303,121 @@ test.describe("the plant's picture", () => {
   test('is nothing at all when no entry carries a photograph', () => {
     const state = stateOf(plant({ photoEventId: 'gone' }), [])
     expect(currentPhotoEvent(state, 'MON-0001')).toBeNull()
+  })
+})
+
+test.describe('the family', () => {
+  /**
+   * Ophelia — Marla — { Juno, Nova, Wilma }, and under Nova, Pim and Terra.
+   * Four generations, a fork in the middle, and everything named once.
+   */
+  const kin = (code: string, parent: string | null, extra: Partial<Plant> = {}): Plant =>
+    ({
+      code,
+      name: code,
+      genus: 'Monstera',
+      species: '',
+      cultivar: '',
+      variegation: '',
+      locationId: null,
+      system: 'soil',
+      potSize: null,
+      mediumId: null,
+      origin: { type: null, from: '', date: null, price: null },
+      parent: parent ? { code: parent, method: 'cutting' } : null,
+      status: 'active',
+      wish: false,
+      wishNote: '',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      ...extra,
+    }) as Plant
+
+  const stateOf = (plants: Plant[]): State => ({
+    status: 'ready',
+    plants,
+    events: [],
+    vocab: [],
+    lastBackupAt: null,
+  })
+
+  const family = stateOf([
+    kin('OPH', null),
+    kin('MAR', 'OPH'),
+    kin('JUN', 'MAR', { createdAt: '2026-02-01T00:00:00.000Z' }),
+    kin('NOV', 'MAR', { createdAt: '2026-03-01T00:00:00.000Z' }),
+    kin('WIL', 'MAR', { createdAt: '2026-04-01T00:00:00.000Z' }),
+    kin('PIM', 'NOV'),
+    kin('TER', 'NOV'),
+  ])
+
+  test('the line above a plant reads oldest first', () => {
+    expect(ancestorsOf(family, 'PIM').map((plant) => plant.code)).toEqual(['OPH', 'MAR', 'NOV'])
+    expect(ancestorsOf(family, 'OPH')).toEqual([])
+  })
+
+  test('the line stops at a tombstone rather than walking through it', () => {
+    const buried = stateOf([
+      kin('OPH', null),
+      kin('MAR', 'OPH', { deleted: true }),
+      kin('NOV', 'MAR'),
+    ])
+    expect(ancestorsOf(buried, 'NOV')).toEqual([])
+  })
+
+  test('a plant that died is still where the cutting came from', () => {
+    const gone = stateOf([kin('OPH', null, { status: 'died' }), kin('MAR', 'OPH')])
+    expect(ancestorsOf(gone, 'MAR').map((plant) => plant.code)).toEqual(['OPH'])
+  })
+
+  test('the tree below a plant keeps its shape', () => {
+    const below = descendantsOf(family, 'MAR')
+    expect(below.map((node) => node.plant.code)).toEqual(['JUN', 'NOV', 'WIL'])
+    expect(below[1]?.children.map((node) => node.plant.code)).toEqual(['PIM', 'TER'])
+    expect(descendantsOf(family, 'PIM')).toEqual([])
+  })
+
+  test('cuttings read in the order they were taken', () => {
+    expect(childrenOf(family, 'MAR').map((plant) => plant.code)).toEqual(['JUN', 'NOV', 'WIL'])
+  })
+
+  test('everything below a plant, flat, is what it may not descend from', () => {
+    expect([...descendantCodes(family, 'MAR')].sort()).toEqual(['JUN', 'NOV', 'PIM', 'TER', 'WIL'])
+    expect(descendantCodes(family, 'PIM').size).toBe(0)
+  })
+
+  test('the counts are the whole line, not the distance from the top', () => {
+    for (const code of ['OPH', 'NOV', 'PIM']) {
+      expect(lineageOf(family, code).generations).toBe(4)
+    }
+    expect(lineageOf(family, 'NOV').plants).toBe(5)
+  })
+
+  /**
+   * Nothing in the record stops two plants naming each other, and nothing on
+   * the page survives a walk that never ends. Both directions have to stop.
+   */
+  test('a loop stops rather than hanging the page', () => {
+    const loop = stateOf([kin('AAA', 'BBB'), kin('BBB', 'AAA')])
+
+    expect(ancestorsOf(loop, 'AAA').map((plant) => plant.code)).toEqual(['BBB'])
+    expect(descendantsOf(loop, 'AAA').map((node) => node.plant.code)).toEqual(['BBB'])
+    expect(descendantsOf(loop, 'AAA')[0]?.children).toEqual([])
+    expect(descendantCodes(loop, 'AAA').has('BBB')).toBe(true)
+
+    // Drawn, it is one plant in one place: whatever is already above you is
+    // not also listed below you, so the rail never names the same plant twice.
+    const drawn = lineageOf(loop, 'AAA')
+    expect(drawn.descendants).toEqual([])
+    expect(drawn.plants).toBe(2)
+    expect(drawn.generations).toBe(2)
+  })
+
+  test('a plant that names itself is not its own parent', () => {
+    const self = stateOf([kin('AAA', 'AAA')])
+
+    expect(ancestorsOf(self, 'AAA')).toEqual([])
+    expect(descendantsOf(self, 'AAA')).toEqual([])
+    expect(descendantCodes(self, 'AAA').size).toBe(0)
   })
 })

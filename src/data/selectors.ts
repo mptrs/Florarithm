@@ -223,8 +223,11 @@ export function ancestorsOf(state: State, code: string): Plant[] {
 /** One plant and everything propagated off it, as deep as it goes. */
 export type Descendant = { plant: Plant; children: Descendant[] }
 
-export function descendantsOf(state: State, code: string): Descendant[] {
-  const seen = new Set<string>([code])
+export function descendantsOf(state: State, code: string, above: Iterable<string> = []): Descendant[] {
+  // `above` is the line already drawn over this plant. Only a broken record
+  // puts a plant in both places — two plants naming each other as parent — and
+  // then the honest answer is the one nearer the top, drawn once.
+  const seen = new Set<string>([code, ...above])
 
   const walk = (parentCode: string): Descendant[] => {
     const branch: Descendant[] = []
@@ -242,7 +245,11 @@ export function descendantsOf(state: State, code: string): Descendant[] {
 /** Every code below this one, flat. What a plant may not be propagated from:
  *  pick your own cutting as your parent and the line eats itself. */
 export function descendantCodes(state: State, code: string): Set<string> {
-  const codes = new Set<string>()
+  // Seeded with the plant itself, then taken back out at the end: it is what
+  // stops a record that names itself — or a pair that name each other — from
+  // coming back as its own descendant, which is the one answer that is never
+  // true however broken the record is.
+  const codes = new Set<string>([code])
   const queue = [code]
 
   while (queue.length > 0) {
@@ -253,6 +260,7 @@ export function descendantCodes(state: State, code: string): Set<string> {
     }
   }
 
+  codes.delete(code)
   return codes
 }
 
@@ -266,7 +274,11 @@ export function descendantCodes(state: State, code: string): Set<string> {
  */
 export function lineageOf(state: State, code: string) {
   const ancestors = ancestorsOf(state, code)
-  const descendants = descendantsOf(state, code)
+  const descendants = descendantsOf(
+    state,
+    code,
+    ancestors.map((plant) => plant.code),
+  )
 
   const depth = (branch: Descendant[]): number =>
     branch.reduce((deepest, node) => Math.max(deepest, 1 + depth(node.children)), 0)
