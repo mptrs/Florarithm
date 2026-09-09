@@ -119,6 +119,7 @@ const REMOTE_PLANT = {
   genus: 'Monstera',
   species: 'deliciosa',
   cultivar: '',
+  variegation: '',
   locationId: null,
   system: 'soil',
   potSize: 15,

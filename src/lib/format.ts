@@ -14,21 +14,27 @@ export function formatPotSize(cm: number | null): string {
   return cm === null ? '—' : `${cm} cm`
 }
 
-/** `Monstera deliciosa 'Thai Constellation'` from the three separate fields —
- *  the one place that puts them back together, so genus, species and cultivar
- *  never get joined two different ways in two different screens. */
+/** `Alocasia reginula 'Ninja' albo` from the four separate fields — the one
+ *  place that puts them back together, so they never get joined two different
+ *  ways in two different screens.
+ *
+ *  The variegation is the only part that stays unquoted, and it trails the
+ *  cultivar even when there is no cultivar to trail: `Monstera deliciosa albo`
+ *  is how that plant is written and sold. */
 export function formatSpecies({
   genus,
   species,
   cultivar,
+  variegation = '',
 }: {
   genus: string
   species: string
   cultivar: string
+  variegation?: string
 }): string {
   const binomial = [genus, species].filter(Boolean).join(' ')
-  if (!cultivar) return binomial
-  return binomial ? `${binomial} '${cultivar}'` : `'${cultivar}'`
+  const named = cultivar ? (binomial ? `${binomial} '${cultivar}'` : `'${cultivar}'`) : binomial
+  return [named, variegation].filter(Boolean).join(' ')
 }
 
 /** `I`, `II`, `III` … Used by the name generator so a cutting reads as the next

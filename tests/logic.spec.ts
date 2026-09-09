@@ -237,6 +237,7 @@ test.describe("the plant's picture", () => {
     genus: 'Monstera',
     species: '',
     cultivar: '',
+    variegation: '',
     locationId: null,
     system: 'soil',
     potSize: null,
