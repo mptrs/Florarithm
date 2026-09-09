@@ -64,10 +64,28 @@ function json(body: unknown) {
  * endpoints one commit touches — and counts the commits, which is the thing
  * worth asserting: a round trip is meant to make exactly one.
  */
-function interceptGitHub(page: Page, contents: Record<string, string> = {}) {
-  const state = { written: new Map<string, string>(), requested: [] as string[], commits: 0 }
+function interceptGitHub(
+  page: Page,
+  contents: Record<string, string> = {},
+  options: { lagRef?: boolean } = {},
+) {
+  // `commits` counts commit objects created, which a refused round still
+  // makes; `pushes` counts the branch actually moving, which is the only
+  // thing that means the round landed.
+  const state = {
+    written: new Map<string, string>(),
+    requested: [] as string[],
+    commits: 0,
+    pushes: 0,
+  }
   const blobs = new Map<string, string>()
+  const parents = new Map<string, string | null>()
   let head: string | null = null
+  // What a lagging replica would still be showing: the head as it was before
+  // the most recent push. `lagRef` serves that once per push, the way GitHub
+  // does for a second or two after a branch moves.
+  let staleHead: string | null = null
+  let refReadsSincePush = 0
 
   const route = async (r: Route) => {
     const request = r.request()
@@ -78,9 +96,14 @@ function interceptGitHub(page: Page, contents: Record<string, string> = {}) {
     if (path === '') {
       await r.fulfill(json({ default_branch: 'main' }))
     } else if (path === '/git/ref/heads/main') {
+      // Long enough to outlast the rebuild attempts: a lag of one read is
+      // something the retries already absorb, and is not the failure.
+      const lagging = options.lagRef && refReadsSincePush < 3
+      refReadsSincePush += 1
+      const reported = lagging ? staleHead : head
       // A repository with no commits answers 409, not 404.
-      if (!head) await r.fulfill({ status: 409, body: '{}' })
-      else await r.fulfill(json({ object: { sha: head } }))
+      if (!reported) await r.fulfill({ status: 409, body: '{}' })
+      else await r.fulfill(json({ object: { sha: reported } }))
     } else if (path.startsWith('/git/commits/') && method === 'GET') {
       await r.fulfill(json({ tree: { sha: 'base-tree' } }))
     } else if (path === '/git/blobs') {
@@ -95,15 +118,32 @@ function interceptGitHub(page: Page, contents: Record<string, string> = {}) {
       await r.fulfill(json({ sha: 'tree' }))
     } else if (path === '/git/commits') {
       state.commits += 1
-      await r.fulfill(json({ sha: `commit-${state.commits}` }))
+      const sha = `commit-${state.commits}`
+      parents.set(sha, ((body() as { parents: string[] }).parents ?? [])[0] ?? null)
+      await r.fulfill(json({ sha }))
     } else if (path === '/git/refs' || path === '/git/refs/heads/main') {
-      head = `commit-${state.commits}`
+      const sha = (body() as { sha?: string }).sha ?? `commit-${state.commits}`
+      // Git refuses a branch update that is not a fast forward, and so does
+      // GitHub — with a 422 and a sentence saying so.
+      if (parents.get(sha) !== head) {
+        await r.fulfill({ status: 422, body: JSON.stringify({ message: 'Update is not a fast forward' }) })
+        return
+      }
+      staleHead = head
+      head = sha
+      state.pushes += 1
+      refReadsSincePush = 0
       await r.fulfill(json({ ref: 'refs/heads/main' }))
     } else if (path.startsWith('/contents/')) {
       const file = path.replace('/contents/', '')
       state.requested.push(file)
       const held = contents[file]
-      if (held === undefined) await r.fulfill({ status: 404, body: '{}' })
+      // A repository with no commits in it answers every Contents request
+      // with 409 "This repository is empty", not 404 — the same status a
+      // write conflict uses.
+      if (!head && Object.keys(contents).length === 0) {
+        await r.fulfill({ status: 409, body: JSON.stringify({ message: 'This repository is empty.' }) })
+      } else if (held === undefined) await r.fulfill({ status: 404, body: '{}' })
       else await r.fulfill({ status: 200, contentType: 'application/json', body: held })
     } else {
       await r.fulfill({ status: 404, body: '{}' })
@@ -285,4 +325,32 @@ test('a photograph the other device took is pulled down and shown', async ({ pag
 
   await page.goto(`#p=${REMOTE_PLANT.code}`)
   await expect(page.getByRole('img', { name: /Gruyère, photographed/ })).toBeVisible()
+})
+
+test('a branch this device just moved syncs again even while GitHub still reports the old head', async ({
+  page,
+}) => {
+  // Ref reads are not read-your-writes: for a second or two after a push,
+  // GitHub can still hand back the previous head. Sync then builds its next
+  // commit on a parent that is one behind, and the update is refused as "not
+  // a fast forward" — a 422 on an ordinary second edit, on a collection only
+  // one device is writing to.
+  const { state, install } = interceptGitHub(page, {}, { lagRef: true })
+  await install()
+
+  await configureSync(page)
+  await expect(page.getByText(/^Synced /)).toBeVisible()
+
+  await page.goto('#new')
+  await page.getByLabel('Genus').fill('Monstera')
+  await page.getByLabel('Name', { exact: true }).fill('Gruyère')
+  await page.getByRole('button', { name: 'Add to the collection' }).click()
+  await expect(page.getByRole('heading', { name: 'Gruyère' })).toBeVisible()
+
+  await page.goto('#settings')
+  await page.getByRole('button', { name: 'Sync now' }).click()
+
+  await expect.poll(() => state.pushes, { timeout: 15000 }).toBe(2)
+  await expect(page.getByText(/refused the request/)).toHaveCount(0)
+  expect(state.written.get('plants.json')).toContain('Gruyère')
 })
