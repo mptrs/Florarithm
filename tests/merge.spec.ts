@@ -40,6 +40,7 @@ function plant(code: string, updatedAt: string, extra: Partial<Plant> = {}): Pla
     name: code,
     genus: '',
     species: '',
+    cross: '',
     cultivar: '',
     variegation: '',
     locationId: null,

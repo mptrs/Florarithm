@@ -308,7 +308,7 @@ async function performSync(): Promise<void> {
       phase = 'error'
       errorMessage =
         error instanceof GitHubApiError
-          ? `GitHub rejected the request (${error.status}). Check the repository name and the token's Contents permission.`
+          ? apiErrorMessage(error)
           : error instanceof Error
             ? `Sync failed: ${error.message}`
             : 'Sync failed for an unknown reason.'
@@ -318,6 +318,18 @@ async function performSync(): Promise<void> {
 
   await persist()
   emit()
+}
+
+/** A status code on its own tells a person nothing they can act on, and the
+ *  advice that used to be attached to every one of them — check the repository
+ *  name, check the token — was only ever true of a 404. Where GitHub explained
+ *  itself, say what it said. */
+function apiErrorMessage(error: GitHubApiError): string {
+  if (error.status === 404) {
+    return 'GitHub could not find that repository. Check the name and the token\u2019s Contents permission.'
+  }
+  if (error.detail) return `GitHub refused the request (${error.status}): ${error.detail}`
+  return `GitHub refused the request (${error.status}).`
 }
 
 async function syncOnce(active: SyncConfig): Promise<void> {

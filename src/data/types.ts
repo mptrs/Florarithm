@@ -77,7 +77,27 @@ export type Plant = {
   /** The specific epithet alone, e.g. `deliciosa`. Often blank: not every
    *  plant on a windowsill has been identified past its genus. */
   species: string
-  /** No quotes — those are added wherever this is displayed. */
+  /**
+   * The parentage of a hybrid, written the way the label writes it:
+   * `papillilaminum × crystallinum`. Takes the place of `species`, never sits
+   * beside it — a plant is a species or it is a cross, and the form enforces
+   * that by greying out whichever one you did not start typing in.
+   *
+   * Its own field rather than a value in `species` because it is not an
+   * epithet, and rather than a value in `cultivar` because quoting it would
+   * claim a bred, named variety that nobody registered. Most collector
+   * Anthuriums are exactly this: a cross with no cultivar at all.
+   *
+   * One string and not a seed/pollen pair. Parentage in a collection is often
+   * a chain — `(papillilaminum × crystallinum) × papillilaminum` — or half
+   * known, and two boxes would only mean the whole thing gets typed into the
+   * first one anyway. The `×` is the real multiplication sign; a lone `x` is
+   * turned into one as you type, so the collection does not end up spelled two
+   * ways. See `normalizeCross`.
+   */
+  cross: string
+  /** No quotes — those are added wherever this is displayed. A cultivar on a
+   *  cross is a selection out of that cross, and is displayed as one. */
   cultivar: string
   /**
    * `albo`, `aurea`, `tricolor`. The bit that comes after the cultivar on the

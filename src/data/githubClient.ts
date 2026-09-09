@@ -33,8 +33,24 @@ export class GitHubApiError extends Error {
   constructor(
     message: string,
     readonly status: number,
+    /** What GitHub itself said, when it said anything. A bare status is not
+     *  enough to act on: a 422 from the Git Data API is "Reference already
+     *  exists" or "not a fast forward" or "tree entry is invalid", and those
+     *  are three different problems wearing one number. */
+    readonly detail?: string,
   ) {
-    super(message)
+    super(detail ? `${message}: ${detail}` : message)
+  }
+}
+
+/** GitHub answers every error with `{ "message": ... }`. Read it if it is
+ *  there, and never let reading it be the thing that fails. */
+async function detailOf(response: Response): Promise<string | undefined> {
+  try {
+    const body = (await response.clone().json()) as { message?: unknown }
+    return typeof body.message === 'string' ? body.message : undefined
+  } catch {
+    return undefined
   }
 }
 
@@ -119,7 +135,11 @@ async function request(config: GitHubConfig, path: string, init?: Call): Promise
         await wait(backoffMs(response, attempt))
         continue
       }
-      throw new GitHubApiError(`${init?.method ?? 'GET'} ${path} kept failing`, response.status)
+      throw new GitHubApiError(
+        `${init?.method ?? 'GET'} ${path} kept failing`,
+        response.status,
+        await detailOf(response),
+      )
     }
 
     if (response.status === 401 || response.status === 403) {
@@ -133,8 +153,23 @@ async function request(config: GitHubConfig, path: string, init?: Call): Promise
   }
 }
 
+/**
+ * A read through the Contents API.
+ *
+ * A repository with no commits in it answers *every* Contents request with
+ * 409 "This repository is empty" rather than 404 — the same status a write
+ * conflict uses. Reading a file cannot conflict with anything, so a 409 here
+ * only ever means the repo has nothing in it yet, which is precisely the
+ * "not there" the callers already handle. Left alone, the very first sync
+ * into a fresh repo died with "someone else wrote to this file first."
+ */
 async function call(config: GitHubConfig, path: string, init?: Call): Promise<Response> {
-  return request(config, `contents/${path}`, init)
+  try {
+    return await request(config, `contents/${path}`, init)
+  } catch (error) {
+    if (error instanceof GitHubConflictError) return new Response(null, { status: 404 })
+    throw error
+  }
 }
 
 /**
@@ -147,7 +182,9 @@ async function call(config: GitHubConfig, path: string, init?: Call): Promise<Re
  */
 export async function getDefaultBranch(config: GitHubConfig): Promise<string> {
   const response = await request(config, '')
-  if (!response.ok) throw new GitHubApiError('GET repo failed', response.status)
+  if (!response.ok) {
+    throw new GitHubApiError('GET repo failed', response.status, await detailOf(response))
+  }
 
   const body = (await response.json()) as { default_branch: string }
   return body.default_branch
@@ -184,9 +221,42 @@ export type FileToCommit = { path: string; text: string } | { path: string; byte
 
 type Ref = { object: { sha: string } }
 
+/**
+ * What this device last put on the end of the branch: the commit it made, and
+ * the head it made that commit on top of.
+ *
+ * Reading a ref back is not read-your-writes. GitHub serves ref reads from
+ * replicas, and for a second or two after a push one of them can still hand
+ * back the *previous* head. Sync then builds its next commit on a parent that
+ * is already a commit behind, and the branch update is refused as "not a fast
+ * forward" — a 422 on an ordinary edit, on a collection only one device is
+ * writing to. Waiting and re-reading does not help, because every re-read can
+ * come from the same lagging replica.
+ *
+ * So the fix is not to wait: it is to notice. If the ref read hands back the
+ * exact commit we built on last time, we are looking at a stale replica of a
+ * branch we ourselves moved, and we already know where it actually points.
+ */
+const lastPush = new Map<string, { parent: string | null; commit: string }>()
+
+function branchKey(config: GitHubConfig, branch: string): string {
+  return `${config.owner}/${config.repo}#${branch}`
+}
+
 /** The branch head, or `null` for a repository with no commits at all —
  *  which GitHub reports as a 409 rather than a 404. */
 async function getHead(config: GitHubConfig, branch: string): Promise<string | null> {
+  const reported = await readHead(config, branch)
+  const ours = lastPush.get(branchKey(config, branch))
+
+  // Either the replica has caught up (it reports our commit, or something
+  // newer that another device pushed), or it is still showing the parent we
+  // built that commit on — the one case where we know better than it does.
+  if (ours && reported === ours.parent) return ours.commit
+  return reported
+}
+
+async function readHead(config: GitHubConfig, branch: string): Promise<string | null> {
   let response: Response
   try {
     response = await request(config, `git/ref/heads/${branch}`)
@@ -196,7 +266,7 @@ async function getHead(config: GitHubConfig, branch: string): Promise<string | n
   }
 
   if (response.status === 404) return null
-  if (!response.ok) throw new GitHubApiError('GET ref failed', response.status)
+  if (!response.ok) throw new GitHubApiError('GET ref failed', response.status, await detailOf(response))
 
   const body = (await response.json()) as Ref
   return body.object.sha
@@ -208,13 +278,17 @@ async function post<T>(config: GitHubConfig, path: string, body: unknown): Promi
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   })
-  if (!response.ok) throw new GitHubApiError(`POST ${path} failed`, response.status)
+  if (!response.ok) {
+    throw new GitHubApiError(`POST ${path} failed`, response.status, await detailOf(response))
+  }
   return (await response.json()) as T
 }
 
 async function treeOfCommit(config: GitHubConfig, sha: string): Promise<string> {
   const response = await request(config, `git/commits/${sha}`)
-  if (!response.ok) throw new GitHubApiError('GET commit failed', response.status)
+  if (!response.ok) {
+    throw new GitHubApiError('GET commit failed', response.status, await detailOf(response))
+  }
 
   const body = (await response.json()) as { tree: { sha: string } }
   return body.tree.sha
@@ -275,15 +349,31 @@ export async function commitFiles(
           body: JSON.stringify({ ref: `refs/heads/${branch}`, sha: commit.sha }),
         })
 
-    if (response.ok) return
-
-    // 422 on a ref update is "that would not be a fast-forward" — the head
-    // moved under us. Build the commit again on top of wherever it went.
-    const movedUnderUs = response.status === 422
-    if (!movedUnderUs || attempt === COMMIT_ATTEMPTS) {
-      throw new GitHubApiError('Updating the branch failed', response.status)
+    if (response.ok) {
+      lastPush.set(branchKey(config, branch), { parent: head, commit: commit.sha })
+      return
     }
-    await wait(BASE_DELAY_MS * 2 ** attempt)
+
+    // 422 is the Git Data API's one status for several unrelated refusals, so
+    // it is GitHub's own sentence that says which: "not a fast forward" means
+    // the head moved and the commit should be rebuilt on top of wherever it
+    // went, while an invalid tree entry will say so no matter how often it is
+    // tried. Anything else is not worth three round trips.
+    const detail = (await detailOf(response)) ?? ''
+    const worthRebuilding =
+      response.status === 422 && /fast.?forward|already exists/i.test(detail)
+
+    if (!worthRebuilding || attempt === COMMIT_ATTEMPTS) {
+      throw new GitHubApiError('Updating the branch failed', response.status, detail)
+    }
+
+    // Whatever we believed about this branch was wrong, or we would not be
+    // here — drop it and read the ref for real on the next attempt.
+    lastPush.delete(branchKey(config, branch))
+    // Seconds, not milliseconds. Whatever moved the branch — a replica still
+    // catching up, or genuinely another device — is not going to have
+    // finished within a couple of hundred milliseconds.
+    await wait(1000 * 2 ** attempt)
   }
 }
 
