@@ -21,6 +21,7 @@ import {
 } from '~/data/store'
 import { configureSync, getSyncConfig, syncNow, useSyncStatus } from '~/data/sync'
 import { VOCAB_KINDS, type VocabKind } from '~/data/types'
+import { cn } from '~/lib/cn'
 import { daysSince, formatDate } from '~/lib/date'
 import { label, plural } from '~/lib/format'
 import { Banner } from '~/ui/Banner'
@@ -249,12 +250,14 @@ function BackupSection() {
 
   return (
     <details className="group flex flex-col gap-3">
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 [&::-webkit-details-marker]:hidden">
-        <h2 className="text-label uppercase text-ink-muted">Backup</h2>
+      <summary className="group/summary flex cursor-pointer list-none items-center justify-between gap-4 [&::-webkit-details-marker]:hidden">
+        <h2 className="warm text-label uppercase text-ink-muted group-hover/summary:text-ink">
+          Backup
+        </h2>
         <Icon
           name="chevronDown"
           size={16}
-          className="text-ink-muted transition-transform group-open:rotate-180"
+          className="text-ink-muted transition duration-200 ease-grow group-open:rotate-180 group-hover/summary:text-ink"
         />
       </summary>
 
@@ -358,11 +361,11 @@ function VocabList({ kind }: { kind: VocabKind }) {
                   if (next && next !== item.name) void renameVocabItem(item.id, next)
                   else event.target.value = item.name
                 }}
-                className={
-                  'min-w-0 flex-1 rounded-sm border border-transparent bg-transparent px-2 py-2 text-body ' +
-                  (item.archived ? 'text-ink-faint line-through' : 'text-ink') +
-                  ' hover:border-line focus:border-leaf focus:outline-none'
-                }
+                className={cn(
+                  'warm min-w-0 flex-1 rounded-sm border border-transparent bg-transparent px-2 py-2 text-body',
+                  item.archived ? 'text-ink-faint line-through' : 'text-ink',
+                  'hover:border-line-strong focus:border-leaf focus:outline-none',
+                )}
               />
               <Button
                 size="sm"

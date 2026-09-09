@@ -27,9 +27,13 @@ async function addPlant(page: Page, species: string, name: string, place = 'Livi
   return code
 }
 
-/** Log a watering the way the viewport offers it. A phone fans the dial open
- *  and takes one of its options; a desktop has no dial and reaches the same
- *  three things through the overflow menu and the sheet. */
+/**
+ * Log a watering the way the viewport offers it.
+ *
+ * A phone fans the drop open and takes one of its three options. A desktop
+ * has no drop — it waters straight from the split button's primary segment,
+ * or reaches fertiliser behind its caret.
+ */
 async function logFromDial(page: Page, option: 'Watered' | 'Watered with fertiliser') {
   const dial = page.getByRole('button', { name: 'Log activity' })
   if (await dial.isVisible()) {
@@ -38,16 +42,47 @@ async function logFromDial(page: Page, option: 'Watered' | 'Watered with fertili
     return
   }
 
-  await page.getByRole('button', { name: 'More' }).click()
-  await page.getByRole('menuitem', { name: 'Log activity' }).click()
-  const inSheet = option === 'Watered' ? 'Water' : 'Fertiliser'
-  await page.getByRole('button', { name: inSheet, exact: true }).click()
+  if (option === 'Watered') {
+    await page.getByRole('button', { name: 'Water', exact: true }).click()
+    return
+  }
+  await page.getByRole('button', { name: 'More ways to log' }).click()
+  await page.getByRole('menuitem', { name: option, exact: true }).click()
 }
 
-/** Drag a history row far enough left to open its delete, then take it. The
- *  row itself carries the pointer handlers, three levels above its title. */
+/** The sheet of everything that is not a plain watering. */
+async function openLogSheet(page: Page) {
+  const dial = page.getByRole('button', { name: 'Log activity' })
+  if (await dial.isVisible()) {
+    await dial.click()
+    await page.getByRole('button', { name: 'Log something else' }).click()
+    return
+  }
+  await page.getByRole('button', { name: 'More ways to log' }).click()
+  await page.getByRole('menuitem', { name: 'Log something else', exact: true }).click()
+}
+
+/** Attach a picture and file it as an entry of its own. */
+async function addPhoto(page: Page, buffer: Buffer, name = 'plant.png') {
+  await openLogSheet(page)
+  const chooser = page.waitForEvent('filechooser')
+  await page.getByRole('button', { name: 'Add a photo' }).click()
+  await (await chooser).setFiles({ name, mimeType: 'image/png', buffer })
+  // The attached-photo chip is also called "Photo"; the action is the later one.
+  await page.getByRole('button', { name: 'Photo', exact: true }).last().click()
+}
+
+/**
+ * Drag a history row far enough left to open its delete, then take it.
+ *
+ * Matched on the layer SwipeRow makes draggable rather than by walking up from
+ * the title: the plant page has a Water button of its own now, so the title is
+ * no longer unique and `getByText('Water').first()` found that button instead.
+ * Going in through the delete does not work either — it is out of the
+ * accessibility tree until the row is open, which is the thing being tested.
+ */
 async function removeEntry(page: Page, title: string, deleteName: RegExp) {
-  const row = main(page).getByText(title, { exact: true }).first().locator('../../..')
+  const row = main(page).locator('div.relative.bg-surface').filter({ hasText: title }).first()
 
   // A phone drags the row open; a desktop reveals the same action on hover.
   // Measured *after* the hover, because hovering scrolls the row into view and
@@ -97,10 +132,10 @@ test('a scanned sticker opens the plant with the actions already in view', async
   // Exactly what an NFC tag carries: a cold load straight at the hash.
   await page.goto(`#p=${code}`)
 
-  // The drop on a phone, the overflow menu on a desktop: whichever this
-  // viewport offers, it is the way to log something.
+  // The drop on a phone, the split button's primary segment on a desktop:
+  // whichever this viewport offers, it is the way to log something.
   const dial = page.getByRole('button', { name: 'Log activity' })
-  const action = (await dial.isVisible()) ? dial : page.getByRole('button', { name: 'More' })
+  const action = (await dial.isVisible()) ? dial : page.getByRole('button', { name: 'Water', exact: true })
   await expect(action).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Gruyère' })).toBeVisible()
 
@@ -131,6 +166,46 @@ test('watering is the dial and one option, with no confirmation', async ({ page 
   await expect(main(page).getByText('today', { exact: true }).first()).toBeVisible()
 })
 
+test('the split button caret closes on an outside click, hover and all', async ({ page }) => {
+  const code = await addPlant(page, 'Monstera deliciosa', 'Gruyère')
+  await page.goto(`#p=${code}`)
+
+  const caret = page.getByRole('button', { name: 'More ways to log' })
+  // Mobile has no split button — the fan covers this ground instead, with
+  // its own long-standing scrim.
+  if (!(await caret.isVisible())) return
+
+  // Opened by hovering onto the caret and clicking it without moving away
+  // first — the pointer is still resting there the instant the menu mounts,
+  // which is exactly when `lift`'s hover transform is live on the pill
+  // beneath it.
+  await caret.hover()
+  await caret.click()
+  const closeOverlay = page.getByRole('button', { name: 'Close menu' })
+  await expect(closeOverlay).toBeVisible()
+
+  // The structural check: a `transform` on an ancestor of a `position: fixed`
+  // element becomes that element's containing block, so if `lift` still sat on
+  // an ancestor of this overlay, its box would shrink from the viewport down
+  // to the pill's own ~140×48 footprint the moment the pointer rests on it —
+  // and a click anywhere else would then miss it entirely, leaving the menu
+  // stuck open. Asserting the overlay's own box, with the pointer still on the
+  // button that opened it, catches that directly rather than racing a CSS
+  // transition that may or may not have settled by the time a click lands.
+  const overlayBox = await closeOverlay.boundingBox()
+  const viewport = page.viewportSize()
+  expect(overlayBox).toMatchObject({ x: 0, y: 0, width: viewport?.width, height: viewport?.height })
+
+  // And, unhurried, a real click elsewhere does close it — a raw coordinate
+  // rather than a locator's `.click()`, since Playwright's own actionability
+  // check refuses to click a target it can see is obscured, so clicking the
+  // heading *by locator* would just wait forever for the overlay to stop
+  // covering it. `page.mouse.click` fires at the point instead, the way a
+  // real click always lands on whatever is topmost there.
+  await page.mouse.click(30, 30)
+  await expect(page.getByRole('menu')).toBeHidden()
+})
+
 test('fertiliser is a property of a watering, not a second entry', async ({ page }) => {
   const code = await addPlant(page, 'Monstera deliciosa', 'Gruyère')
   await page.goto(`#p=${code}`)
@@ -144,6 +219,33 @@ test('fertiliser is a property of a watering, not a second entry', async ({ page
   await openHistory(page)
   await expect(page.getByText('with fertiliser')).toBeVisible()
   await expect(page.getByText('1 entry')).toBeVisible()
+})
+
+test('a plant takes water once a day, and a second press folds into the first', async ({
+  page,
+}) => {
+  const code = await addPlant(page, 'Calathea orbifolia', 'Olga')
+  await page.goto(`#p=${code}`)
+
+  await logFromDial(page, 'Watered')
+  await logFromDial(page, 'Watered')
+
+  // Watering something twice in one day is still one watering.
+  await openHistory(page)
+  await expect(page.getByText('1 entry')).toBeVisible()
+  await expect(page.getByText('with fertiliser')).toHaveCount(0)
+
+  // Fertiliser went into the water that was already given, so it amends that
+  // entry rather than standing beside it.
+  await logFromDial(page, 'Watered with fertiliser')
+  await expect(page.getByText('1 entry')).toBeVisible()
+  await expect(page.getByText('with fertiliser')).toBeVisible()
+
+  // And pressing water afterwards restates it as plain water: the last press
+  // is the correction, so a mis-tap is fixable without editing the row.
+  await logFromDial(page, 'Watered')
+  await expect(page.getByText('1 entry')).toBeVisible()
+  await expect(page.getByText('with fertiliser')).toHaveCount(0)
 })
 
 test('a logged watering survives a reload', async ({ page }) => {
@@ -191,19 +293,21 @@ test('deleting a plant forever tombstones it rather than erasing it outright', a
   await expect(page.getByText('No plant with this code')).toBeVisible()
 })
 
-test('promoting a wish keeps its code, its name and its history', async ({ page }) => {
+test('promoting a wish keeps its code and its history', async ({ page }) => {
   await page.goto('#new/wish')
   await page.getByLabel('Genus').fill('Philodendron')
   await page.getByLabel('Species', { exact: true }).fill('spiritus-sancti')
-  await page.getByLabel('Name', { exact: true }).fill('Ranker')
   await page.getByLabel('Note').fill('One day')
-  await page.getByRole('button', { name: 'Add to the wishlist' }).click()
+  await page.getByRole('button', { name: 'Add to wishlist' }).click()
   await expect(page.getByText('On the wishlist')).toBeVisible()
 
   const code = new URL(page.url()).hash.replace('#p=', '')
   expect(code).toMatch(/^[A-Z0-9]{3}-[0-9A-F]{4}$/)
 
+  // A wish has no name of its own — the species is all it carries until you
+  // own it, so naming it is part of taking it into the collection.
   await page.getByRole('button', { name: 'I have this now' }).click()
+  await page.getByLabel('Name', { exact: true }).fill('Ranker')
   await page.getByRole('button', { name: 'Save' }).click()
 
   // Wait for the save to land before reading the URL, or you are asserting on
@@ -384,12 +488,9 @@ test('light and dark are both painted, and neither is transparent', async ({ pag
   }
 })
 
-/** Photograph the plant from the hero's overflow menu. */
+/** Photograph the plant, which is now one of the things the sheet logs. */
 async function addPhotoFromHero(page: Page, buffer: Buffer) {
-  const chooser = page.waitForEvent('filechooser')
-  await page.getByRole('button', { name: 'More' }).click()
-  await page.getByRole('menuitem', { name: 'Add a photo' }).click()
-  await (await chooser).setFiles({ name: 'shot.png', mimeType: 'image/png', buffer })
+  await addPhoto(page, buffer, 'shot.png')
 }
 
 test('a photograph becomes the plant, and is shrunk on the way in', async ({ page }) => {
@@ -399,14 +500,7 @@ test('a photograph becomes the plant, and is shrunk on the way in', async ({ pag
   const photo = page.getByRole('img', { name: /Gruyère, photographed/ })
   await expect(photo).toBeHidden()
 
-  const chooser = page.waitForEvent('filechooser')
-  await page.getByRole('button', { name: 'More' }).click()
-  await page.getByRole('menuitem', { name: 'Add a photo' }).click()
-  await (await chooser).setFiles({
-    name: 'gruyere.png',
-    mimeType: 'image/png',
-    buffer: png(2400, 1200),
-  })
+  await addPhoto(page, png(2400, 1200), 'gruyere.png')
 
   await expect(photo).toBeVisible()
 
@@ -434,14 +528,7 @@ test('a photo attached to a new leaf is one entry, not two', async ({ page }) =>
   await page.goto(`#p=${code}`)
 
   // Open the sheet the way this viewport offers it.
-  const dial = page.getByRole('button', { name: 'Log activity' })
-  if (await dial.isVisible()) {
-    await dial.click()
-    await page.getByRole('button', { name: 'Log something else' }).click()
-  } else {
-    await page.getByRole('button', { name: 'More' }).click()
-    await page.getByRole('menuitem', { name: 'Log activity' }).click()
-  }
+  await openLogSheet(page)
 
   // Attach the photograph first, then say what it was — the sheet treats it as
   // a property of the entry, like the date.
@@ -460,6 +547,33 @@ test('a photo attached to a new leaf is one entry, not two', async ({ page }) =>
   await expect(main(page).getByRole('img', { name: /Photographed/ })).toBeVisible()
 
   // One entry carrying a picture, so it is also the plant's picture now.
+  await expect(page.getByRole('img', { name: /Gruyère, photographed/ })).toBeVisible()
+})
+
+test('a photo on a second watering follows the entry it folds into', async ({ page }) => {
+  const code = await addPlant(page, 'Monstera deliciosa', 'Gruyère')
+  await page.goto(`#p=${code}`)
+
+  // Today's watering already exists, so the press below has to fold into it.
+  await logFromDial(page, 'Watered')
+
+  await openLogSheet(page)
+
+  const chooser = page.waitForEvent('filechooser')
+  await page.getByRole('button', { name: 'Add a photo' }).click()
+  await (await chooser).setFiles({
+    name: 'wet.png',
+    mimeType: 'image/png',
+    buffer: png(1200, 1600),
+  })
+  await page.getByRole('dialog').getByRole('button', { name: 'Water', exact: true }).click()
+
+  // Still one watering — and the picture came with it. Photographs are filed
+  // under an event id, so the bytes have to move to the entry that stands or
+  // the row promises a picture that never loads.
+  await openHistory(page)
+  await expect(page.getByText('1 entry')).toBeVisible()
+  await expect(main(page).getByRole('img', { name: /Photographed/ })).toBeVisible()
   await expect(page.getByRole('img', { name: /Gruyère, photographed/ })).toBeVisible()
 })
 

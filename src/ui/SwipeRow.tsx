@@ -193,7 +193,7 @@ export function RowActions({
           type="button"
           onClick={onEdit}
           aria-label={editLabel}
-          className="flex size-touch items-center justify-center rounded-lg text-ink-muted opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 hover:bg-sunk"
+          className="flex size-touch items-center justify-center rounded-lg text-ink-muted opacity-0 transition duration-200 ease-grow group-hover:opacity-100 focus-visible:opacity-100 hover:bg-sunk hover:text-ink"
         >
           <Icon name="pencil" size={18} />
         </button>
@@ -202,7 +202,7 @@ export function RowActions({
         type="button"
         onClick={onDelete}
         aria-label={deleteLabel}
-        className="flex size-touch items-center justify-center rounded-lg text-ember opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 hover:bg-ember-tint"
+        className="flex size-touch items-center justify-center rounded-lg text-ember opacity-0 transition duration-200 ease-grow group-hover:opacity-100 focus-visible:opacity-100 hover:bg-ember-tint"
       >
         <Icon name="trash" size={18} />
       </button>

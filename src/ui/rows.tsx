@@ -29,7 +29,7 @@ export function RowLink({
       href={href}
       className={cn(
         'flex min-h-touch items-center gap-4 border-b border-line py-2.5 lg:px-2.5',
-        'transition-colors active:bg-sunk md:hover:bg-sunk',
+        'warm active:bg-sunk hover:bg-sunk',
         className,
       )}
     >

@@ -18,6 +18,7 @@ import { ensureVocabItem, logEvent, updateEvent, useStore, type EventDraft } fro
 import type { EventPhoto, NoteEvent, Plant, PlantEvent, RepotEvent } from '~/data/types'
 import { nowISO } from '~/lib/date'
 import { newId } from '~/lib/id'
+import { Button } from '~/ui/Button'
 import { Icon, type IconName } from '~/ui/Icon'
 import { DateChip, DatePicker } from '~/ui/DatePicker'
 import { NumberField, SuggestField, TextAreaField, TextField } from '~/ui/fields'
@@ -248,11 +249,18 @@ export function LogSheet({
                         else picker.current?.click()
                       } else setMode(action.mode)
                     }}
-                    className="flex flex-col items-center gap-2.5 transition-opacity active:opacity-70 md:hover:opacity-80"
+                    className="warm group flex flex-col items-center gap-2.5 active:opacity-70 hover:text-ink"
                   >
                     <span
                       className={cn(
                         'inline-flex size-15 items-center justify-center rounded-full shadow-md',
+                        // `translate`, not `transform`: Tailwind v4 puts these
+                        // on the standalone property, which a transition list
+                        // naming only `transform` would never animate.
+                        'transition-[translate,box-shadow] duration-200 ease-grow',
+                        'group-hover:-translate-y-0.5 group-hover:shadow-lg',
+                        'group-active:translate-y-0',
+                        'motion-reduce:transition-none motion-reduce:group-hover:translate-y-0',
                         FILL[action.tone],
                       )}
                     >
@@ -307,7 +315,7 @@ function PhotoChip({
       <button
         type="button"
         onClick={onPick}
-        className="inline-flex h-9 items-center gap-2 rounded-full border border-line bg-sunk px-4 text-[0.875rem] font-medium text-ink transition-colors active:opacity-70 md:hover:bg-line"
+        className="lift inline-flex h-9 items-center gap-2 rounded-full border border-line bg-sunk px-4 text-[0.875rem] font-medium text-ink active:opacity-70 hover:border-line-strong"
       >
         <Icon name="image" size={16} className="text-ink-muted" />
         Add a photo
@@ -320,16 +328,20 @@ function PhotoChip({
       <button
         type="button"
         onClick={onPick}
-        className="flex items-center gap-2 transition-opacity active:opacity-70 md:hover:opacity-80"
+        className="group flex items-center gap-2 active:opacity-70"
       >
-        <img src={photo.previewUrl} alt="" className="size-7 rounded-full object-cover" />
+        <img
+          src={photo.previewUrl}
+          alt=""
+          className="size-7 rounded-full object-cover transition-transform duration-500 ease-grow group-hover:scale-110 motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+        />
         <span className="text-[0.875rem] font-medium text-ink">Photo</span>
       </button>
       <button
         type="button"
         onClick={onClear}
         aria-label="Remove this photo"
-        className="flex size-6 items-center justify-center rounded-full text-ink-muted transition-colors active:opacity-70 md:hover:bg-line"
+        className="warm flex size-6 items-center justify-center rounded-full text-ink-muted active:opacity-70 hover:text-ember"
       >
         <Icon name="close" size={15} />
       </button>
@@ -385,14 +397,15 @@ function NoteForm({
         placeholder="What happened?"
         fieldClassName="mt-5"
       />
-      <button
-        type="button"
+      <Button
+        variant="solid"
+        block
         disabled={!text.trim()}
         onClick={() => void save()}
-        className="mt-4 flex h-control w-full items-center justify-center rounded-lg bg-ink text-body font-semibold text-paper transition-opacity disabled:opacity-40 active:opacity-70 enabled:md:hover:opacity-90"
+        className="mt-4"
       >
         {editing ? 'Save changes' : 'Save note'}
-      </button>
+      </Button>
     </div>
   )
 }
@@ -488,13 +501,9 @@ function RepotForm({
         placeholder="Roots through the bottom"
       />
 
-      <button
-        type="button"
-        onClick={() => void save()}
-        className="flex h-control w-full items-center justify-center rounded-lg bg-ink text-body font-semibold text-paper transition-opacity active:opacity-70 md:hover:opacity-90"
-      >
+      <Button variant="solid" block onClick={() => void save()}>
         {editing ? 'Save changes' : 'Log repot'}
-      </button>
+      </Button>
     </div>
   )
 }

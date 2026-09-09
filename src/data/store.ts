@@ -13,12 +13,12 @@
  */
 
 import { useSyncExternalStore } from 'react'
-import { nowISO } from '~/lib/date'
+import { isoToInputValue, nowISO } from '~/lib/date'
 import { newId } from '~/lib/id'
 import { generatePlantCode } from '~/lib/plantCode'
 import * as db from './db'
 import { migrateEvents, migrateVocab, needsMigration } from './migrate'
-import { dropPhotos } from './photos'
+import { dropPhotos, refilePhoto } from './photos'
 import type {
   Id,
   Origin,
@@ -29,6 +29,7 @@ import type {
   System,
   VocabItem,
   VocabKind,
+  WaterEvent,
 } from './types'
 
 export type State = {
@@ -239,10 +240,66 @@ type DraftOf<T> = T extends unknown
   : never
 export type EventDraft = DraftOf<PlantEvent>
 
-/** Hands back the record it wrote, because a photograph has to be filed under
- *  the id this just drew. */
+/**
+ * The watering already on the books for that plant on that day, if there is one.
+ *
+ * The day is the local calendar day the entry is *dated*, not the day it was
+ * typed — back-dating a watering in the log sheet has to meet the same rule as
+ * pressing the drop, or the sheet quietly becomes the way around it.
+ */
+function wateringThatDay(plantCode: string, iso: string): WaterEvent | null {
+  const day = isoToInputValue(iso)
+  const found = state.events.find(
+    (event) =>
+      event.type === 'water' &&
+      !event.deleted &&
+      event.plantCode === plantCode &&
+      isoToInputValue(event.date) === day,
+  )
+  return (found as WaterEvent | undefined) ?? null
+}
+
+/**
+ * Hands back the record it wrote, because a photograph has to be filed under
+ * the id this just drew.
+ *
+ * A plant is watered once a day. Fertiliser is not a second thing you do to it
+ * — it is something that was in the water — so the two cannot both stand on one
+ * day as separate entries. A second press folds into the first and restates
+ * what that day's watering was: press fertiliser and the entry carries it,
+ * press water again and it does not. The last press is the correction, which is
+ * what makes a mis-tap fixable without going into the log to edit a row.
+ *
+ * A picture the folded press was carrying moves to the entry that stands, bytes
+ * and all — they are filed under an event id, so the record alone would be a
+ * promise of a photograph that never loads. If that entry already had one, the
+ * new picture replaces it, for the same reason the fertiliser flag follows the
+ * last press: one watering a day means one row to look at, and a second
+ * photograph filed beside it as an entry of its own would be the duplicate this
+ * rule exists to prevent.
+ *
+ * This lives here rather than in the two buttons that call it, so the drop and
+ * the log sheet cannot drift into disagreeing about the rule.
+ */
 export async function logEvent(draft: EventDraft): Promise<PlantEvent> {
   const event = { ...draft, id: draft.id ?? newId(), date: draft.date ?? nowISO() } as PlantEvent
+
+  if (event.type === 'water') {
+    const standing = wateringThatDay(event.plantCode, event.date)
+    if (standing) {
+      const patch: Partial<WaterEvent> = {}
+      if (event.fertilized !== standing.fertilized) patch.fertilized = event.fertilized
+
+      // Moving the bytes onto the standing entry's key also overwrites whatever
+      // was filed there before, so replacing a picture leaves nothing stranded.
+      if (event.photo && (await refilePhoto(event.id, standing.id))) {
+        patch.photo = event.photo
+      }
+
+      if (Object.keys(patch).length > 0) await updateEvent(standing.id, patch)
+      return state.events.find((current) => current.id === standing.id) ?? standing
+    }
+  }
 
   await db.putEvent(event)
   commit({ events: [...state.events, event] })

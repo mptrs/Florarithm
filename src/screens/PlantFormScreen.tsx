@@ -580,7 +580,7 @@ function PhotoChoice({
       <div
         role="radiogroup"
         aria-label="The plant's photo"
-        className="flex gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex gap-3 overflow-x-auto -mt-1 pt-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         <Choice selected={chosen === ''} label="Newest" onClick={() => onChoose('')}>
           <span className="flex size-full items-center justify-center text-[0.8125rem] font-medium text-ink-muted">
@@ -622,11 +622,14 @@ function Choice({
       aria-label={name}
       onClick={onClick}
       className={cn(
-        'size-20 shrink-0 overflow-hidden rounded-lg border-2 bg-sunk transition-colors active:opacity-70',
-        selected ? 'border-leaf' : 'border-transparent md:hover:border-line-strong',
+        'warm group size-20 shrink-0 overflow-hidden rounded-lg border-2 bg-sunk active:opacity-70',
+        selected ? 'border-leaf' : 'border-transparent hover:border-line-strong',
       )}
     >
-      {children}
+      {/* The same lean-in the collection tile makes, at thumbnail scale. */}
+      <div className="size-full transition-transform duration-500 ease-grow group-hover:scale-[1.06] motion-reduce:transition-none motion-reduce:group-hover:scale-100">
+        {children}
+      </div>
     </button>
   )
 }

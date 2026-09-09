@@ -113,10 +113,10 @@ function Sidebar({ active }: { active: NavKey | null }) {
               href={item.href}
               aria-current={isActive ? 'page' : undefined}
               className={cn(
-                'flex h-touch items-center gap-2.5 rounded-md px-2.5 text-[0.9375rem]',
+                'warm flex h-touch items-center gap-2.5 rounded-md px-2.5 text-[0.9375rem]',
                 isActive
                   ? 'bg-leaf-tint font-semibold text-leaf'
-                  : 'font-medium text-ink-muted hover:bg-sunk',
+                  : 'font-medium text-ink-muted hover:bg-sunk hover:text-ink',
               )}
             >
               <Icon name={item.icon} size={19} />
