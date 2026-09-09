@@ -1,47 +1,46 @@
 {
+  "pages": [
+    { "id": "page-1", "name": "Shipped" },
+    { "id": "page-2", "name": "Explored" }
+  ],
   "artboards": [
-    { "file": "Now.dc.html",       "x": 0,    "y": 0, "w": 390, "h": 780, "title": "Now — what ships today" },
-    { "file": "Main.dc.html",      "x": 500,  "y": 0, "w": 390, "h": 780, "title": "Place in the label register" },
-    { "file": "OwnLane.dc.html",   "x": 1000, "y": 0, "w": 390, "h": 780, "title": "Place gets its own lane" },
-    { "file": "Marker.dc.html",    "x": 1500, "y": 0, "w": 390, "h": 780, "title": "Place with its pin" },
-    { "file": "Grouping.dc.html",  "x": 2000, "y": 0, "w": 390, "h": 780, "title": "Let the grouping carry it" }
+    { "file": "Main.dc.html",          "page": "page-1", "x": 0,    "y": 0, "w": 390, "h": 780, "title": "Shipped — the grouping carries it" },
+    { "file": "Before.dc.html",        "page": "page-1", "x": 500,  "y": 0, "w": 390, "h": 780, "title": "Before" },
+    { "file": "LabelRegister.dc.html", "page": "page-2", "x": 0,    "y": 0, "w": 390, "h": 780, "title": "Place in the label register" },
+    { "file": "OwnLane.dc.html",       "page": "page-2", "x": 500,  "y": 0, "w": 390, "h": 780, "title": "Place gets its own lane" },
+    { "file": "Marker.dc.html",        "page": "page-2", "x": 1000, "y": 0, "w": 390, "h": 780, "title": "Place with its pin" }
   ],
   "annotations": [
     {
-      "id": "brief",
-      "x": 0, "y": -330, "w": 390,
-      "text": "The problem\n\nThe species and the place are both drawn as prose under the name, so the eye has to read the words to tell which is which. Making the place smaller and fainter says 'less important' — but they are not two points on one scale. The species is what the plant IS; the place is where it happens to be standing. Different kinds of fact.\n\nFour ways to say that, on both lists at once."
+      "id": "decision",
+      "x": 0, "y": -250, "w": 390, "page": "page-1",
+      "text": "SHIPPED\n\nThe phone does not say the place at all. Sorted by place the drawer label says the room once for a whole run; sorted A–Z the room is not the question you are asking, and the switch is one tap.\n\nBeyond the ranking going away: the tile is the same height in both orderings, so the grid stops going ragged when you switch the sort, and the second line can never compete with anything.\n\nDesktop is unchanged — it has a column for the place, and a column is not prose."
     },
     {
-      "id": "note-now",
-      "x": 0, "y": -190, "w": 390,
-      "text": "NOW\n\nSame prose, 12px/ink-faint under 13px/ink-muted. It works, but only once you have read both lines. On the row the place also truncates mid-word when the right-hand figure is wide.\n\nHere as the thing to beat."
+      "id": "before",
+      "x": 500, "y": -250, "w": 390, "page": "page-1",
+      "text": "BEFORE\n\nThe species and the place drawn as one prose block under the name, ranked apart by a size and a shade.\n\nThat is the treatment for two facts of one kind. These are two kinds: the species is what the plant IS, the place is where it happens to be standing. Ranking them only made the eye read both lines to find out which was which — and on a narrow phone the loser truncated mid-word."
+    },
+    {
+      "id": "explored",
+      "x": 0, "y": -230, "w": 890, "page": "page-2",
+      "text": "The three that were not taken. All of them answer 'different kind of fact' by giving the place a different FORM; the shipped answer gives it no form at all, which turned out to be the one that also fixes the ragged grid and the truncation."
     },
     {
       "id": "note-label",
-      "x": 500, "y": -190, "w": 390,
-      "text": "LABEL REGISTER  ·  recommended\n\nThe place is set in the app's own place type: 12px, uppercase, tracked — the same specimen the drawer label uses to say SLAAPKAMER above a group. So a place looks like a place wherever it appears, and the change of register does the separating: no dot, no fading contest.\n\nThe app already argues for this. Section's own source note: a heading 'has to be a different KIND of type from the labels under it, not a heavier weight of the same one'.\n\nTradeoff: caps run long, so a room like Studeerkamer eats more width than it does in sentence case."
+      "x": 0, "y": -110, "w": 390, "page": "page-2",
+      "text": "LABEL REGISTER\n\nThe place set in the app's own place type — the specimen the drawer label uses to say SLAAPKAMER above a group. The register change does the separating: no dot, no contest between greys.\n\nWhy not: still a second line to read, and caps run long."
     },
     {
       "id": "note-lane",
-      "x": 1000, "y": -190, "w": 390,
-      "text": "ITS OWN LANE\n\nThe place leaves the text entirely. On the tile it becomes a chip on the picture — the same floating pill the archive tag already uses; on the row it takes a fixed 84px lane before the figure.\n\nStrongest structural win: the tile is the SAME HEIGHT in both sorts, so the grid stops going ragged when you switch to A–Z, and nothing can truncate the species.\n\nTradeoff: a chip on a photograph is busier than a chip on paper, and the lane costs the name 84px on every row for a fact you only sometimes want."
+      "x": 500, "y": -110, "w": 390, "page": "page-2",
+      "text": "ITS OWN LANE\n\nA chip on the picture, a fixed 84px lane on the row. Also gives a constant tile height.\n\nWhy not: a chip on a photograph is busier than one on paper, and the lane costs every row 84px for a fact you only sometimes want."
     },
     {
       "id": "note-pin",
-      "x": 1500, "y": -190, "w": 390,
-      "text": "WITH ITS PIN\n\nThe place keeps its prose and gains the pin — the same glyph the form already puts over 'Where it lives'. The glyph classifies it instantly; you never have to work out which line is which.\n\nTradeoff: one pin per row and per tile at list scale is a lot of small marks on a page whose whole manner is quiet, and an 11px pin is close to mush."
-    },
-    {
-      "id": "note-none",
-      "x": 2000, "y": -190, "w": 390,
-      "text": "LET THE GROUPING CARRY IT\n\nDon't show it. Sorted A–Z the place is simply absent; 'By place' is one tap away and then the drawer label says it, in full, once per group instead of once per row.\n\nThe cheapest answer and the cleanest picture: constant tile height, nothing to rank, nothing to truncate.\n\nTradeoff: you cannot see name and room at once in A–Z. If 'which Calathea is the bedroom one' is a real question at the shelf, this fails it — and that is the question worth answering before picking."
-    },
-    {
-      "id": "note-mix",
-      "x": 500, "y": 820, "w": 890,
-      "text": "Worth saying: the two nearest neighbours mix well. The label register on the row (where width is cheap) and the lane/chip on the tile (where a constant height is worth most) is a defensible pair — the rule stays 'a place is never prose', and each list gets the form that suits its shape."
+      "x": 1000, "y": -110, "w": 390, "page": "page-2",
+      "text": "WITH ITS PIN\n\nThe place keeps its prose and gains the glyph the form puts over 'Where it lives'.\n\nWhy not: one pin per row and per tile is a lot of small marks on a page whose whole manner is quiet, and 11px of pin is close to mush."
     }
   ],
-  "launch": { "view": "canvas" }
+  "launch": { "view": "canvas", "page": "page-1" }
 }

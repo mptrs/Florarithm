@@ -244,11 +244,12 @@ def build(d, comment):
 
 
 FILES = {
-    "Now.dc.html": ("now", "What ships today: the place is the same prose as the species, one step smaller and one step fainter."),
-    "Main.dc.html": ("label", "The place moves into the label register — the type the app already uses to name a room above a drawer."),
-    "OwnLane.dc.html": ("lane", "The place leaves the text entirely: a chip on the picture, a fixed lane on the row."),
-    "Marker.dc.html": ("pin", "The place keeps its prose but gains the pin glyph the form uses over 'Where it lives'."),
-    "Grouping.dc.html": ("none", "The place is not shown at all when the list is sorted A–Z; 'By place' is one tap away."),
+    # Main is the decision: the place is not shown on a phone at all.
+    "Main.dc.html": ("none", "Chosen and shipped: the place is not shown on a phone; the drawer label carries it."),
+    "Before.dc.html": ("now", "What this replaced: the place as the same prose as the species, one step smaller and fainter."),
+    "LabelRegister.dc.html": ("label", "Explored: the place in the app's own uppercase, tracked place type."),
+    "OwnLane.dc.html": ("lane", "Explored: the place leaves the text — a chip on the picture, a fixed lane on the row."),
+    "Marker.dc.html": ("pin", "Explored: the place keeps its prose but gains the pin glyph from 'Where it lives'."),
 }
 
 for fname, (d, comment) in FILES.items():
