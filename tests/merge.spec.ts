@@ -42,6 +42,7 @@ function plant(code: string, updatedAt: string, extra: Partial<Plant> = {}): Pla
     genus: '',
     species: '',
     cultivar: '',
+    variegation: '',
     locationId: null,
     system: 'soil',
     potSize: null,

@@ -16,6 +16,23 @@ export type Id = string
 export type System = 'hydro' | 'semi-hydro' | 'soil'
 export const SYSTEMS: readonly System[] = ['hydro', 'semi-hydro', 'soil']
 
+/**
+ * What the field starts you off with, not what it accepts.
+ *
+ * There is no closed list to be had: these are trade terms that vary by grower
+ * and by species, and a fixed set would be out of date within a season. Six is
+ * what covers most labels, and anything else you type is simply typed — and is
+ * then in the list next time, which is the only list that matches your shelf.
+ */
+export const VARIEGATIONS: readonly string[] = [
+  'albo',
+  'aurea',
+  'mint',
+  'variegata',
+  'splash',
+  'tricolor',
+]
+
 export type PlantStatus = 'active' | 'dormant' | 'died' | 'given-away'
 export const PLANT_STATUSES: readonly PlantStatus[] = ['active', 'dormant', 'died', 'given-away']
 
@@ -62,6 +79,21 @@ export type Plant = {
   species: string
   /** No quotes — those are added wherever this is displayed. */
   cultivar: string
+  /**
+   * `albo`, `aurea`, `tricolor`. The bit that comes after the cultivar on the
+   * label, unquoted, because it names a mutation rather than a bred variety.
+   *
+   * Its own field and not part of `cultivar` for two reasons. Quoting it would
+   * be wrong — 'Ninja albo' is not the name of anything — and a collection full
+   * of albos is a thing you look for, which a term buried in someone else's
+   * spelling inside a free-text field can never answer.
+   *
+   * Where the line falls is a judgement the app does not make: 'Tricolor' is a
+   * registered cultivar on a Hoya and a description on a Stromanthe, and no
+   * rule tells the two apart. Whichever field it is typed into is the one it
+   * belongs in.
+   */
+  variegation: string
   locationId: Id | null
   system: System
   /** Diameter in cm. */

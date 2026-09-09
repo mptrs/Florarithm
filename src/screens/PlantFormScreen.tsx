@@ -23,6 +23,7 @@ import {
   PLANT_STATUSES,
   PROPAGATION_METHODS,
   SYSTEMS,
+  VARIEGATIONS,
   type OriginType,
   type PlantStatus,
   type PropagationMethod,
@@ -74,6 +75,7 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
   const [genus, setGenus] = useState('')
   const [species, setSpecies] = useState('')
   const [cultivar, setCultivar] = useState('')
+  const [variegation, setVariegation] = useState('')
   const [name, setName] = useState('')
   const [parent, setParent] = useState<string>('')
   const [method, setMethod] = useState<PropagationMethod>('cutting')
@@ -102,6 +104,7 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
       setGenus(existing.genus)
       setSpecies(existing.species)
       setCultivar(existing.cultivar)
+      setVariegation(existing.variegation)
       setName(existing.name)
       setParent(existing.parent?.code ?? '')
       setMethod(existing.parent?.method ?? 'cutting')
@@ -125,6 +128,7 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
           setGenus(source.genus)
           setSpecies(source.species)
           setCultivar(source.cultivar)
+          setVariegation(source.variegation)
         }
       }
     }
@@ -165,16 +169,23 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
       const genusTrimmed = genus.trim()
       const speciesTrimmed = species.trim()
       const cultivarTrimmed = cultivar.trim()
+      const variegationTrimmed = variegation.trim()
 
       const plant = await savePlant({
         code: existing?.code,
         name:
           name.trim() ||
-          formatSpecies({ genus: genusTrimmed, species: speciesTrimmed, cultivar: cultivarTrimmed }) ||
+          formatSpecies({
+            genus: genusTrimmed,
+            species: speciesTrimmed,
+            cultivar: cultivarTrimmed,
+            variegation: variegationTrimmed,
+          }) ||
           'Unnamed',
         genus: genusTrimmed,
         species: speciesTrimmed,
         cultivar: cultivarTrimmed,
+        variegation: variegationTrimmed,
         locationId,
         system,
         potSize: potSize ? Number(potSize) : null,
@@ -300,12 +311,23 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
               />
             </div>
 
-            <TextField
-              label="Cultivar"
-              value={cultivar}
-              onChange={(event) => setCultivar(event.target.value)}
-              placeholder="Thai Constellation"
-            />
+            <div className="flex gap-3">
+              <TextField
+                label="Cultivar"
+                value={cultivar}
+                onChange={(event) => setCultivar(event.target.value)}
+                placeholder="Ninja"
+                fieldClassName="flex-1"
+              />
+              <SuggestField
+                label="Variegation"
+                value={variegation}
+                onChange={(event) => setVariegation(event.target.value)}
+                options={VARIEGATIONS}
+                placeholder="albo"
+                fieldClassName="flex-1"
+              />
+            </div>
 
             {wish ? null : (
               <Field

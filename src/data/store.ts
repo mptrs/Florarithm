@@ -90,7 +90,7 @@ export async function load(): Promise<void> {
       db.readMeta<string>(LAST_BACKUP_KEY),
     ])
 
-    const plants = snapshot.plants.map(migrateLegacySpecies)
+    const plants = snapshot.plants.map(migratePlant)
     const migrated = plants.filter((plant, index) => plant !== snapshot.plants[index])
     if (migrated.length > 0) await Promise.all(migrated.map((plant) => db.putPlant(plant)))
 
@@ -114,10 +114,22 @@ export async function load(): Promise<void> {
 }
 
 /**
+ * Everything a stored plant might be missing, filled in on read and written
+ * straight back, so the collection never needs a dedicated migration step.
+ */
+function migratePlant(plant: Plant): Plant {
+  const withSpecies = migrateLegacySpecies(plant)
+  // Added after the fact, and absent means only "never typed" — so an empty
+  // string is the whole migration, and the backup format stays at 3.
+  return typeof withSpecies.variegation === 'string'
+    ? withSpecies
+    : { ...withSpecies, variegation: '' }
+}
+
+/**
  * Plants written before the genus/species/cultivar split had one free-text
  * `species` field, e.g. `Monstera deliciosa 'Thai Constellation'`. Split it
- * once, on read, so the collection never needs a dedicated migration step —
- * the corrected record is written straight back to IndexedDB.
+ * once, on read.
  */
 function migrateLegacySpecies(plant: Plant): Plant {
   if (typeof (plant as unknown as Record<string, unknown>).genus === 'string') return plant
@@ -140,6 +152,7 @@ export type PlantDraft = {
   genus: string
   species: string
   cultivar: string
+  variegation: string
   locationId: Id | null
   system: System
   potSize: number | null
