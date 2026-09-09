@@ -100,9 +100,13 @@ export function navigate(hash: string): void {
  * app is actually choosing where to go, so it is what "back" trusts.
  */
 let navigatedWithinApp = false
-window.addEventListener('hashchange', () => {
-  navigatedWithinApp = true
-})
+// Guarded rather than assumed: `parseRoute` and friends are pure enough to
+// import from a plain Node test file too, which has no `window` to listen on.
+if (typeof window !== 'undefined') {
+  window.addEventListener('hashchange', () => {
+    navigatedWithinApp = true
+  })
+}
 
 /** True once `history.back()` is guaranteed to land on an earlier route of
  *  this app, rather than wherever the tab was before it loaded here. */

@@ -113,15 +113,19 @@ function WishRow({ plant, onDelete }: { plant: Plant; onDelete: () => void }) {
 
       <div className="relative inline-flex h-touch shrink-0">
         <div className="inline-flex h-touch shrink-0 rounded-md border border-leaf">
-          {/* The one action every wish gets, on every screen — text collapses
-              to just the icon once the row is too narrow to spell it out
-              next to the species and note. */}
+          {/* The one action every wish gets, on every screen — the visible
+              label collapses to just the icon once the row is too narrow to
+              spell it out next to the species and note, but `aria-label`
+              keeps the link's own name from collapsing with it. */}
           <a
             href={routes.have(plant.code)}
+            aria-label="Add to collection"
             className="warm flex items-center gap-1.5 rounded-l-md px-3.5 text-[0.875rem] font-semibold text-leaf hover:bg-leaf-tint active:opacity-70"
           >
             <Icon name="plus" size={16} />
-            <span className="hidden md:inline">Add to collection</span>
+            <span className="hidden md:inline" aria-hidden="true">
+              Add to collection
+            </span>
           </a>
 
           <span className="w-px shrink-0 bg-leaf/30" aria-hidden />
