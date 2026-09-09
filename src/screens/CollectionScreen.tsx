@@ -38,7 +38,7 @@ import { useStore } from '~/data/store'
 import type { Plant } from '~/data/types'
 import { cn } from '~/lib/cn'
 import { formatSpecies, label } from '~/lib/format'
-import { COLLECTION_FILTERS, routes, type CollectionFilter } from '~/lib/router'
+import { COLLECTION_FILTERS, navigate, routes, type CollectionFilter } from '~/lib/router'
 import { Button } from '~/ui/Button'
 import { Chip, ChipStrip, SortSwitch, type SortOption } from '~/ui/Chip'
 import { Dozing } from '~/ui/Dozing'
@@ -107,7 +107,7 @@ export function CollectionScreen({ filter }: { filter: CollectionFilter }) {
             <Chip
               key={candidate}
               selected={candidate === filter}
-              onClick={() => window.location.assign(routes.collection(candidate))}
+              onClick={() => navigate(routes.collection(candidate))}
             >
               {FILTER_LABELS[candidate]}
             </Chip>
@@ -124,7 +124,7 @@ export function CollectionScreen({ filter }: { filter: CollectionFilter }) {
           description={query ? `No plant matches “${query}”.` : emptyDescription(filter)}
           action={
             query ? null : (
-              <Button variant="accent" onClick={() => window.location.assign(routes.new())}>
+              <Button variant="accent" onClick={() => navigate(routes.new())}>
                 Add a plant
               </Button>
             )

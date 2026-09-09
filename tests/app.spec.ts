@@ -502,6 +502,44 @@ test('a dormant plant stays on the shelf, asleep rather than archived', async ({
   await expect(main(page).getByRole('link', { name: /Winter/ })).toBeHidden()
 })
 
+test('a new screen starts at its top, not where the last one was left', async ({ page }) => {
+  await addPlant(page, 'Monstera deliciosa', 'Gruy\u00e8re', 'Living room')
+
+  // Settings is the one screen long enough to scroll at either size.
+  await page.goto('#settings')
+  await page.evaluate(() => window.scrollTo(0, 400))
+  expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0)
+
+  // A real click on the nav, not page.goto: a browser navigation would not
+  // exercise the thing under test.
+  await page.getByRole('link', { name: 'Collection' }).first().click()
+  await expect(page).toHaveURL(/#collection/)
+  expect(await page.evaluate(() => window.scrollY)).toBe(0)
+})
+
+test('going back puts you where you were', async ({ page }) => {
+  // Only observable on a phone. The desktop sidebar sits in normal flow, so
+  // reaching the nav from halfway down a screen means scrolling up to it
+  // first — by the time the link is clicked the page is already at its top,
+  // and there is no position left to restore.
+  test.skip(isWide(page), 'the desktop nav cannot be reached from a scrolled page')
+
+  await addPlant(page, 'Monstera deliciosa', 'Gruy\u00e8re', 'Living room')
+
+  await page.goto('#settings')
+  await page.evaluate(() => window.scrollTo(0, 400))
+  const parked = await page.evaluate(() => window.scrollY)
+
+  await page.getByRole('link', { name: 'Collection' }).first().click()
+  await expect(page).toHaveURL(/#collection/)
+
+  await page.goBack()
+  await expect(page).toHaveURL(/#settings/)
+  // Polled: the screen has to mount before the offset is reachable, and
+  // WebKit puts the page back at 0 after the handler has already run.
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(parked)
+})
+
 test('the service worker caches what a cold offline start needs', async ({ page }) => {
   await addPlant(page, 'Monstera deliciosa', 'Gruyère')
 

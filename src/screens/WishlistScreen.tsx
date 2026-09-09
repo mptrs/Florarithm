@@ -13,7 +13,7 @@ import { wishlist } from '~/data/selectors'
 import { deletePlantForever, useStore } from '~/data/store'
 import type { Plant } from '~/data/types'
 import { formatSpecies } from '~/lib/format'
-import { routes } from '~/lib/router'
+import { navigate, routes } from '~/lib/router'
 import { cn } from '~/lib/cn'
 import { Button } from '~/ui/Button'
 import { useConfirm } from '~/ui/ConfirmDialog'
@@ -55,7 +55,7 @@ export function WishlistScreen() {
           title="No wishes yet"
           description="Plants you want but do not have. One button turns a wish into a plant, keeping its code and its name."
           action={
-            <Button variant="accent" icon="plus" onClick={() => window.location.assign(routes.newWish())}>
+            <Button variant="accent" icon="plus" onClick={() => navigate(routes.newWish())}>
               Add a wish
             </Button>
           }
@@ -78,7 +78,7 @@ export function WishlistScreen() {
             icon="plus"
             block
             className="mt-2 border-dashed"
-            onClick={() => window.location.assign(routes.newWish())}
+            onClick={() => navigate(routes.newWish())}
           >
             Add a wish
           </Button>

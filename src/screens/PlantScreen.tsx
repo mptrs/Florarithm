@@ -32,7 +32,7 @@ import { describeEvent, logEvent, removeEvent, useStore } from '~/data/store'
 import type { Plant, PlantEvent } from '~/data/types'
 import { daysSince, formatDate, formatDayMonth, formatMonthYear } from '~/lib/date'
 import { formatPotSize, formatPrice, formatSpecies, label, plural } from '~/lib/format'
-import { plantUrl, routes } from '~/lib/router'
+import { navigate, plantUrl, routes } from '~/lib/router'
 import { cn } from '~/lib/cn'
 import { Dozing } from '~/ui/Dozing'
 import { BackButton, Button, IconButton } from '~/ui/Button'
@@ -830,7 +830,7 @@ function WishActions({ plant }: { plant: Plant }) {
     <Card className="mt-5 flex flex-col gap-3 p-4">
       <GroupLabel>On the wishlist</GroupLabel>
       {plant.wishNote ? <p className="text-[0.9375rem] text-ink">{plant.wishNote}</p> : null}
-      <Button variant="accent" onClick={() => window.location.assign(routes.have(plant.code))}>
+      <Button variant="accent" onClick={() => navigate(routes.have(plant.code))}>
         I have this now
       </Button>
     </Card>
@@ -851,7 +851,7 @@ function UnknownPlant({ code, ready }: { code: string; ready: boolean }) {
         title="No plant with this code"
         description="Either this sticker belongs to someone else, or you have not added this one yet."
         action={
-          <Button variant="accent" onClick={() => window.location.assign(routes.new())}>
+          <Button variant="accent" onClick={() => navigate(routes.new())}>
             Add a plant
           </Button>
         }

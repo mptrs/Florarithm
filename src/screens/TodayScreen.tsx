@@ -39,7 +39,7 @@ import type { Plant } from '~/data/types'
 import { useSyncStatus } from '~/data/sync'
 import { daysSince, formatDayMonth } from '~/lib/date'
 import { formatSpecies, plural } from '~/lib/format'
-import { routes } from '~/lib/router'
+import { navigate, routes } from '~/lib/router'
 import { Banner } from '~/ui/Banner'
 import { Button } from '~/ui/Button'
 import { SortSwitch, type SortOption } from '~/ui/Chip'
@@ -96,7 +96,7 @@ export function TodayScreen() {
           title="Nothing here yet"
           description="Add your first plant and it will show up here, sorted by how long it has been since it last had water."
           action={
-            <Button variant="accent" onClick={() => window.location.assign(routes.new())}>
+            <Button variant="accent" onClick={() => navigate(routes.new())}>
               Add a plant
             </Button>
           }
@@ -205,7 +205,7 @@ function BackupReminder({
     <Banner
       tone="warning"
       action={
-        <Button size="sm" variant="danger" onClick={() => window.location.assign(routes.settings())}>
+        <Button size="sm" variant="danger" onClick={() => navigate(routes.settings())}>
           Back up
         </Button>
       }
