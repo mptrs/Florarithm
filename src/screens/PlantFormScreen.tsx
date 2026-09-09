@@ -299,17 +299,28 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
         </div>
       </div>
 
-      <ToggleField
-        label="This is still a wish"
-        checked={wish}
-        onChange={setWish}
-        hint={
-          wish
-            ? 'A wish only records what it is and why you want it — no place or care yet. Turn this off once you actually have it.'
-            : undefined
-        }
-        className="border-y border-line py-1"
-      />
+      {/* Only while adding. Which side of the line a record is on is settled
+          once, when it is written: a plant you own does not become a wish
+          again, and a wish becomes a plant through "I have this now" — on the
+          wishlist row and on the wish's own page — which is a decision with a
+          date on it rather than a switch you can graze past on your way to
+          fixing a typo. Leaving it here also let a plant keep a parent it had
+          no business keeping: the Family section hides itself for a wish, so
+          the switch could carry a line off into a record that cannot show
+          it. */}
+      {existing ? null : (
+        <ToggleField
+          label="This is still a wish"
+          checked={wish}
+          onChange={setWish}
+          hint={
+            wish
+              ? 'A wish only records what it is and why you want it — no place or care yet.'
+              : undefined
+          }
+          className="border-y border-line py-1"
+        />
+      )}
 
       <div className="flex flex-col gap-7 lg:flex-row lg:gap-12">
         <div className="flex flex-col gap-7 lg:w-[32rem] lg:shrink-0">
