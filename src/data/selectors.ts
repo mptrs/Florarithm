@@ -55,18 +55,6 @@ export function vocabName(state: State, id: Id | null): string {
   return vocabById(state).get(id)?.name ?? '—'
 }
 
-/**
- * The same name, or nothing at all.
- *
- * A dash holds a column open in a table, where the alternative is a row that
- * has lost a cell. On a tile or in the middle of a sentence there is no column
- * to hold, and the dash becomes a line of its own saying nothing.
- */
-export function vocabNameOrNone(state: State, id: Id | null): string {
-  const name = vocabName(state, id)
-  return name === '—' ? '' : name
-}
-
 /** The list you pick from: everything of a kind that is still in use. */
 export function vocabOf(state: State, kind: VocabKind): VocabItem[] {
   return state.vocab

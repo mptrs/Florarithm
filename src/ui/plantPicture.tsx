@@ -35,25 +35,30 @@ export function PlantPicture({ plant }: { plant: Plant }) {
 /**
  * One plant in the grid.
  *
- * `secondary` is the species, and it stays put in every ordering: the species
- * is what you are reading the tile *for* on a phone, and swapping it out for
- * the place when the list was sorted A–Z meant the one list you would sort
- * alphabetically was the one list that would not tell you what the plant was.
+ * `secondary` is the species, in every ordering — and it is the only thing
+ * under the name. The place is not here at all.
  *
- * `meta` is whatever the grouping is not already saying — the place, and only
- * while no drawer label above the tile is carrying it. It gets its own line
- * rather than trailing the species behind a dot, because half a phone wide
- * there is no room for two facts on one line and the second one truncates.
+ * That is the answer to a question this tile kept getting wrong. The species
+ * and the place are not two points on one scale — the species is what the
+ * plant *is*, the place is where it happens to be standing — so drawing the
+ * place as smaller, fainter prose under the species said "less important"
+ * when the honest thing to say was "different kind of fact". Sizing it down
+ * only made the eye read both lines to find out which was which.
+ *
+ * So the grouping carries it instead. Sorted by place, the drawer label says
+ * the room once for a whole run rather than once per tile; sorted A–Z the
+ * room is not the question you are asking, and it is one tap back. What the
+ * tile gains is a constant height in both orderings — the grid stopped going
+ * ragged when you switch the sort — and a second line that never competes
+ * with anything.
  */
 export function PlantTile({
   plant,
   secondary,
-  meta,
   tag,
 }: {
   plant: Plant
   secondary?: string
-  meta?: string
   /** An archived plant carries why it is archived, and is drawn faded. */
   tag?: string
 }) {
@@ -108,12 +113,9 @@ export function PlantTile({
           {plant.status === 'dormant' ? <Dozing className="shrink-0 text-[0.6875rem]" /> : null}
         </div>
         {secondary ? (
-          <div className="mt-0.5 truncate text-[0.8125rem] leading-4 text-ink-faint">
+          <div className="mt-0.5 truncate text-[0.8125rem] leading-4 text-ink-muted">
             {secondary}
           </div>
-        ) : null}
-        {meta ? (
-          <div className="truncate text-[0.8125rem] leading-4 text-ink-faint">{meta}</div>
         ) : null}
       </div>
     </a>

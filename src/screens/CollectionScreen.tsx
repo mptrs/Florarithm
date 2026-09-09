@@ -9,12 +9,15 @@
  * One rule runs through both: whatever the list is grouped by never repeats
  * itself inside a row. Grouped by place, the drawer label says the room, so the
  * table drops its Place column; sorted A–Z there is no label, so the place
- * moves back in.
+ * moves back into the column.
  *
- * The species is not part of that trade. It stays on the tile in either order,
- * because on a phone it is the line you are actually reading — the rule is
- * about not saying the room twice, and it used to cost you the species every
- * time you sorted alphabetically.
+ * On a phone there is no column for it to move into, and it does not move at
+ * all: the tile says the name and the species, and the room is whatever the
+ * drawer label above it says — nothing, when you have sorted A–Z. The place
+ * had been drawn there as a fainter, smaller run of the same prose as the
+ * species, which is what you do to rank two facts of one kind; these are two
+ * kinds. The room being one tap away is a better answer than a second line
+ * you have to read to identify.
  *
  * Days since water is here and quiet. Today is the list you water from, and two
  * screens shouting the same number at you means you trust neither.
@@ -30,7 +33,6 @@ import {
   isArchiveQuery,
   isThirsty,
   vocabName,
-  vocabNameOrNone,
 } from '~/data/selectors'
 import { useStore } from '~/data/store'
 import type { Plant } from '~/data/types'
@@ -154,8 +156,6 @@ function PlantRuns({
   runs: readonly (readonly [string, readonly Plant[]])[]
   showPlace: boolean
 }) {
-  const state = useStore()
-
   return (
     <div>
       {/* The table header exists only where there are columns to head. */}
@@ -176,12 +176,7 @@ function PlantRuns({
 
           <div className={cn('grid grid-cols-2 gap-3 lg:hidden', place ? '' : 'mt-4')}>
             {members.map((plant) => (
-              <PlantTile
-                key={plant.code}
-                plant={plant}
-                secondary={formatSpecies(plant)}
-                meta={showPlace ? vocabNameOrNone(state, plant.locationId) : undefined}
-              />
+              <PlantTile key={plant.code} plant={plant} secondary={formatSpecies(plant)} />
             ))}
           </div>
 
