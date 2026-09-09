@@ -473,3 +473,41 @@
 @utility animate-splash {
   animation: splash 500ms cubic-bezier(0.12, 0.8, 0.3, 1) both;
 }
+
+/**
+ * Sleep.
+ *
+ * There is no dormancy glyph in the icon set and there was never going to be
+ * one — the mark for asleep is a comic-strip convention, three z's drifting
+ * off, not a symbol. So it is drawn in letters and moved in CSS.
+ *
+ * Each z rises about its own height while it fades, and drifts a little to the
+ * right as it goes, because breath does not travel straight up. The three run
+ * on one keyframe with staggered delays and a slow cycle: a plant that is
+ * resting should look restful, and anything quicker reads as a spinner.
+ */
+@keyframes doze {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0.15rem) scale(0.8);
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(0.35rem, -0.85rem) scale(1.1);
+  }
+}
+
+@utility animate-doze {
+  animation: doze 2.8s var(--ease-grow) infinite;
+
+  /* Suppressed, the z's stay put and legible rather than vanishing: the mark
+     is the information, the drift is only the charm. */
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}

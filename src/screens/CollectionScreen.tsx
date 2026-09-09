@@ -33,6 +33,7 @@ import { formatSpecies, label } from '~/lib/format'
 import { COLLECTION_FILTERS, routes, type CollectionFilter } from '~/lib/router'
 import { Button } from '~/ui/Button'
 import { Chip, ChipStrip, SortSwitch, type SortOption } from '~/ui/Chip'
+import { Dozing } from '~/ui/Dozing'
 import { SearchField } from '~/ui/fields'
 import { PlantThumb, PlantTile } from '~/ui/plantPicture'
 import { EmptyState, ScreenHeader } from '~/ui/primitives'
@@ -194,14 +195,18 @@ function PlantRow({ plant, showPlace }: { plant: Plant; showPlace: boolean }) {
   const state = useStore()
   const days = daysSinceWater(state, plant.code)
   const species = formatSpecies(plant)
+  const dormant = plant.status === 'dormant'
 
   return (
     <RowLink href={routes.plant(plant.code)}>
       <PlantThumb plant={plant} />
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <span className="truncate font-display text-[1.09375rem] leading-[1.375rem] font-medium">
-          {plant.name}
+        <span className="flex items-baseline gap-1.5">
+          <span className="truncate font-display text-[1.09375rem] leading-[1.375rem] font-medium">
+            {plant.name}
+          </span>
+          {dormant ? <Dozing className="shrink-0 self-center" /> : null}
         </span>
         {species ? (
           <span className="truncate text-[0.8125rem] leading-[1.0625rem] text-ink-muted">
@@ -225,7 +230,11 @@ function PlantRow({ plant, showPlace }: { plant: Plant; showPlace: boolean }) {
         <span
           className={cn(
             'w-16 shrink-0 text-right font-mono text-[0.875rem]',
-            isThirsty(days) ? 'font-semibold text-ember' : 'text-ink',
+            // A dormant plant is not late, it is asleep — counting its days
+            // in ember would ask you to water something you have decided not
+            // to water.
+            isThirsty(days) && !dormant ? 'font-semibold text-ember' : 'text-ink',
+            dormant ? 'text-ink-faint' : '',
           )}
         >
           {days ?? '—'}
@@ -278,7 +287,7 @@ function Archive({ plants, query }: { plants: readonly Plant[]; query: string })
 
       <p className="mt-3.5 px-0.5 text-[0.8125rem] leading-[1.125rem] text-ink-faint text-pretty">
         {isArchiveQuery(query)
-          ? 'Plants that died, were given away or are resting. They stay out of every list you water from.'
+          ? 'Plants that died or were given away. A dormant plant is not here — it is still on the shelf, just asleep.'
           : 'Archived, so it is out of every list you water from.'}
       </p>
     </section>
@@ -292,7 +301,7 @@ function emptyTitle(filter: CollectionFilter): string {
 
 function emptyDescription(filter: CollectionFilter): string {
   if (filter === 'archive') {
-    return 'Plants that died, were given away or are resting show up here rather than in the list of things to water.'
+    return 'Plants that died or were given away show up here rather than in the list of things to water.'
   }
   return 'Everything you own, searchable by name, species, code or place.'
 }

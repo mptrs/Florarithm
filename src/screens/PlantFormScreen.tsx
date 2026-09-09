@@ -319,14 +319,27 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
                 placeholder="Ninja"
                 fieldClassName="flex-1"
               />
-              <SuggestField
+              {/* A select, not a suggest box: the terms are a short fixed set,
+                  and every other short fixed set in the app is a select. A
+                  plant already carrying a term from outside the six — typed
+                  back when this was a free field — is offered its own value
+                  back, so editing anything else cannot silently drop it. */}
+              <SelectField
                 label="Variegation"
                 value={variegation}
                 onChange={(event) => setVariegation(event.target.value)}
-                options={VARIEGATIONS}
-                placeholder="albo"
                 fieldClassName="flex-1"
-              />
+              >
+                <option value="">None</option>
+                {(VARIEGATIONS.includes(variegation) || !variegation
+                  ? VARIEGATIONS
+                  : [...VARIEGATIONS, variegation]
+                ).map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </SelectField>
             </div>
 
             {wish ? null : (

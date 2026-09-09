@@ -17,12 +17,12 @@ export type System = 'hydro' | 'semi-hydro' | 'soil'
 export const SYSTEMS: readonly System[] = ['hydro', 'semi-hydro', 'soil']
 
 /**
- * What the field starts you off with, not what it accepts.
+ * The trade terms a label actually carries.
  *
- * There is no closed list to be had: these are trade terms that vary by grower
- * and by species, and a fixed set would be out of date within a season. Six is
- * what covers most labels, and anything else you type is simply typed — and is
- * then in the list next time, which is the only list that matches your shelf.
+ * A plain select, because that is the control the rest of the app uses for a
+ * short fixed set and a browser's own suggest popup is not that control. Six
+ * covers the labels you meet; a plant already carrying something else keeps
+ * it, and the field offers it back rather than quietly dropping it.
  */
 export const VARIEGATIONS: readonly string[] = [
   'albo',

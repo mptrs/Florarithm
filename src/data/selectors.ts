@@ -242,8 +242,8 @@ export function filterCollection(
     .filter((plant) => {
       if (filter === 'wishlist') return plant.wish
       if (plant.wish) return false
-      if (filter === 'archive') return plant.status !== 'active'
-      if (plant.status !== 'active') return false
+      if (filter === 'archive') return isArchived(plant)
+      if (isArchived(plant)) return false
       if (filter === 'all') return true
       return plant.system === filter
     })
@@ -267,6 +267,19 @@ function matchesQuery(state: State, plant: Plant, needle: string): boolean {
 }
 
 // --- the archive ------------------------------------------------------------
+
+/**
+ * Whether a plant belongs in the drawer rather than on the shelf.
+ *
+ * Gone, not resting. A dormant plant is still yours and still in the room —
+ * it simply is not on a rhythm this month — so it stays in the collection,
+ * marked as asleep, and only death and a new owner close the drawer on a
+ * plant. `status !== 'active'` used to stand here, which filed a Caladium
+ * sleeping through the winter next to one that died.
+ */
+export function isArchived(plant: Plant): boolean {
+  return plant.status === 'died' || plant.status === 'given-away'
+}
 
 /**
  * The word that opens the drawer.
@@ -297,7 +310,7 @@ export function archivedMatching(state: State, query: string): Plant[] {
   if (!needle) return []
 
   const archived = livePlants(state).filter(
-    (plant) => !plant.wish && !plant.deleted && plant.status !== 'active',
+    (plant) => !plant.wish && !plant.deleted && isArchived(plant),
   )
 
   return archived

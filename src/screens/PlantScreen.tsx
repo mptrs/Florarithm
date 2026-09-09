@@ -34,6 +34,7 @@ import { daysSince, formatDate, formatDayMonth, formatMonthYear } from '~/lib/da
 import { formatPotSize, formatPrice, formatSpecies, label, plural } from '~/lib/format'
 import { plantUrl, routes } from '~/lib/router'
 import { cn } from '~/lib/cn'
+import { Dozing } from '~/ui/Dozing'
 import { BackButton, Button, IconButton } from '~/ui/Button'
 import { ActionDial } from '~/ui/ActionDial'
 import { SplitButton } from '~/ui/SplitButton'
@@ -124,6 +125,11 @@ export function PlantScreen({ code }: { code: string }) {
           <div className="min-w-0">
             <h1 className="font-display text-[2.5rem] leading-[2.6875rem] font-medium tracking-[-0.025em]">
               {plant.name}
+              {/* Riding the name rather than sitting in the record below it:
+                  dormancy is the one status that changes how you read
+                  everything else on this page, so it has to arrive with the
+                  name and not four rows later. */}
+              {plant.status === 'dormant' ? <Dozing className="ml-1.5 align-top text-[1.375rem]" /> : null}
             </h1>
             {formatSpecies(plant) ? (
               <p className="-mt-1 text-[1.0625rem] leading-6 text-ink-muted">{formatSpecies(plant)}</p>

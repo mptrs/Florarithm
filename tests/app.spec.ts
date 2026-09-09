@@ -447,6 +447,26 @@ test('an archived plant is out of the way but still findable', async ({ page }) 
   await expect(main(page).getByRole('link', { name: /Wolk/ })).toContainText('Died')
 })
 
+test('a dormant plant stays on the shelf, asleep rather than archived', async ({ page }) => {
+  const code = await addPlant(page, 'Caladium bicolor', 'Winter', 'Bedroom')
+
+  await page.goto(`#edit/${code}`)
+  await page.getByLabel('Status').selectOption('dormant')
+  await page.getByRole('button', { name: 'Save' }).click()
+
+  // The plant page says it is asleep without saying it is gone.
+  await expect(main(page).getByRole('img', { name: 'Dormant' })).toBeVisible()
+
+  await page.goto('#collection')
+  // Still in the collection, unfiltered — not behind the archive word.
+  await expect(main(page).getByRole('link', { name: /Winter/ })).toBeVisible()
+  await expect(main(page).getByRole('img', { name: 'Dormant' }).first()).toBeVisible()
+
+  // And out of the list you water from.
+  await page.goto('#today')
+  await expect(main(page).getByRole('link', { name: /Winter/ })).toBeHidden()
+})
+
 test('the service worker caches what a cold offline start needs', async ({ page }) => {
   await addPlant(page, 'Monstera deliciosa', 'Gruyère')
 

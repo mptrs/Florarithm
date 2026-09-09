@@ -17,6 +17,7 @@ import { useStore } from '~/data/store'
 import type { Plant } from '~/data/types'
 import { cn } from '~/lib/cn'
 import { routes } from '~/lib/router'
+import { Dozing } from './Dozing'
 import { Plate } from './Plate'
 
 /** The photograph or the plate, filling whatever box it is given. */
@@ -82,6 +83,17 @@ export function PlantTile({
         {tag ? (
           <span className="absolute bottom-2 left-2 rounded-full bg-floating px-2.5 py-1 text-[0.6875rem] leading-4 font-semibold text-ink-muted">
             {tag}
+          </span>
+        ) : null}
+        {/* Top right, over the photograph and clear of the tag: a sleeping
+            plant is still in the list, and this is the only thing telling you
+            why it has stopped asking to be watered. */}
+        {plant.status === 'dormant' ? (
+          // The same floating ground as the archive tag below it, for the same
+          // reason: over a photograph, three faint letters on their own are a
+          // coin toss between legible and invisible.
+          <span className="absolute top-2 right-2 rounded-full bg-floating px-2 pt-1 pb-0.5">
+            <Dozing />
           </span>
         ) : null}
       </div>
