@@ -20,3 +20,5 @@ design/today-redesign/florarithm-today.html
 # Per-session scan cache the design hook writes on every edit — local and
 # disposable, not something a commit should carry.
 .impeccable/hook.cache.json
+# The delete-placement canvas: same rule as the ones above.
+design/delete-placement/delete-plant-placement.html

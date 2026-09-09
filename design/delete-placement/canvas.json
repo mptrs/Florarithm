@@ -1,0 +1,15 @@
+{
+  "artboards": [
+    { "file": "Now.dc.html", "x": 0, "y": 0, "w": 390, "h": 844 },
+    { "file": "Main.dc.html", "x": 590, "y": 0, "w": 390, "h": 844 },
+    { "file": "DirectionB.dc.html", "x": 1080, "y": 0, "w": 390, "h": 844 },
+    { "file": "DirectionC.dc.html", "x": 1570, "y": 0, "w": 390, "h": 844 }
+  ],
+  "annotations": [
+    { "id": "now", "x": 0, "y": -150, "w": 390, "text": "NOW — the problem\n\nYou scroll to the bottom to save. The last thing under your thumb is Delete, one row below Save, in the spot the eye treats as \"the final action on this page\". Two destructive-adjacent taps sit within 60px of each other." },
+    { "id": "a", "x": 590, "y": -150, "w": 390, "text": "A — Overflow menu in the form header (recommended)\n\nDelete leaves the flow of the form entirely and becomes a deliberate two-step: ⋯ beside the title, then the item, then the existing confirm dialog. The save bar holds only Save and Cancel.\n\nTradeoff: one more tap, and a new ⋯ pattern on the form (the plant page already has one, so it is not a new idea)." },
+    { "id": "b", "x": 1080, "y": -150, "w": 390, "text": "B — Delete lives on the plant page, not on the form\n\nThe edit form becomes purely about editing; deleting the record sits with the record, in the ⋯ next to the floating edit button. Matches where \"take a cutting\" and \"show the tag\" already are.\n\nTradeoff: you cannot delete from the screen where you just discovered the plant is a mistake — you go back one step first." },
+    { "id": "c", "x": 1570, "y": -150, "w": 390, "text": "C — Under Status, above the save bar\n\nStays on the form but moves up into the Status section, where the plant's ending already lives (died, given away). One line of copy makes the case that status is usually the right answer, and delete reads as the quiet exception rather than a red button competing with Save.\n\nTradeoff: still on the same scroll as Save, just no longer beneath it." }
+  ],
+  "launch": { "view": "canvas" }
+}

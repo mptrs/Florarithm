@@ -266,12 +266,14 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
           where it belongs next to the decision it undoes. The code rides
           alongside the title on an existing plant: it is the one thing on this
           page that cannot be edited, because it is printed on the pot. */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-start gap-2">
         <BackButton variant="bare" className="-ml-2.5" />
-        <h1 className="min-w-0 flex-1 font-display text-[2rem] leading-9 font-medium tracking-[-0.015em]">
-          {title}
-        </h1>
-        {existing ? <CodeBadge code={existing.code} /> : null}
+        <div className="min-w-0 flex-1">
+          <h1 className="font-display text-[2rem] leading-9 font-medium tracking-[-0.015em] text-balance">
+            {title}
+          </h1>
+          {existing ? <CodeBadge code={existing.code} tone="quiet" className="-ml-2.5 mt-1" /> : null}
+        </div>
       </div>
 
       <ToggleField
@@ -444,6 +446,14 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
               )}
             </>
           )}
+
+          {/* A wish has no Status section to hang this off — nothing about it
+              has a status yet — so the one exit it does have sits here. */}
+          {existing && wish ? (
+            <div className="border-t border-line pt-5">
+              <DeleteRow onDelete={remove} wish />
+            </div>
+          ) : null}
         </div>
 
         {wish ? null : (
@@ -504,6 +514,8 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
                     </option>
                   ))}
                 </SelectField>
+
+                <DeleteRow onDelete={remove} />
               </Section>
             ) : null}
 
@@ -533,19 +545,36 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
         </Button>
       </div>
 
-      {existing ? (
-        <div className="mt-4 border-t border-line pt-5">
-          <Button variant="danger" icon="trash" onClick={remove}>
-            Delete this plant
-          </Button>
-        </div>
-      ) : null}
-
       {confirmDialog}
     </div>
   )
 }
 
+
+/**
+ * The way out that is almost never the right one.
+ *
+ * It used to be a red-outlined button hung under the save bar, which made it
+ * the last thing on the page — exactly where a thumb arrives looking for Save,
+ * and where the eye reads "the final action here". It sits under Status now
+ * because that is where a plant's ending already lives: died and given away
+ * keep the record and its whole history, and this is the one case where there
+ * should be no record at all. Quiet, and it still asks before it does anything.
+ */
+function DeleteRow({ onDelete, wish }: { onDelete: () => void; wish?: boolean }) {
+  return (
+    <div className="flex flex-col items-start gap-2">
+      <p className="text-[0.8125rem] leading-5 text-ink-muted text-pretty">
+        {wish
+          ? 'Deleting drops the wish and its note for good.'
+          : 'A plant that died or moved on keeps its place here under its own status — the history is the point. Delete is for a record that should never have existed.'}
+      </p>
+      <Button variant="danger-quiet" icon="trash" onClick={onDelete} className="-ml-3.5">
+        {wish ? 'Delete this wish' : 'Delete this plant for good'}
+      </Button>
+    </div>
+  )
+}
 
 /**
  * Which photograph stands for the plant.

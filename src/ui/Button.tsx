@@ -15,7 +15,15 @@ import { cn } from '~/lib/cn'
 import { canGoBack, routes } from '~/lib/router'
 import { Icon, type IconName } from './Icon'
 
-export type ButtonVariant = 'primary' | 'accent' | 'solid' | 'outline' | 'tinted' | 'quiet' | 'danger'
+export type ButtonVariant =
+  | 'primary'
+  | 'accent'
+  | 'solid'
+  | 'outline'
+  | 'tinted'
+  | 'quiet'
+  | 'danger'
+  | 'danger-quiet'
 export type ButtonSize = 'lg' | 'md' | 'sm'
 
 /**
@@ -43,6 +51,12 @@ const VARIANTS: Record<ButtonVariant, string> = {
   tinted: 'bg-water-tint text-water border border-transparent hover:text-water-deep',
   quiet: 'border border-transparent text-ink-muted hover:bg-sunk hover:text-ink',
   danger: 'border border-ember text-ember hover:bg-ember-tint',
+  /** The same warning colour without the frame — for a destructive action that
+   *  is offered rather than pressed, sitting in the run of a form. An outlined
+   *  red button reads as a decision the page expects you to make; this reads as
+   *  one it will let you make. The ground still answers on hover, so it is not
+   *  a link either. */
+  'danger-quiet': 'border border-transparent text-ember hover:bg-ember-tint',
 }
 
 const SIZES: Record<ButtonSize, string> = {
