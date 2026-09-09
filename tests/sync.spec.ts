@@ -37,10 +37,16 @@ async function addPlantWithPhoto(page: Page): Promise<string> {
   await page.getByRole('button', { name: 'Add to the collection' }).click()
   await expect(page.getByRole('heading', { name: 'Gruyère' })).toBeVisible()
 
+  // Photographing is one of the things the log sheet does. This project runs
+  // Desktop Chrome, which has no drop — the split button's caret reaches the
+  // same sheet.
+  await page.getByRole('button', { name: 'More ways to log' }).click()
+  await page.getByRole('menuitem', { name: 'Log something else', exact: true }).click()
   const chooser = page.waitForEvent('filechooser')
-  await page.getByRole('button', { name: 'More' }).click()
-  await page.getByRole('menuitem', { name: 'Add a photo' }).click()
+  await page.getByRole('button', { name: 'Add a photo' }).click()
   await (await chooser).setFiles({ name: 'g.png', mimeType: 'image/png', buffer: png(1200, 1600) })
+  // The attached-photo chip is also called "Photo"; the action is the later one.
+  await page.getByRole('button', { name: 'Photo', exact: true }).last().click()
   await expect(page.getByRole('img', { name: /Gruyère, photographed/ })).toBeVisible()
 
   return new URL(page.url()).hash.replace('#p=', '')

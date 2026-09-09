@@ -101,13 +101,18 @@
 /* ---------------------------------------------------------------------------
    Design tokens.
 
-   These are the light values, and they are the source of truth: every colour,
-   face and size in the app comes from a `--color-*` / `--font-*` / `--text-*`
-   token, never from a literal. Tailwind turns each one into a utility, so
-   `--color-water` gives you `bg-water`, `text-water`, `border-water`.
+   Every colour, face and size in the app comes from a `--color-*` /
+   `--font-*` / `--text-*` token, never from a literal. Tailwind turns each one
+   into a utility, so `--color-water` gives you `bg-water`, `text-water`,
+   `border-water`.
 
-   Dark mode is further down: it redefines the same variable names, so nothing
-   in the app has to know which theme is on.
+   Each colour carries both themes in one declaration: `light-dark()` picks the
+   arm that matches whatever `color-scheme` is in force, which is set once at
+   the root below. The dark palette used to be a second and third copy of these
+   names — once under `prefers-color-scheme`, once under `[data-theme='dark']` —
+   and a colour added to one copy and not the others simply went missing in that
+   theme, which is exactly what happened to the `-deep` values while they were
+   being written. One name, one line, both themes.
 --------------------------------------------------------------------------- */
 
 @theme {
@@ -119,28 +124,63 @@
   --color-current: currentColor;
 
   /* Surfaces, from the page ground up to a raised card. */
-  --color-paper: oklch(0.968 0.008 85);
-  --color-surface: oklch(0.995 0.003 85);
-  --color-sunk: oklch(0.944 0.01 85);
-  --color-line: oklch(0.886 0.01 80);
-  --color-line-strong: oklch(0.8 0.012 80);
+  --color-paper: light-dark(oklch(0.968 0.008 85), oklch(0.19 0.008 80));
+  --color-surface: light-dark(oklch(0.995 0.003 85), oklch(0.238 0.009 80));
+  --color-sunk: light-dark(oklch(0.944 0.01 85), oklch(0.155 0.008 80));
+  --color-line: light-dark(oklch(0.886 0.01 80), oklch(0.322 0.01 80));
+  --color-line-strong: light-dark(oklch(0.8 0.012 80), oklch(0.405 0.012 80));
 
   /* Text, from primary down to placeholder. */
-  --color-ink: oklch(0.255 0.014 65);
-  --color-ink-muted: oklch(0.51 0.014 68);
-  --color-ink-faint: oklch(0.655 0.012 72);
+  --color-ink: light-dark(oklch(0.255 0.014 65), oklch(0.945 0.008 85));
+  --color-ink-muted: light-dark(oklch(0.51 0.014 68), oklch(0.735 0.012 80));
+  --color-ink-faint: light-dark(oklch(0.655 0.012 72), oklch(0.575 0.012 78));
 
   /* One saturated colour per meaning. Leaf and water sit at the same lightness
      and chroma so neither shouts over the other; ember is deliberately a touch
      brighter, because a warning that is exactly as loud as everything else is
      not a warning. */
-  --color-leaf: oklch(0.455 0.098 152);
-  --color-leaf-tint: oklch(0.944 0.026 152);
-  --color-water: oklch(0.455 0.104 236);
-  --color-water-tint: oklch(0.944 0.028 236);
-  --color-ember: oklch(0.52 0.13 47);
-  --color-ember-tint: oklch(0.948 0.034 47);
-  --color-on-accent: oklch(0.985 0.004 85);
+  --color-leaf: light-dark(oklch(0.455 0.098 152), oklch(0.76 0.11 152));
+  --color-leaf-tint: light-dark(oklch(0.944 0.026 152), oklch(0.3 0.04 152));
+  --color-water: light-dark(oklch(0.455 0.104 236), oklch(0.76 0.105 236));
+  --color-water-tint: light-dark(oklch(0.944 0.028 236), oklch(0.305 0.042 236));
+  --color-ember: light-dark(oklch(0.52 0.13 47), oklch(0.79 0.12 47));
+  --color-ember-tint: light-dark(oklch(0.948 0.034 47), oklch(0.322 0.048 47));
+  --color-on-accent: light-dark(oklch(0.985 0.004 85), oklch(0.18 0.01 80));
+
+  /* Where a filled thing goes when you point at it. A `-tint` is the same
+     colour stepped away from the ink; a `-deep` is the same colour stepped
+     towards it, so a hovered button gains presence rather than losing it.
+     Hovering used to be `opacity-90`, which faded the label along with the
+     ground and read as half-disabled — the one state a button under the
+     cursor should never be in.
+
+     Dark is the other way up: a filled button there is light-on-dark, so
+     "towards the ink" means brighter. Same gain in presence, opposite
+     direction, which is the whole reason these are two arms of one token
+     rather than one value nudged at runtime. */
+  --color-leaf-deep: light-dark(oklch(0.405 0.098 152), oklch(0.815 0.11 152));
+  --color-water-deep: light-dark(oklch(0.405 0.104 236), oklch(0.815 0.105 236));
+  --color-ink-deep: light-dark(oklch(0.185 0.014 65), oklch(0.985 0.008 85));
+
+  /* Colours that carry their own transparency.
+
+     These were written as opacity modifiers on the tokens above — ink at 45%
+     for a scrim, surface at 90% for a chip on a photograph. Two reasons they
+     are their own tokens now.
+
+     The first is that ink is the *text* colour, and dark mode turns it nearly
+     white: a 45% ink veil over a dark page washed the page out instead of
+     dimming it, which is the opposite of what a scrim is for. A scrim is dark
+     in both themes, because its job is to put the page behind it in shadow.
+
+     The second is mechanical: an opacity modifier compiles to `color-mix()`,
+     and a `light-dark()` inside a `color-mix()` is not recomputed when the
+     colour scheme changes under a page that is already open — so those few
+     elements kept yesterday's theme until something re-rendered them. Baking
+     the alpha in keeps them plain `var()` lookups, which do update. */
+  --color-scrim: light-dark(oklch(0.255 0.014 65 / 0.45), oklch(0.12 0.008 80 / 0.62));
+  --color-floating: light-dark(oklch(0.995 0.003 85 / 0.9), oklch(0.238 0.009 80 / 0.9));
+  --color-veil-strong: light-dark(oklch(0.968 0.008 85 / 0.95), oklch(0.19 0.008 80 / 0.95));
 
   /* Two webfonts. The interface chrome runs on system-ui, which is SF on both
      devices this app will ever see, so it feels native and costs nothing. */
@@ -197,51 +237,32 @@
   --spacing-touch: 2.75rem; /* 44px — the floor */
   --spacing-control: 3rem; /* 48px — the standard control */
   --spacing-primary: 4rem; /* 64px — the one action you came for */
+
+  /* One curve for the whole app: quick off the mark, long settle. A plant
+     does not bounce into place, and neither does anything here — no spring,
+     no overshoot, nothing that draws attention to itself on the way. */
+  --ease-grow: cubic-bezier(0.2, 0.8, 0.24, 1);
 }
 
-/* Dark mode remaps the same names. `data-theme` lets an explicit choice win in
-   both directions; with no choice made, the system decides. */
+/* Which way the tokens above resolve.
+
+   `color-scheme` is the only switch now: the root follows the system unless an
+   explicit choice pins it, and every `light-dark()` above reads that. Setting
+   `data-theme` on <html> is still how a theme toggle would work — nothing in
+   the app sets it yet — and it now costs one line per theme instead of a full
+   copy of the palette. Naming the scheme also tells the browser what to paint
+   form controls, scrollbars and the caret. */
 @layer base {
   :root {
     color-scheme: light dark;
   }
 
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme='light']) {
-      --color-paper: oklch(0.19 0.008 80);
-      --color-surface: oklch(0.238 0.009 80);
-      --color-sunk: oklch(0.155 0.008 80);
-      --color-line: oklch(0.322 0.01 80);
-      --color-line-strong: oklch(0.405 0.012 80);
-      --color-ink: oklch(0.945 0.008 85);
-      --color-ink-muted: oklch(0.735 0.012 80);
-      --color-ink-faint: oklch(0.575 0.012 78);
-      --color-leaf: oklch(0.76 0.11 152);
-      --color-leaf-tint: oklch(0.3 0.04 152);
-      --color-water: oklch(0.76 0.105 236);
-      --color-water-tint: oklch(0.305 0.042 236);
-      --color-ember: oklch(0.79 0.12 47);
-      --color-ember-tint: oklch(0.322 0.048 47);
-      --color-on-accent: oklch(0.18 0.01 80);
-    }
+  :root[data-theme='light'] {
+    color-scheme: light;
   }
 
   :root[data-theme='dark'] {
-    --color-paper: oklch(0.19 0.008 80);
-    --color-surface: oklch(0.238 0.009 80);
-    --color-sunk: oklch(0.155 0.008 80);
-    --color-line: oklch(0.322 0.01 80);
-    --color-line-strong: oklch(0.405 0.012 80);
-    --color-ink: oklch(0.945 0.008 85);
-    --color-ink-muted: oklch(0.735 0.012 80);
-    --color-ink-faint: oklch(0.575 0.012 78);
-    --color-leaf: oklch(0.76 0.11 152);
-    --color-leaf-tint: oklch(0.3 0.04 152);
-    --color-water: oklch(0.76 0.105 236);
-    --color-water-tint: oklch(0.305 0.042 236);
-    --color-ember: oklch(0.79 0.12 47);
-    --color-ember-tint: oklch(0.322 0.048 47);
-    --color-on-accent: oklch(0.18 0.01 80);
+    color-scheme: dark;
   }
 
   html {
@@ -282,6 +303,60 @@
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+/**
+ * The warm — for a surface that answers by taking on ground, not by moving.
+ *
+ * A row in a list, a menu item, a nav stop. They are pressable too, but a
+ * hundred of them are on screen at once and a hundred things rising a pixel
+ * under a travelling cursor is weather, not feedback. Same curve, same
+ * duration as the lift, so the app still keeps one sense of time.
+ */
+@utility warm {
+  transition-property: color, background-color, border-color;
+  transition-duration: 200ms;
+  transition-timing-function: var(--ease-grow);
+}
+
+/**
+ * The lift — what everything you can press does under the cursor.
+ *
+ * A single pixel towards the light, on the one curve, plus the transition
+ * every hover in the app rides on. It is one class rather than four repeated
+ * utilities because the point is that the whole surface answers the same way:
+ * a button, a chip and a tile that each rose by their own amount would read as
+ * three separate effects rather than one material.
+ *
+ * The colour change is the state; the rise only ornaments it. That order
+ * matters — under `prefers-reduced-motion` the rise is dropped entirely and
+ * the hover still reads, which would not be true if the movement carried it.
+ */
+@utility lift {
+  transition-property: color, background-color, border-color, box-shadow, transform, opacity;
+  transition-duration: 200ms;
+  transition-timing-function: var(--ease-grow);
+
+  /* `:not(:disabled)` rather than `:enabled`, which only ever matches a form
+     control — a disabled button still receives :hover, and a dead control
+     that rises to meet the cursor is a promise the app cannot keep. */
+  @media (hover: hover) {
+    &:not(:disabled):hover {
+      transform: translateY(-1px);
+    }
+  }
+
+  /* Pressed puts it back down on the paper, under the finger. */
+  &:active {
+    transform: translateY(0);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &:hover,
+    &:active {
+      transform: none;
+    }
+  }
+}
+
 @keyframes toast-in {
   from {
     opacity: 0;
@@ -291,4 +366,110 @@
 
 @utility animate-toast-in {
   animation: toast-in 0.2s ease-out;
+}
+
+/**
+ * A drop landing.
+ *
+ * What the quick water and feed buttons say back. Logging from the dial used
+ * to close it and leave the screen exactly as it was, which reads as nothing
+ * having happened — the record had changed, but the only place you could see
+ * that was a card further down the page.
+ *
+ * Two rings rather than one, the second a beat behind, because that is what a
+ * drop actually does to a still surface; one ring on its own reads as a button
+ * flashing. They start slightly inside the button and grow past it, so the
+ * mark is clearly *leaving* rather than being drawn on top.
+ */
+@keyframes ripple {
+  from {
+    opacity: 0.65;
+    transform: scale(0.5);
+  }
+  to {
+    opacity: 0;
+    transform: scale(3.2);
+  }
+}
+
+@utility animate-ripple {
+  /* `both` so a delayed ring holds its opening frame instead of sitting there
+     full-size and opaque until its turn comes. */
+  animation: ripple 720ms var(--ease-grow) both;
+}
+
+/**
+ * Opening.
+ *
+ * Everything that covers the page arrives rather than appears. Three shapes,
+ * because the three surfaces come from different places: the scrim fades where
+ * it is, a sheet rises from the edge it is attached to, and a panel — the
+ * overflow menu, or the same sheet once a desktop has centred it — scales up a
+ * hair from its own corner. All on the app's one curve.
+ *
+ * These are entrances only. Closing unmounts, so there is nothing left to
+ * animate out without keeping a dead panel on screen to do it with.
+ */
+@keyframes veil-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@utility animate-veil-in {
+  animation: veil-in 220ms var(--ease-grow) both;
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(1.5rem);
+  }
+}
+
+@utility animate-rise-in {
+  animation: rise-in 280ms var(--ease-grow) both;
+}
+
+@keyframes panel-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+
+@utility animate-panel-in {
+  animation: panel-in 190ms var(--ease-grow) both;
+}
+
+/**
+ * The splash.
+ *
+ * Water thrown outward from the button you pressed, each drop along its own
+ * `--dx`/`--dy`. This one *is* on a decelerating curve: the drops leave fast
+ * and lose speed on the way out, which is what thrown water does — the ease-in
+ * that suits something falling would have them crawl away from the button and
+ * then bolt. They shrink as they go, the way a thrown drop does once it is
+ * past the throw.
+ *
+ * The element is centred with the `translate` property and moved with
+ * `transform`, which are separate properties and so compose rather than
+ * overwrite each other.
+ */
+@keyframes splash {
+  from {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.2);
+  }
+  15% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: translate(var(--dx, 0), var(--dy, 0)) scale(0.7);
+  }
+}
+
+@utility animate-splash {
+  animation: splash 500ms cubic-bezier(0.12, 0.8, 0.3, 1) both;
 }

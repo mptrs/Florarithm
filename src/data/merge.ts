@@ -53,6 +53,14 @@ export function mergeVocab(a: readonly VocabItem[], b: readonly VocabItem[]): Me
  * and a photograph one device knows about is never dropped because the other
  * had not heard of it yet.
  *
+ * `fertilized` is deliberately *not* one of them. A day's watering can be
+ * corrected in both directions — pressing water after fertiliser says it was
+ * plain water after all — so there is no direction to resolve towards, and an
+ * OR would make the correction impossible to sync rather than merely lossy.
+ * Two devices amending the same day before syncing is left as the rare case it
+ * is: one of the two amendments wins and the other is visible in the log to be
+ * fixed by hand.
+ *
  * Nothing removes an event outright any more — deleting one sets the flag and
  * the row stays — so a push can go out at any moment without a merge handing
  * back something a person has already taken away.

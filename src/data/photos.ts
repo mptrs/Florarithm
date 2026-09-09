@@ -150,6 +150,26 @@ export async function storePhoto(eventId: string, prepared: PreparedPhoto): Prom
   put(eventId, URL.createObjectURL(new Blob([prepared.bytes], { type: prepared.type })))
 }
 
+/**
+ * Move a photograph's bytes to a different entry.
+ *
+ * Photographs are filed under the id of the event that claims them, so an entry
+ * that inherits a picture has to inherit the bytes too — leaving them under the
+ * id that was thrown away gives you a row promising a picture that will never
+ * load, which is the one thing the storing order everywhere else is careful to
+ * avoid.
+ */
+export async function refilePhoto(fromEventId: string, toEventId: string): Promise<boolean> {
+  const stored = await db.readPhoto(fromEventId)
+  if (!stored) return false
+
+  await db.putPhoto({ ...stored, eventId: toEventId })
+  await db.deletePhotos([fromEventId])
+  put(fromEventId, null)
+  put(toEventId, URL.createObjectURL(toBlob({ ...stored, eventId: toEventId })))
+  return true
+}
+
 /** What `sync.ts` calls when it has pulled a photograph the other device took.
  *  Already in the repo by definition, so it starts life synced. */
 export async function acceptDownloadedPhoto(photo: Omit<StoredPhoto, 'synced'>): Promise<void> {

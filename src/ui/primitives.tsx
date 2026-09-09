@@ -32,6 +32,14 @@ export function CodeBadge({
     tinted: 'bg-leaf-tint text-leaf',
   } as const
 
+  /** One per tone, because fading the code out on hover — which is what this
+   *  did — is the one thing a number you are about to read must not do. */
+  const hovers = {
+    outline: 'hover:border-ink-faint hover:text-ink',
+    quiet: 'hover:bg-sunk hover:text-ink-muted',
+    tinted: 'hover:text-leaf-deep',
+  } as const
+
   const shared = cn(
     'inline-flex shrink-0 items-center rounded-sm px-2.5 py-1 font-mono text-code',
     tones[tone],
@@ -44,7 +52,7 @@ export function CodeBadge({
         type="button"
         onClick={onClick}
         aria-label={label}
-        className={cn(shared, 'transition-opacity active:opacity-70 md:hover:opacity-70')}
+        className={cn(shared, 'lift active:opacity-70', hovers[tone])}
       >
         {code}
       </button>

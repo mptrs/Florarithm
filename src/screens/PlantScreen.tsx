@@ -6,12 +6,14 @@
  * when did it last get anything. Care and History are the two tabs; the facts
  * that never change moved to the desktop, where managing happens.
  *
- * The drop is fixed to the bottom right and never scrolls away. Tapping it fans
- * out watered, fertilised, and a way to everything else.
+ * The drop is fixed to the bottom right on a phone and never scrolls away;
+ * tapping it fans out watered, fertilised, and a way to everything else. A
+ * desktop has no thumb to reach a floating corner with, so the same three
+ * things sit on a split button on the title row instead.
  */
 
-import { useEffect, useRef, useState, type ChangeEvent, type ReactNode } from 'react'
-import { preparePhoto, storePhoto, usePhoto } from '~/data/photos'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { usePhoto } from '~/data/photos'
 import {
   childrenOf,
   countThisYear,
@@ -25,20 +27,20 @@ import {
   lastRepot,
   lastWaterAt,
   vocabName,
-  waterRhythm,
 } from '~/data/selectors'
 import { describeEvent, logEvent, removeEvent, useStore } from '~/data/store'
 import type { Plant, PlantEvent } from '~/data/types'
 import { daysSince, formatDate, formatDayMonth, formatMonthYear } from '~/lib/date'
 import { formatPotSize, formatPrice, formatSpecies, label, plural } from '~/lib/format'
-import { newId } from '~/lib/id'
 import { plantUrl, routes } from '~/lib/router'
 import { cn } from '~/lib/cn'
-import { BackButton, Button } from '~/ui/Button'
+import { BackButton, Button, IconButton } from '~/ui/Button'
 import { ActionDial } from '~/ui/ActionDial'
+import { SplitButton } from '~/ui/SplitButton'
 import { Card, GroupLabel, IconChip, type ChipTone } from '~/ui/Card'
+import { Chip } from '~/ui/Chip'
 import { Icon, type IconName } from '~/ui/Icon'
-import { Menu, MenuItem } from '~/ui/Menu'
+import { showToast } from '~/ui/toast'
 import { Plate } from '~/ui/Plate'
 import { EmptyState } from '~/ui/primitives'
 import { QrCodeBox } from '~/ui/QrCode'
@@ -53,27 +55,102 @@ export function PlantScreen({ code }: { code: string }) {
   const [tab, setTab] = useState<Tab>('care')
   const [intent, setIntent] = useState<LogIntent | null>(null)
   const [dialOpen, setDialOpen] = useState(false)
+  const [showQr, setShowQr] = useState(false)
 
   // A tombstoned plant reads exactly like a code that never existed — the
   // lookup itself stays unfiltered so an old event can still name it.
   if (!plant || plant.deleted) return <UnknownPlant code={code} ready={state.status === 'ready'} />
 
+  /* The link on the sticker. Copying it is the everyday job — it is how a tag
+     gets made — so it is a button of its own rather than a step inside the QR.
+     It confirms with a toast because that is what everything else that writes
+     or copies does here; a word appearing beside the button was a second
+     vocabulary for the same idea. The QR is the same address for a phone with
+     no keyboard, and falls out of the failure path: a browser that refuses the
+     clipboard still has it. */
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(plantUrl(plant.code))
+      showToast('Tag link copied')
+    } catch {
+      setShowQr(true)
+    }
+  }
+
+  /* The pour on the dial is the answer here, so there is no toast on top of
+     it — a pill sliding up to say what you just watched happen is the boring
+     half of the same sentence. The exception is where the pour never plays:
+     with motion suppressed the animation is the part that is missing, and the
+     words become the whole of the feedback rather than a duplicate of it. */
   const water = (fertilized: boolean) => {
     void logEvent({ type: 'water', plantCode: plant.code, fertilized })
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      showToast(fertilized ? `${plant.name} watered with fertiliser` : `${plant.name} watered`)
+    }
   }
 
   return (
     <div className="relative -mx-4 -mt-6 md:mx-0 md:mt-0">
-      <Hero plant={plant} onLog={() => setIntent({ kind: 'new' })} />
+      <Hero
+        plant={plant}
+        showQr={showQr}
+        onShowQr={() => setShowQr(true)}
+        onHideQr={() => setShowQr(false)}
+      />
 
       {/* The sheet of content rides up over the bottom of the hero, and keeps
           going over it as the page scrolls. The padding at its foot is the
           drop's own footprint: without it the last row of the record sits
-          under a button that never scrolls away. */}
-      <div className="relative z-10 -mt-6 rounded-t-[1.75rem] bg-paper px-4 pt-5 pb-14 md:mt-6 md:rounded-none md:px-0 md:pt-0 md:pb-0">
-        <h1 className="font-display text-[2.5rem] leading-[2.6875rem] font-medium tracking-[-0.025em]">
-          {plant.name}
-        </h1>
+          under a button that never scrolls away.
+
+          `z-30`, not `z-10`: this `relative` + explicit z-index makes the
+          sheet its own stacking context, which caps everything nested inside
+          it — including the split button's own click-outside overlay, at
+          `z-40` — at this number, no matter how high THAT number is. Hero's
+          own controls (Back, Edit) sit at `z-20`, one sibling context over; a
+          rank of 10 here lost to them every time, so the overlay could never
+          catch a click landing on Hero. 30 clears Hero's 20 and still loses
+          cleanly to a real modal like Sheet or the toast, both `z-50`. */}
+      <div className="relative z-30 -mt-6 rounded-t-[1.75rem] bg-paper px-4 pt-5 pb-14 md:mt-6 md:rounded-none md:px-0 md:pt-0 md:pb-0">
+        {/* The link is the everyday half of the tag, so it rides the name's own
+            line at the far edge of it. The QR is the other half and lives down
+            on the photograph, next to the place. */}
+        <div className="flex items-start justify-between gap-3">
+          <h1 className="min-w-0 font-display text-[2.5rem] leading-[2.6875rem] font-medium tracking-[-0.025em]">
+            {plant.name}
+          </h1>
+          {plant.wish ? null : (
+            <div className="flex shrink-0 items-center gap-2">
+              <IconButton
+                icon="link"
+                label="Copy the tag link"
+                variant="quiet"
+                className="mt-0.5"
+                onClick={() => void copyLink()}
+              />
+              {/* The fan does this on a phone. A desktop has no thumb to reach
+                  with, so the same three things sit here instead, on the row
+                  that already carries this plant's identity.
+
+                  Visibility lives on this wrapper rather than on a className
+                  handed to `SplitButton` itself: the button's own root is
+                  already `inline-flex` for its two segments, and `hidden` on
+                  the same element loses that fight regardless of breakpoint —
+                  two unconditional display utilities on one element resolve by
+                  their order in the generated stylesheet, not by which one is
+                  meant to win. `md:contents` un-boxes the wrapper from `md` up,
+                  so the button becomes a direct flex item of the row exactly
+                  as if this div were never here. */}
+              <div className="hidden md:contents">
+                <SplitButton
+                  onWater={() => water(false)}
+                  onFertilise={() => water(true)}
+                  onMore={() => setIntent({ kind: 'new' })}
+                />
+              </div>
+            </div>
+          )}
+        </div>
         {formatSpecies(plant) ? (
           <p className="mt-1.5 text-[1.0625rem] leading-6 text-ink-muted">{formatSpecies(plant)}</p>
         ) : null}
@@ -86,11 +163,17 @@ export function PlantScreen({ code }: { code: string }) {
                 record because there is room for one of them; a desktop shows
                 both, with the facts you only ever manage sitting beside them. */}
             <Tabs tab={tab} onChange={setTab} />
-            <div className="md:flex md:items-start md:gap-8">
+            {/* The split waits for `lg`. The care column is a fixed 21rem, and
+                from `md` the shell is already spending 15.5rem on the sidebar —
+                so at 768px the record beside it was left with about 70px to set
+                a date and a title in, and the two ran straight over each other.
+                Everywhere else in the app the desktop layout starts at `lg`;
+                this is the one place that started early. */}
+            <div className="lg:flex lg:items-start lg:gap-8">
               <div
                 className={cn(
-                  'md:order-2 md:w-[21rem] md:shrink-0',
-                  tab === 'care' ? '' : 'hidden md:block',
+                  'lg:order-2 lg:w-[21rem] lg:shrink-0',
+                  tab === 'care' ? '' : 'hidden lg:block',
                 )}
               >
                 <Care plant={plant} />
@@ -99,8 +182,8 @@ export function PlantScreen({ code }: { code: string }) {
               </div>
               <div
                 className={cn(
-                  'md:order-1 md:min-w-0 md:flex-1',
-                  tab === 'history' ? '' : 'hidden md:block',
+                  'lg:order-1 lg:min-w-0 lg:flex-1',
+                  tab === 'history' ? '' : 'hidden lg:block',
                 )}
               >
                 <History plant={plant} onEdit={(event) => setIntent({ kind: 'edit', event })} />
@@ -176,62 +259,23 @@ function useScrolled(): number {
  * without a photo than with one, because a tall empty rectangle on every plant
  * is a worse answer than a short one.
  */
-function Hero({ plant, onLog }: { plant: Plant; onLog: () => void }) {
+function Hero({
+  plant,
+  showQr,
+  onShowQr,
+  onHideQr,
+}: {
+  plant: Plant
+  showQr: boolean
+  onShowQr: () => void
+  onHideQr: () => void
+}) {
   const state = useStore()
-  const [menuOpen, setMenuOpen] = useState(false)
-  const [showQr, setShowQr] = useState(false)
-  const [copied, setCopied] = useState(false)
-  const [photoError, setPhotoError] = useState('')
   const photoEvent = currentPhotoEvent(state, plant.code)
   const photo = usePhoto(photoEvent?.id ?? null)
-  const picker = useRef<HTMLInputElement>(null)
   const frame = useRef<HTMLDivElement>(null)
   const scrolled = useScrolled()
   const place = vocabName(state, plant.locationId)
-
-  const choosePhoto = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-
-    // Clear the selection before doing anything with it: an input holds on to
-    // the last file it was given, so picking the same photo twice in a row
-    // would fire no second change event.
-    event.target.value = ''
-    if (!file) return
-
-    setPhotoError('')
-    try {
-      // A photograph taken from the hero is an entry in its own right — "this
-      // is what it looks like now" — so it goes into the log like everything
-      // else, and becomes the plant's picture by being the newest one.
-      const prepared = await preparePhoto(file)
-      URL.revokeObjectURL(prepared.previewUrl)
-
-      // Bytes before the entry that claims them: a failure here leaves nothing
-      // behind rather than a row promising a picture that never loads.
-      const id = newId()
-      await storePhoto(id, prepared)
-      await logEvent({
-        type: 'photo',
-        id,
-        plantCode: plant.code,
-        photo: { width: prepared.width, height: prepared.height },
-      })
-    } catch {
-      // A photo that silently fails to appear reads as the app losing it.
-      setPhotoError('That photo could not be read.')
-    }
-  }
-
-  const copyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(plantUrl(plant.code))
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    } catch {
-      // Clipboard access can be refused; the QR is the other way to the same link.
-      setShowQr(true)
-    }
-  }
 
   // A photograph belongs to an event; `photo` and `photoEvent` are read from
   // two different places and can go out of step for a render or two — most
@@ -276,115 +320,58 @@ function Hero({ plant, onLog }: { plant: Plant; onLog: () => void }) {
           over the record instead of being clipped by the photograph's edge.
           Transparent, so only the controls themselves take a tap. */}
       <div className={cn('pointer-events-none absolute inset-x-0 top-0 z-20', box)}>
-        <input
-          ref={picker}
-          type="file"
-          accept="image/*"
-          onChange={choosePhoto}
-          tabIndex={-1}
-          aria-hidden
-          className="hidden"
-        />
-
         <div className="pointer-events-auto absolute inset-x-4 top-4 flex items-start justify-between">
         <BackButton />
 
         <div className="relative flex items-center gap-2">
-          {copied ? (
-            <span className="rounded-full bg-surface/90 px-3 py-1.5 text-[0.8125rem] font-medium text-leaf shadow-md">
-              Copied
-            </span>
-          ) : null}
           <a
             href={routes.edit(plant.code)}
             aria-label="Edit this plant"
-            className="flex size-10 items-center justify-center rounded-full bg-surface/90 text-ink shadow-md transition-colors active:opacity-70 md:hover:bg-surface"
+            className="lift flex size-10 items-center justify-center rounded-full bg-floating text-ink shadow-md active:opacity-70 hover:bg-surface hover:shadow-lg"
           >
             <Icon name="edit" size={19} />
           </a>
-          <button
-            type="button"
-            onClick={() => setMenuOpen(true)}
-            aria-label="More"
-            aria-haspopup="menu"
-            className="flex size-10 items-center justify-center rounded-full bg-surface/90 text-ink shadow-md transition-colors active:opacity-70 md:hover:bg-surface"
-          >
-            <Icon name="more" size={19} />
-          </button>
-
-          <Menu open={menuOpen} onClose={() => setMenuOpen(false)} label={plant.name}>
-            <MenuItem
-              icon="plus"
-              label="Log activity"
-              className="hidden md:flex"
-              onClick={() => {
-                setMenuOpen(false)
-                onLog()
-              }}
-            />
-            {/* Not "replace": every photograph is kept, and the newest one is
-                what the plant looks like now. Removing one means removing its
-                entry, in the history, where it is visible. */}
-            <MenuItem
-              icon="image"
-              label="Add a photo"
-              onClick={() => {
-                setMenuOpen(false)
-                picker.current?.click()
-              }}
-            />
-            <MenuItem
-              icon="link"
-              label="Copy the tag link"
-              onClick={() => {
-                setMenuOpen(false)
-                void copyLink()
-              }}
-            />
-            <MenuItem
-              icon="qr"
-              label="Show the QR code"
-              onClick={() => {
-                setMenuOpen(false)
-                setShowQr(true)
-              }}
-            />
-            <MenuItem
-              icon="edit"
-              label="Edit this plant"
-              onClick={() => window.location.assign(routes.edit(plant.code))}
-            />
-          </Menu>
         </div>
       </div>
 
       {/* One line at the foot of the photograph. A failed photo displaces the
-          place, because they want the same line and only one of them is news. */}
-      {photoError ? (
-        <div className="absolute inset-x-4 bottom-4">
-          <span
-            role="status"
-            className="inline-flex items-center gap-1.5 rounded-full bg-ember px-3.5 py-2 text-[0.875rem] font-semibold text-on-accent shadow-md"
+          place, because they want the same line and only one of them is news.
+
+          The two offsets are the same line in two different layouts. On a
+          phone the sheet of content rides 24px up over the photograph, so
+          anything sitting lower than that is behind paper — `bottom-9` clears
+          the overlap and leaves the chip a margin. From `md` the sheet starts
+          below the hero instead of over it, there is nothing to clear, and the
+          chip can sit where it reads best: near the frame's own edge. */}
+      {plant.wish ? null : (
+        <div className="pointer-events-auto absolute inset-x-4 bottom-9 flex items-center gap-2 md:bottom-4">
+          {/* The other half of the tag, kept next to the place because both are
+              about the pot this plant is standing in. With no place recorded it
+              is simply the first thing on the line, in the corner on its own. */}
+          <button
+            type="button"
+            onClick={onShowQr}
+            aria-label="Show the QR code"
+            className="lift flex size-10 shrink-0 items-center justify-center rounded-full bg-floating text-ink shadow-md active:opacity-70 hover:bg-surface hover:shadow-lg"
           >
-            <Icon name="alert" size={16} />
-            {photoError}
-          </span>
+            <Icon name="qr" size={19} />
+          </button>
+
+          {place && place !== '—' ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-floating px-3.5 py-2 text-[0.875rem] font-semibold text-ink shadow-md">
+              <Icon name="place" size={16} className="text-leaf" />
+              {place}
+            </span>
+          ) : null}
         </div>
-      ) : place && place !== '—' ? (
-        <div className="absolute inset-x-4 bottom-4">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-surface/90 px-3.5 py-2 text-[0.875rem] font-semibold text-ink shadow-md">
-            <Icon name="place" size={16} className="text-leaf" />
-            {place}
-          </span>
-        </div>
-      ) : null}
+      )}
 
       {showQr ? (
         <button
           type="button"
           aria-label="Hide the QR code"
-          onClick={() => setShowQr(false)}
-          className="pointer-events-auto absolute inset-0 flex flex-col items-center justify-center gap-3 bg-paper/95"
+          onClick={onHideQr}
+          className="pointer-events-auto absolute inset-0 flex flex-col items-center justify-center gap-3 bg-veil-strong"
         >
           <QrCodeBox value={plantUrl(plant.code)} size={112} />
           <span className="font-mono text-code tracking-[0.1em] text-ink-muted">{plant.code}</span>
@@ -399,7 +386,7 @@ function Hero({ plant, onLog }: { plant: Plant; onLog: () => void }) {
 
 function Tabs({ tab, onChange }: { tab: Tab; onChange: (tab: Tab) => void }) {
   return (
-    <div role="tablist" className="mt-5 flex border-b border-line md:hidden">
+    <div role="tablist" className="mt-5 flex border-b border-line lg:hidden">
       {(['care', 'history'] as const).map((key) => (
         <button
           key={key}
@@ -408,10 +395,10 @@ function Tabs({ tab, onChange }: { tab: Tab; onChange: (tab: Tab) => void }) {
           aria-selected={tab === key}
           onClick={() => onChange(key)}
           className={cn(
-            'h-12 flex-1 border-b-2 text-body capitalize',
+            'warm h-12 flex-1 border-b-2 text-body capitalize',
             tab === key
               ? 'border-leaf font-semibold text-leaf'
-              : 'border-transparent font-medium text-ink-muted',
+              : 'border-transparent font-medium text-ink-muted hover:border-line-strong hover:text-ink',
           )}
         >
           {key}
@@ -426,7 +413,6 @@ function Tabs({ tab, onChange }: { tab: Tab; onChange: (tab: Tab) => void }) {
 function Care({ plant }: { plant: Plant }) {
   const state = useStore()
   const days = daysSinceWater(state, plant.code)
-  const rhythm = waterRhythm(state, plant.code)
   const water = lastWaterAt(state, plant.code)
   const fertilised = lastFertilisedAt(state, plant.code)
   const repot = lastRepot(state, plant.code)
@@ -437,7 +423,6 @@ function Care({ plant }: { plant: Plant }) {
         icon="droplet"
         tone="water"
         label="Last watered"
-        detail={rhythm ? `every ${rhythm.average} days · ${rhythm.min}–${rhythm.max}` : null}
         value={water === null ? 'never' : ago(days)}
         alert={isThirsty(days)}
       />
@@ -626,30 +611,30 @@ function History({ plant, onEdit }: { plant: Plant; onEdit: (event: PlantEvent) 
 
   return (
     <section className="mt-4">
-      <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <FilterChip selected={filter === 'all'} onClick={() => setFilter('all')} count={all.length}>
+      <div className="flex gap-2 overflow-x-auto -mt-1 pt-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <Chip selected={filter === 'all'} onClick={() => setFilter('all')} count={all.length}>
           Everything
-        </FilterChip>
-        <FilterChip selected={filter === 'notable'} onClick={() => setFilter('notable')}>
+        </Chip>
+        <Chip selected={filter === 'notable'} onClick={() => setFilter('notable')}>
           Notable
-        </FilterChip>
-        <FilterChip
+        </Chip>
+        <Chip
           selected={filter === 'water'}
           onClick={() => setFilter('water')}
           count={waterings}
         >
           Waterings
-        </FilterChip>
+        </Chip>
         {/* The timeline, and deliberately not a separate screen: it is the same
             record, read through the entries that happen to have a picture. */}
         {photos > 0 ? (
-          <FilterChip
+          <Chip
             selected={filter === 'photo'}
             onClick={() => setFilter('photo')}
             count={photos}
           >
             Photos
-          </FilterChip>
+          </Chip>
         ) : null}
       </div>
 
@@ -673,40 +658,6 @@ function History({ plant, onEdit }: { plant: Plant; onEdit: (event: PlantEvent) 
         {plural(shown.length, 'entry', 'entries')} — drag one left to remove it, right to change it.
       </p>
     </section>
-  )
-}
-
-function FilterChip({
-  selected,
-  onClick,
-  count,
-  children,
-}: {
-  selected: boolean
-  onClick: () => void
-  count?: number
-  children: string
-}) {
-  return (
-    <button
-      type="button"
-      aria-pressed={selected}
-      onClick={onClick}
-      className={cn(
-        'inline-flex h-9 shrink-0 items-center gap-2 rounded-full px-3.5 text-[0.875rem] whitespace-nowrap',
-        'transition-colors active:opacity-70',
-        selected
-          ? 'bg-ink font-semibold text-paper'
-          : 'border border-line-strong font-medium text-ink-muted md:hover:bg-sunk',
-      )}
-    >
-      {children}
-      {count === undefined ? null : (
-        <span className={cn('font-mono text-micro', selected ? 'opacity-70' : 'text-ink-faint')}>
-          {count}
-        </span>
-      )}
-    </button>
   )
 }
 
@@ -748,9 +699,11 @@ function EntryRow({
           <IconChip icon={GLYPH[event.type]} tone={TONE[event.type]} />
         )}
         <div className="min-w-0 flex-1">
-          <div className="text-[0.9375rem] font-medium">{title}</div>
+          <div className="truncate text-[0.9375rem] font-medium">{title}</div>
           {detail ? (
-            <div className="mt-px text-[0.8125rem] leading-[1.125rem] text-ink-muted">{detail}</div>
+            <div className="mt-px truncate text-[0.8125rem] leading-[1.125rem] text-ink-muted">
+              {detail}
+            </div>
           ) : null}
         </div>
         <span className="shrink-0 font-mono text-micro text-ink-faint group-hover:md:hidden">
@@ -825,7 +778,7 @@ function Family({ plant }: { plant: Plant }) {
         {parent && plant.parent ? (
           <a
             href={routes.plant(parent.code)}
-            className="flex min-h-touch items-center gap-3.5 border-b border-line py-3 transition-colors last:border-b-0 md:hover:bg-sunk"
+            className="warm flex min-h-touch items-center gap-3.5 border-b border-line py-3 last:border-b-0 hover:bg-sunk"
           >
             <Icon name="scissors" size={19} className="text-ink-faint" />
             <span className="flex-1 font-display text-[1.125rem] font-medium text-leaf">
@@ -841,7 +794,7 @@ function Family({ plant }: { plant: Plant }) {
           <a
             key={child.code}
             href={routes.plant(child.code)}
-            className="flex min-h-touch items-center gap-3.5 border-b border-line py-3 transition-colors last:border-b-0 md:hover:bg-sunk"
+            className="warm flex min-h-touch items-center gap-3.5 border-b border-line py-3 last:border-b-0 hover:bg-sunk"
           >
             <Icon name="scissors" size={19} className="text-ink-faint" />
             <span className="flex-1 font-display text-[1.125rem] font-medium text-leaf">

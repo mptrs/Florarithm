@@ -52,16 +52,35 @@ export function PlantTile({
     <a
       href={routes.plant(plant.code)}
       className={cn(
-        'flex flex-col overflow-hidden rounded-xl border border-line bg-surface',
-        'transition-colors active:bg-sunk md:hover:border-line-strong',
+        'group flex flex-col overflow-hidden rounded-xl border border-line bg-surface',
+        'transition-[border-color,box-shadow,scale] duration-200 ease-grow',
+        // Pressed, the whole card gives a little. It used to take on `sunk`
+        // instead, which tinted the name strip under the photograph along with
+        // everything else — that strip is paper, and paper does not change
+        // colour because a finger is on the picture above it.
+        'active:scale-[0.99] hover:border-line-strong hover:shadow-sm',
       )}
     >
-      <div className="relative aspect-[4/3] bg-sunk">
-        <div className={cn('size-full', tag ? 'opacity-70 grayscale' : '')}>
+      {/* The frame clips its own picture. Without this the zoom below grows
+          past the bottom of the photograph and over the name, which sits
+          inside this same card and so is not covered by its `overflow-hidden`. */}
+      <div className="relative aspect-[4/3] overflow-hidden bg-sunk">
+        {/* The one place the app says out loud what it is for: lean towards a
+            plant and the plant grows. Slower than every other hover here and
+            deliberately so — three percent over half a second is the most a
+            thing can move and still be read as growing rather than as
+            reacting. The card itself holds still underneath it. */}
+        <div
+          className={cn(
+            'size-full transition-transform duration-500 ease-grow',
+            'group-hover:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100',
+            tag ? 'opacity-70 grayscale' : '',
+          )}
+        >
           <PlantPicture plant={plant} />
         </div>
         {tag ? (
-          <span className="absolute bottom-2 left-2 rounded-full bg-surface/90 px-2.5 py-1 text-[0.6875rem] leading-4 font-semibold text-ink-muted">
+          <span className="absolute bottom-2 left-2 rounded-full bg-floating px-2.5 py-1 text-[0.6875rem] leading-4 font-semibold text-ink-muted">
             {tag}
           </span>
         ) : null}

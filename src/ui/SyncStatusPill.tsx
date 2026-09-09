@@ -36,10 +36,17 @@ export function SyncStatusPill({
           <Icon name="alert" size={15} className="mt-0.5 shrink-0 text-ember" />
           <span className="flex-1 text-[0.8125rem] leading-5 text-ink">{status.message}</span>
         </div>
+        {/* The hover fills rather than tints: this sits on the ember-tinted
+            panel itself, and a tint on a tint is a state nobody can see —
+            which is what it had. */}
         {variant === 'compact' ? (
           <a
             href={routes.settings()}
-            className="flex h-touch shrink-0 items-center self-end rounded-sm px-3.5 text-[0.8125rem] font-semibold text-ember transition-colors active:opacity-70 md:hover:bg-ember/10"
+            className={cn(
+              'warm flex h-touch shrink-0 items-center self-end rounded-sm px-3.5',
+              'text-[0.8125rem] font-semibold text-ember',
+              'active:opacity-70 hover:bg-ember hover:text-on-accent',
+            )}
           >
             Fix
           </a>

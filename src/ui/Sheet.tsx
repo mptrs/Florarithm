@@ -52,7 +52,7 @@ export function Sheet({ open, onClose, title, onBack, children }: SheetProps) {
         type="button"
         aria-label="Close"
         onClick={onClose}
-        className="absolute inset-0 bg-ink/45"
+        className="absolute inset-0 bg-scrim backdrop-blur-sm animate-veil-in motion-reduce:animate-none"
       />
 
       <div
@@ -63,6 +63,9 @@ export function Sheet({ open, onClose, title, onBack, children }: SheetProps) {
         tabIndex={-1}
         className={cn(
           'relative max-h-[88vh] w-full overflow-y-auto bg-surface outline-none',
+          // It rises from the edge it is attached to on a phone, and scales up
+          // from the middle once a desktop has centred it.
+          'animate-rise-in md:animate-panel-in motion-reduce:animate-none',
           // The device inset adds to the resting padding rather than replacing
           // it — `safe-bottom` alone would leave the last row flush with the
           // edge on a phone with no home-indicator inset to speak of.
@@ -80,7 +83,7 @@ export function Sheet({ open, onClose, title, onBack, children }: SheetProps) {
               type="button"
               onClick={onBack}
               aria-label="Back"
-              className="-ml-2.5 flex size-touch items-center justify-center rounded-full text-ink-muted transition-colors active:opacity-70 md:hover:bg-sunk"
+              className="-ml-2.5 warm flex size-touch items-center justify-center rounded-full text-ink-muted active:opacity-70 hover:bg-sunk hover:text-ink"
             >
               <Icon name="chevronLeft" size={23} />
             </button>
@@ -92,7 +95,7 @@ export function Sheet({ open, onClose, title, onBack, children }: SheetProps) {
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="-mr-2.5 flex size-touch items-center justify-center rounded-full text-ink-muted transition-colors active:opacity-70 md:hover:bg-sunk"
+            className="-mr-2.5 warm flex size-touch items-center justify-center rounded-full text-ink-muted active:opacity-70 hover:bg-sunk hover:text-ink"
           >
             <Icon name="close" size={22} />
           </button>

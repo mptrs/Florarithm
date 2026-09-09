@@ -202,7 +202,9 @@ Components should read as restrained and precise: flat at rest, color spent only
 - **Tinted** (`water-tint` bg, `water` text): a filled state that has already happened and doesn't need to shout about it.
 - **Quiet:** transparent, `ink-muted` text, no border — the lowest-emphasis action on a screen.
 - **Danger:** transparent, `ember` border and text.
-- **Hover / Focus:** no hover-darken; `active:opacity-70` on press, a 2px `leaf`-colored focus-visible ring offset from the control.
+- **Solid** (`ink` bg, `paper` text): the neutral fill that commits a sheet — "Use this date", "Save note", "Log repot". Ink because none of those is a watering or an addition.
+- **Hover:** every interactive element has one, and it deepens rather than fades — a filled variant steps to its `-deep` token, an outline or quiet one takes on `sunk` ground. Never `opacity`, which dims the label along with the ground and reads as disabled. Pressable things also rise 1px (`lift`); rows and menu items only take on ground (`warm`). Both ride one curve, `ease-grow`, over 200ms, and the rise is dropped under `prefers-reduced-motion` while the colour change stays.
+- **Focus / press:** `active:opacity-70` on press, a 2px `leaf`-colored focus-visible ring offset from the control.
 - **Disabled:** `opacity-40`, pointer-events removed — never a separate disabled palette.
 
 ### Chips
@@ -212,7 +214,7 @@ Components should read as restrained and precise: flat at rest, color spent only
 ### Cards / Containers (Empty State, Sheet panel)
 - **Corner Style:** 10px (`lg`) for the empty-state card; a sheet is `rounded-t-[14px]` on phone (14px, sitting just above the `lg` step because it's a full-bleed edge) and `rounded-lg` from `md` up.
 - **Background:** `surface`.
-- **Shadow Strategy:** none at rest (see Elevation & Depth); a sheet's separation comes from a `line` border plus a `bg-ink/45` scrim behind it, not a shadow on the sheet itself.
+- **Shadow Strategy:** none at rest (see Elevation & Depth); a sheet's separation comes from a `line` border plus a `scrim` behind it, not a shadow on the sheet itself.
 - **Border:** `line` (empty state), `line` top border only (phone sheet), full `line` border (desktop sheet).
 - **Internal Padding:** `px-5 py-7` (empty state); `px-4 pt-2.5 pb-6` phone / `px-6` desktop (sheet).
 

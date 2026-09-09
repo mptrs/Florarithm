@@ -15,19 +15,34 @@ import { cn } from '~/lib/cn'
 import { routes } from '~/lib/router'
 import { Icon, type IconName } from './Icon'
 
-export type ButtonVariant = 'primary' | 'accent' | 'outline' | 'tinted' | 'quiet' | 'danger'
+export type ButtonVariant = 'primary' | 'accent' | 'solid' | 'outline' | 'tinted' | 'quiet' | 'danger'
 export type ButtonSize = 'lg' | 'md' | 'sm'
 
+/**
+ * Hover deepens; it never fades.
+ *
+ * `hover:` is already only ever asked on a device that can point — Tailwind
+ * compiles it inside `@media (hover: hover)` — so the `md:` these carried is
+ * not what keeps a phone from sticking, and all it ever did was withhold the
+ * hover from a desktop window narrower than 768px.
+ */
 const VARIANTS: Record<ButtonVariant, string> = {
   /** The WATER button. The only filled, saturated thing on the plant screen. */
-  primary: 'bg-water text-on-accent border border-transparent md:hover:opacity-90',
+  primary: 'bg-water text-on-accent border border-transparent hover:bg-water-deep hover:shadow-sm',
   /** Everything that adds to the collection. */
-  accent: 'bg-leaf text-on-accent border border-transparent md:hover:opacity-90',
-  outline: 'border border-line-strong text-ink md:hover:bg-sunk',
-  /** Already done — a filled state that does not shout. */
-  tinted: 'bg-water-tint text-water border border-transparent md:hover:opacity-80',
-  quiet: 'border border-transparent text-ink-muted md:hover:bg-sunk',
-  danger: 'border border-ember text-ember md:hover:bg-ember-tint',
+  accent: 'bg-leaf text-on-accent border border-transparent hover:bg-leaf-deep hover:shadow-sm',
+  /** The neutral fill: what commits a sheet you opened to do one thing — pick
+   *  a date, write a note, record a repot. Ink rather than water or leaf,
+   *  because those two already mean watering and adding, and none of these is
+   *  either. It was three hand-drawn buttons before this, which is how one of
+   *  them ended up with a disabled state and the other two did not. */
+  solid: 'bg-ink text-paper border border-transparent hover:bg-ink-deep hover:shadow-sm',
+  outline: 'border border-line-strong text-ink hover:bg-sunk hover:border-ink-faint',
+  /** Already done — a filled state that does not shout, and does not start
+   *  shouting on hover either: the ground holds and only the mark deepens. */
+  tinted: 'bg-water-tint text-water border border-transparent hover:text-water-deep',
+  quiet: 'border border-transparent text-ink-muted hover:bg-sunk hover:text-ink',
+  danger: 'border border-ember text-ember hover:bg-ember-tint',
 }
 
 const SIZES: Record<ButtonSize, string> = {
@@ -60,7 +75,7 @@ export function Button({
       type={type}
       className={cn(
         'inline-flex items-center justify-center gap-2 rounded-md font-ui',
-        'transition-[opacity,background-color] active:opacity-70',
+        'lift active:opacity-70',
         'disabled:opacity-40 disabled:pointer-events-none',
         'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-leaf',
         VARIANTS[variant],
@@ -98,7 +113,7 @@ export function IconButton({
       title={label}
       className={cn(
         'inline-flex size-control shrink-0 items-center justify-center rounded-md',
-        'transition-[opacity,background-color] active:opacity-70',
+        'lift active:opacity-70',
         'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-leaf',
         VARIANTS[variant],
         className,
@@ -138,8 +153,10 @@ export function BackButton({
         else window.location.assign(routes.today())
       }}
       className={cn(
-        'flex size-10 shrink-0 items-center justify-center rounded-full transition-colors active:opacity-70',
-        variant === 'chip' ? 'bg-surface/90 text-ink shadow-md md:hover:bg-surface' : 'text-ink md:hover:bg-sunk',
+        'lift flex size-10 shrink-0 items-center justify-center rounded-full active:opacity-70',
+        variant === 'chip'
+          ? 'bg-floating text-ink shadow-md hover:bg-surface hover:shadow-lg'
+          : 'text-ink hover:bg-sunk',
         className,
       )}
     >

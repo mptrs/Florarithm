@@ -19,9 +19,6 @@ import type { EventType, Id, Plant, PlantEvent, VocabItem, VocabKind } from './t
 /** Below this many days the count is a fact; at or above it, it is a nudge. */
 export const THIRSTY_AFTER_DAYS = 14
 
-/** A rhythm needs three waterings to have two gaps to average. */
-const MINIMUM_WATERINGS_FOR_RHYTHM = 3
-
 function memo<T>(compute: (state: State) => T): (state: State) => T {
   const cache = new WeakMap<State, T>()
   return (state) => {
@@ -140,36 +137,6 @@ export function lastFertilisedAt(state: State, code: string): string | null {
 
 export function isThirsty(days: number | null): boolean {
   return days !== null && days >= THIRSTY_AFTER_DAYS
-}
-
-export type Rhythm = { average: number; min: number; max: number }
-
-/**
- * How often this plant actually got water, looking backwards only.
- *
- * There is deliberately no prediction here. Watering happens on fixed days, so
- * every measured gap lands on 7 or 14 and the app would "learn" a schedule that
- * is really just the calendar, handed back with a straight face.
- */
-export function waterRhythm(state: State, code: string): Rhythm | null {
-  const waterings = eventsFor(state, code).filter((event) => event.type === 'water')
-  if (waterings.length < MINIMUM_WATERINGS_FOR_RHYTHM) return null
-
-  const gaps: number[] = []
-  for (let i = 0; i < waterings.length - 1; i += 1) {
-    const newer = waterings[i]
-    const older = waterings[i + 1]
-    if (!newer || !older) continue
-    gaps.push(Math.max(0, daysSince(older.date) - daysSince(newer.date)))
-  }
-  if (gaps.length === 0) return null
-
-  const total = gaps.reduce((sum, gap) => sum + gap, 0)
-  return {
-    average: Math.round(total / gaps.length),
-    min: Math.min(...gaps),
-    max: Math.max(...gaps),
-  }
 }
 
 export function countThisYear(state: State, code: string, type: EventType): number {

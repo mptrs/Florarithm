@@ -32,6 +32,10 @@ import { Icon } from './Icon'
 const CONTROL_FACE = cn(
   'w-full rounded-sm border border-line-strong bg-surface px-3.5 text-body text-ink',
   'placeholder:text-ink-faint',
+  // Hover firms the border, focus turns it leaf. Both set `border-color`, and
+  // focus wins because Tailwind emits it after hover — so a focused field
+  // stays leaf while the cursor is over it.
+  'warm hover:border-ink-faint',
   'focus:border-leaf focus:outline-none',
 )
 
@@ -258,9 +262,11 @@ export function SegmentedField<T extends string>({
             aria-checked={value === option.value}
             onClick={() => onChange(option.value)}
             className={cn(
-              'flex-1 text-body transition-colors',
+              'warm flex-1 text-body',
               index > 0 ? 'border-l border-line-strong' : '',
-              value === option.value ? 'bg-ink font-semibold text-paper' : 'text-ink',
+              value === option.value
+                ? 'bg-ink font-semibold text-paper hover:bg-ink-deep'
+                : 'text-ink hover:bg-sunk',
             )}
           >
             {option.label}
@@ -292,16 +298,28 @@ export function ToggleField({
         role="switch"
         aria-checked={checked}
         onClick={() => onChange(!checked)}
-        className="flex min-h-control items-center justify-between gap-4 text-left"
+        className="group flex min-h-control items-center justify-between gap-4 text-left"
       >
         <span className="text-body text-ink">{label}</span>
         <span
           className={cn(
-            'flex h-8 w-13 shrink-0 items-center rounded-full px-[3px] transition-colors',
-            checked ? 'justify-end bg-leaf' : 'justify-start bg-line-strong',
+            'warm flex h-8 w-13 shrink-0 items-center rounded-full px-[3px]',
+            checked
+              ? 'bg-leaf group-hover:bg-leaf-deep'
+              : 'bg-line-strong group-hover:bg-ink-faint',
           )}
         >
-          <span className="size-6.5 rounded-full bg-surface" />
+          {/* 52px track, 3px of padding either side, a 26px knob: 20px of
+              travel. It used to swap `justify-start` for `justify-end`, which
+              is not a property anything can animate, so the knob arrived
+              before the colour did. */}
+          <span
+            className={cn(
+              'size-6.5 rounded-full bg-surface transition-transform duration-200 ease-grow',
+              'motion-reduce:transition-none',
+              checked ? 'translate-x-5' : 'translate-x-0',
+            )}
+          />
         </span>
       </button>
       {hint ? <p className="text-[0.8125rem] leading-5 text-ink-muted">{hint}</p> : null}
@@ -327,12 +345,14 @@ export function CheckField({
       role="checkbox"
       aria-checked={checked}
       onClick={() => onChange(!checked)}
-      className={cn('flex h-touch items-center gap-3 text-left', className)}
+      className={cn('group flex h-touch items-center gap-3 text-left', className)}
     >
       <span
         className={cn(
-          'flex size-6 shrink-0 items-center justify-center rounded-sm border transition-colors',
-          checked ? 'border-water bg-water text-on-accent' : 'border-line-strong',
+          'warm flex size-6 shrink-0 items-center justify-center rounded-sm border',
+          checked
+            ? 'border-water bg-water text-on-accent group-hover:border-water-deep group-hover:bg-water-deep'
+            : 'border-line-strong group-hover:border-ink-faint group-hover:bg-sunk',
         )}
       >
         {checked ? <Icon name="check" size={15} className="stroke-[3]" /> : null}

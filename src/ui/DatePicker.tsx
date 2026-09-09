@@ -18,6 +18,8 @@
 import { useId, useState, type ReactNode } from 'react'
 import { cn } from '~/lib/cn'
 import { isoToInputValue, inputValueToISO, nowISO } from '~/lib/date'
+import { Button } from './Button'
+import { Chip } from './Chip'
 import { CONTROL, Field } from './fields'
 import { Sheet } from './Sheet'
 import { Icon } from './Icon'
@@ -66,17 +68,20 @@ export function DatePicker({
 
   return (
     <div className="pt-1">
+      {/* Today and Yesterday, which between them cover most back-dating.
+          These were a local button drawn to the filter chip's exact
+          measurements — the same thing twice, which is how one of them ends
+          up with a hover state and the other does not. */}
       <div className="flex justify-center gap-2">
-        <Quick
-          label="Today"
-          selected={selectedValue === todayValue}
-          onClick={() => shortcut(today)}
-        />
-        <Quick
-          label="Yesterday"
+        <Chip selected={selectedValue === todayValue} onClick={() => shortcut(today)}>
+          Today
+        </Chip>
+        <Chip
           selected={selectedValue === isoToInputValue(yesterday.toISOString())}
           onClick={() => shortcut(yesterday)}
-        />
+        >
+          Yesterday
+        </Chip>
       </div>
 
       <div className="mt-5 flex items-center justify-between">
@@ -84,7 +89,7 @@ export function DatePicker({
           type="button"
           aria-label="Previous month"
           onClick={() => setCursor(new Date(year, month - 1, 1))}
-          className="-ml-2 flex size-touch items-center justify-center rounded-full text-ink-muted transition-colors active:opacity-70 md:hover:bg-sunk"
+          className="warm -ml-2 flex size-touch items-center justify-center rounded-full text-ink-muted active:opacity-70 hover:bg-sunk hover:text-ink"
         >
           <Icon name="chevronLeft" size={21} />
         </button>
@@ -96,7 +101,7 @@ export function DatePicker({
           aria-label="Next month"
           disabled={atLatest}
           onClick={() => setCursor(new Date(year, month + 1, 1))}
-          className="-mr-2 flex size-touch items-center justify-center rounded-full text-ink-muted transition-colors disabled:opacity-30 active:opacity-70 md:hover:bg-sunk"
+          className="warm -mr-2 flex size-touch items-center justify-center rounded-full text-ink-muted disabled:opacity-30 active:opacity-70 enabled:hover:bg-sunk enabled:hover:text-ink"
         >
           <Icon name="chevronRight" size={21} />
         </button>
@@ -131,12 +136,12 @@ export function DatePicker({
               onClick={() => pick(day)}
               aria-current={isSelected ? 'date' : undefined}
               className={cn(
-                'flex h-10 items-center justify-center rounded-lg font-mono text-[0.9375rem] transition-colors',
+                'warm flex h-10 items-center justify-center rounded-lg font-mono text-[0.9375rem]',
                 isSelected
-                  ? 'bg-ink font-semibold text-paper'
+                  ? 'bg-ink font-semibold text-paper hover:bg-ink-deep'
                   : isFuture
                     ? 'text-ink-faint opacity-40'
-                    : 'text-ink active:bg-sunk md:hover:bg-sunk',
+                    : 'text-ink active:bg-sunk hover:bg-sunk',
               )}
             >
               {day}
@@ -145,41 +150,10 @@ export function DatePicker({
         })}
       </div>
 
-      <button
-        type="button"
-        onClick={onDone}
-        className="mt-4 flex h-control w-full items-center justify-center rounded-lg bg-ink text-body font-semibold text-paper transition-opacity active:opacity-70 md:hover:opacity-90"
-      >
+      <Button variant="solid" block onClick={onDone} className="mt-4">
         Use this date
-      </button>
+      </Button>
     </div>
-  )
-}
-
-/** Today and Yesterday, which between them cover most back-dating. */
-function Quick({
-  label,
-  selected,
-  onClick,
-}: {
-  label: string
-  selected: boolean
-  onClick: () => void
-}) {
-  return (
-    <button
-      type="button"
-      aria-pressed={selected}
-      onClick={onClick}
-      className={cn(
-        'inline-flex h-9 items-center rounded-full px-3.5 text-[0.875rem] transition-colors',
-        selected
-          ? 'bg-ink font-semibold text-paper'
-          : 'border border-line-strong font-medium text-ink-muted md:hover:bg-sunk',
-      )}
-    >
-      {label}
-    </button>
   )
 }
 
@@ -207,7 +181,7 @@ export function DateChip({ value, onClick }: { value: string; onClick: () => voi
       <button
         type="button"
         onClick={onClick}
-        className="inline-flex h-9 items-center gap-2 rounded-full border border-line bg-sunk px-4 text-[0.875rem] font-medium text-ink transition-colors active:opacity-70 md:hover:bg-line"
+        className="lift inline-flex h-9 items-center gap-2 rounded-full border border-line bg-sunk px-4 text-[0.875rem] font-medium text-ink active:opacity-70 hover:border-line-strong"
       >
         <Icon name="calendar" size={16} className="text-ink-muted" />
         {label}
@@ -269,7 +243,7 @@ export function DatePickerField({
         }}
         className={cn(
           CONTROL,
-          'flex items-center gap-2.5 text-left font-mono transition-colors active:opacity-70 md:hover:bg-sunk',
+          'warm flex items-center gap-2.5 text-left font-mono active:opacity-70 hover:bg-sunk',
         )}
       >
         <Icon name="calendar" size={17} className="shrink-0 text-ink-muted" />

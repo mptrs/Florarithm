@@ -21,6 +21,7 @@ import {
 } from '~/data/store'
 import { configureSync, getSyncConfig, syncNow, useSyncStatus } from '~/data/sync'
 import { VOCAB_KINDS, type VocabKind } from '~/data/types'
+import { cn } from '~/lib/cn'
 import { daysSince, formatDate } from '~/lib/date'
 import { label, plural } from '~/lib/format'
 import { Banner } from '~/ui/Banner'
@@ -259,15 +260,24 @@ function BackupSection() {
     // between the elements inside it. The real rhythm has to live on a
     // wrapper div we own.
     <details className="group">
-      <summary className="mb-4 flex cursor-pointer list-none items-center justify-between gap-2.5 border-b border-line pb-2.5 [&::-webkit-details-marker]:hidden">
+      <summary
+        className={cn(
+          'warm group/summary mb-4 flex cursor-pointer list-none items-center justify-between gap-2.5',
+          'border-b border-line pb-2.5 hover:border-line-strong [&::-webkit-details-marker]:hidden',
+        )}
+      >
         <span className="flex items-center gap-2.5">
-          <Icon name="download" size={19} className="text-ink-faint" />
+          <Icon
+            name="download"
+            size={19}
+            className="warm text-ink-faint group-hover/summary:text-ink-muted"
+          />
           <h2 className="font-display text-[1.3125rem] leading-7 font-medium">Backup</h2>
         </span>
         <Icon
           name="chevronDown"
           size={16}
-          className="text-ink-muted transition-transform group-open:rotate-180"
+          className="text-ink-muted transition duration-200 ease-grow group-open:rotate-180 group-hover/summary:text-ink"
         />
       </summary>
 
@@ -406,11 +416,11 @@ function VocabList({ kind }: { kind: VocabKind }) {
                   if (next && next !== item.name) void renameVocabItem(item.id, next)
                   else event.target.value = item.name
                 }}
-                className={
-                  'min-w-0 flex-1 rounded-sm border border-transparent bg-transparent px-2 py-2 text-body ' +
-                  (item.archived ? 'text-ink-faint line-through' : 'text-ink') +
-                  ' hover:border-line focus:border-leaf focus:outline-none'
-                }
+                className={cn(
+                  'warm min-w-0 flex-1 rounded-sm border border-transparent bg-transparent px-2 py-2 text-body',
+                  item.archived ? 'text-ink-faint line-through' : 'text-ink',
+                  'hover:border-line-strong focus:border-leaf focus:outline-none',
+                )}
               />
               <Button
                 size="sm"

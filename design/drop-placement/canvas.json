@@ -1,0 +1,46 @@
+{
+  "artboards": [
+    { "file": "SplitButton.dc.html", "title": "Split button", "x": 0, "y": 0, "w": 1440, "h": 900 },
+    { "file": "Main.dc.html", "title": "On the title row", "x": 1560, "y": 0, "w": 1440, "h": 900 },
+    { "file": "InThePhotograph.dc.html", "title": "In the photograph", "x": 3120, "y": 0, "w": 1440, "h": 900 },
+    { "file": "InTheSidebar.dc.html", "title": "At the foot of the sidebar", "x": 4680, "y": 0, "w": 1440, "h": 900 }
+  ],
+  "annotations": [
+    {
+      "id": "brief",
+      "x": -700,
+      "y": 0,
+      "w": 560,
+      "text": "Where the drop goes on desktop.\n\nToday it floats at the bottom-right of the content column. That is a thumb affordance on a screen with no thumb, and it sits on top of the record.\n\nThe last three keep the drop and its fan and only move the anchor; the dashed circles show where the fan would open, so the room it needs is visible while the button is at rest. The first one drops the fan instead, and is the only board here that follows an existing desktop convention rather than relocating a phone pattern."
+    },
+    {
+      "id": "note-split",
+      "x": 0,
+      "y": -300,
+      "w": 460,
+      "text": "Split button — the recommendation.\n\nThis is the desktop answer to \"one main action with variants\", and the drop is exactly that: water, water with fertiliser, everything else. Bootstrap, Fluent and Carbon all define the control. One click waters; the caret drops the other two.\n\nIt sits where page-header actions go — right of the title, primary rightmost — which is what GitHub, Linear, Jira and Stripe do with the main action on a detail page.\n\nWhy it beats the others: nothing floats, nothing overlaps the record, and it is reachable by keyboard, which is the desktop equivalent of being within a thumb's reach.\n\nTradeoff: the fan goes away on desktop, so the two screens stop looking identical — and fertiliser costs a second click. The phone keeps the drop exactly as it is."
+    },
+    {
+      "id": "note-title-row",
+      "x": 1560,
+      "y": -300,
+      "w": 400,
+      "text": "On the title row.\n\nWhy: it joins the row that already carries this plant's identity and its link button, so the actions for a plant live where the plant is named. Never covers the record, and it is the first thing in view when a sticker scan lands you here.\n\nTradeoff: it scrolls away on a long history, and the fan has to open downward over the record."
+    },
+    {
+      "id": "note-photograph",
+      "x": 3120,
+      "y": -300,
+      "w": 400,
+      "text": "In the photograph.\n\nWhy: anchored to the plant's own frame, in a corner that already holds controls. The fan opens over the picture rather than over any data, which is the one thing on the page nothing is lost behind.\n\nTradeoff: the hero would then carry five controls, and it scrolls away with the photograph."
+    },
+    {
+      "id": "note-sidebar",
+      "x": 4680,
+      "y": -300,
+      "w": 400,
+      "text": "At the foot of the sidebar.\n\nWhy: out of the content entirely, so it can never overlap anything, and it is the one place on screen that never scrolls. The fan opens up into the sidebar's own empty space.\n\nTradeoff: the sidebar is a list of places to go, not actions on one plant — and it is the furthest point from the record you are reading."
+    }
+  ],
+  "launch": { "view": "canvas" }
+}
