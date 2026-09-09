@@ -760,7 +760,7 @@ function EntryPhoto({ event }: { event: PlantEvent }) {
   )
 }
 
-function detailOf(event: PlantEvent, state: ReturnType<typeof useStore>): string {
+function detailOf(event: PlantEvent, state: ReturnType<typeof useStore>): ReactNode {
   switch (event.type) {
     case 'water':
       return event.fertilized ? 'with fertiliser' : ''
@@ -770,7 +770,20 @@ function detailOf(event: PlantEvent, state: ReturnType<typeof useStore>): string
       return [size, medium, event.reason].filter(Boolean).join(' · ')
     }
     case 'note':
-      return event.text
+      if (event.fromWishlist === undefined) return event.text
+      // The mark sits inside the sentence rather than replacing the row's own
+      // glyph: this is a note like any other note, and the sparkle is there to
+      // say what those days were spent waiting for. Inline and sat on the text
+      // baseline with `align`, not nudged with a transform — a transform moves
+      // the drawing and leaves the line box where it was, which is what makes
+      // an icon look a pixel wrong at one size and right at another.
+      return (
+        <>
+          <Icon name="sparkles" size={13} className="mr-1 inline align-[-0.15em] text-ink-faint" />
+          {event.fromWishlist === 0 ? 'same day' : plural(event.fromWishlist, 'day')}
+          {event.text ? ` · ${event.text}` : ''}
+        </>
+      )
     default:
       return ''
 

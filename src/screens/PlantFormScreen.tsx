@@ -242,25 +242,14 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
         // collection since", and the wait has to end where that begins.
         const arrived = inputValueToISO(originDate) ?? nowISO()
         const waited = Math.max(0, daysBetween(existing.createdAt, arrived))
-        const said = existing.wishNote.trim()
-
-        // What you wrote about why you wanted it, kept in your own words and
-        // dated the day you wrote it. It goes in first so it sits under the
-        // arrival in the log, which reads newest first.
-        if (said) {
-          await logEvent({
-            plantCode: plant.code,
-            type: 'note',
-            date: existing.createdAt,
-            text: said,
-          })
-        }
-
+        // One entry, dated the day it arrived: the wait in its own field, and
+        // whatever you wrote about why you wanted it as the note itself.
         await logEvent({
           plantCode: plant.code,
           type: 'note',
           date: arrived,
-          text: `From the wishlist · ${waited === 0 ? 'same day' : plural(waited, 'day')}`,
+          text: existing.wishNote.trim(),
+          fromWishlist: waited,
         })
       }
 

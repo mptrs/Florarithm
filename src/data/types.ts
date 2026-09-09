@@ -185,7 +185,21 @@ export type LeafEvent = EventBase & { type: 'leaf' }
 /** Blooming: one moment, same as a new leaf. */
 export type BloomEvent = EventBase & { type: 'bloom' }
 
-export type NoteEvent = EventBase & { type: 'note'; text: string }
+export type NoteEvent = EventBase & {
+  type: 'note'
+  text: string
+  /**
+   * Days this plant stood on the wishlist, set once when the wish became a
+   * plant and never afterwards.
+   *
+   * A field rather than words inside `text`, and a note rather than a type of
+   * its own: what got written down is an ordinary note in your own words — the
+   * wait is the one thing the app knows and you did not type, so it is the one
+   * thing it stores separately and draws its own mark for. Keeping it out of
+   * `text` also means editing the note cannot silently rewrite the count.
+   */
+  fromWishlist?: number
+}
 
 /** Just a picture: nothing happened to the plant, this is what it looks like
  *  now. The one event type that is meaningless without its `photo`. */
