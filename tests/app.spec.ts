@@ -322,12 +322,20 @@ test('deleting a plant forever tombstones it rather than erasing it outright', a
 test('a hybrid is recorded as a cross, not as a cultivar', async ({ page }) => {
   await page.goto('#new')
   await page.getByLabel('Genus').fill('Anthurium')
+  await page.getByLabel('Species', { exact: true }).fill('crystallinum')
+
+  // The field is behind a switch, because most plants are not hybrids.
+  await expect(page.getByLabel('Cross')).toBeHidden()
+  await page.getByRole('switch', { name: 'This is a hybrid' }).click()
+
+  // A plant is a species or it is a cross, so the species empties and stays
+  // out of reach rather than sitting there contradicting the cross.
+  await expect(page.getByLabel('Species', { exact: true })).toHaveValue('')
+  await expect(page.getByLabel('Species', { exact: true })).toBeDisabled()
+
   // Typing a plain x is what the keyboard offers; the field makes it a ×.
   await page.getByLabel('Cross').fill('papillilaminum x crystallinum')
   await expect(page.getByLabel('Cross')).toHaveValue('papillilaminum × crystallinum')
-
-  // A plant is a species or it is a cross, so the other field switches off.
-  await expect(page.getByLabel('Species', { exact: true })).toBeDisabled()
 
   await page.getByLabel('Name', { exact: true }).fill('Vlek')
   await page.getByLabel('Place').fill('Living room')
@@ -340,6 +348,33 @@ test('a hybrid is recorded as a cross, not as a cultivar', async ({ page }) => {
   await page.goto('#collection')
   await page.getByPlaceholder('Name, species or place').fill('papillilaminum x cry')
   await expect(page.getByRole('link', { name: /Vlek/ })).toBeVisible()
+})
+
+test('the hybrid switch comes back on for a plant that has a cross', async ({ page }) => {
+  await page.goto('#new')
+  await page.getByLabel('Genus').fill('Anthurium')
+  await page.getByRole('switch', { name: 'This is a hybrid' }).click()
+  await page.getByLabel('Cross').fill('warocqueanum × papillilaminum')
+  await page.getByLabel('Name', { exact: true }).fill('Koningin')
+  await page.getByLabel('Place').fill('Living room')
+  await page.getByRole('button', { name: 'Add to the collection' }).click()
+  await expect(page.getByRole('heading', { name: 'Koningin' })).toBeVisible()
+
+  const code = new URL(page.url()).hash.replace('#p=', '')
+  await page.goto(`#edit/${code}`)
+
+  // Nothing stores the switch — it is read back off the cross itself.
+  await expect(page.getByRole('switch', { name: 'This is a hybrid' })).toHaveAttribute(
+    'aria-checked',
+    'true',
+  )
+  await expect(page.getByLabel('Cross')).toHaveValue('warocqueanum × papillilaminum')
+
+  // Turning it off drops the cross rather than hiding it while still set.
+  await page.getByRole('switch', { name: 'This is a hybrid' }).click()
+  await page.getByRole('button', { name: 'Save' }).click()
+  await expect(page.getByRole('heading', { name: 'Koningin' })).toBeVisible()
+  await expect(page.getByText('warocqueanum')).toBeHidden()
 })
 
 test('promoting a wish keeps its code and its history', async ({ page }) => {
