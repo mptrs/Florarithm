@@ -309,11 +309,6 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
                 onChange={(event) => setGenus(event.target.value)}
                 placeholder="Monstera"
                 fieldClassName="flex-1"
-                hint={
-                  existing || wish
-                    ? undefined
-                    : 'The plant code is drawn from this, not from the name — a sticker cannot be rewritten.'
-                }
               />
               <TextField
                 label="Species"
@@ -322,7 +317,6 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
                 placeholder="deliciosa"
                 fieldClassName="flex-1"
                 disabled={hybrid}
-                hint={hybrid ? 'A hybrid has no species of its own.' : undefined}
               />
             </div>
 
@@ -333,7 +327,6 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
                 onChange={(event) => setCultivar(event.target.value)}
                 placeholder="Ninja"
                 fieldClassName="flex-1"
-                hint={hybrid ? 'A named selection out of the cross, if it has one.' : undefined}
               />
               {/* A select, not a suggest box: the terms are a short fixed set,
                   and every other short fixed set in the app is a select. A
@@ -365,7 +358,12 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
 
                 A plant is a species or it is a cross, never both, so throwing
                 the switch empties the other one rather than leaving a
-                contradiction to be saved. Nothing is hidden while still set. */}
+                contradiction to be saved. Nothing is hidden while still set.
+
+                No hint under any of these four: the labels are the words off
+                the plant label itself, and a line of prose under each one only
+                made the section harder to read than the thing it explained.
+                The `×` is taught by the placeholder, where it costs nothing. */}
             <ToggleField
               label="This is a hybrid"
               checked={hybrid}
@@ -384,7 +382,6 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
                 value={cross}
                 onChange={(event) => setCross(normalizeCross(event.target.value))}
                 placeholder="papillilaminum × crystallinum"
-                hint="The parents, as the label writes them — type x between them."
               />
             ) : null}
 
