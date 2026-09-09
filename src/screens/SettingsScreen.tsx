@@ -1,5 +1,5 @@
 /**
- * Settings — sync, the three growing lists, and the manual backup.
+ * Settings — sync, the two growing lists, and the manual backup.
  *
  * Sync is the real safety net now: a repository somewhere else, kept
  * current automatically. The manual export is what it was before M2 —
@@ -30,7 +30,7 @@ import { useConfirm } from '~/ui/ConfirmDialog'
 import { Field, TextField } from '~/ui/fields'
 import { showToast } from '~/ui/toast'
 import { Icon } from '~/ui/Icon'
-import { Rows, ScreenHeader, SectionHeading } from '~/ui/primitives'
+import { Rows, ScreenHeader, Section, SectionHeading } from '~/ui/primitives'
 import { Row } from '~/ui/rows'
 import { SyncStatusPill } from '~/ui/SyncStatusPill'
 
@@ -130,9 +130,7 @@ function SyncSection() {
   }
 
   return (
-    <section className="flex flex-col gap-3">
-      <SectionHeading>Sync</SectionHeading>
-
+    <Section icon="sync" title="Sync">
       <SyncStatusPill status={status} variant="detailed" />
 
       <TextField
@@ -161,7 +159,7 @@ function SyncSection() {
               }}
               fieldClassName="max-w-sm flex-1"
             />
-            <Button variant="outline" onClick={() => void saveToken()}>
+            <Button variant="outline" icon="check" onClick={() => void saveToken()}>
               Save
             </Button>
           </div>
@@ -172,7 +170,7 @@ function SyncSection() {
             <div className="flex h-control w-full max-w-sm items-center rounded-sm border border-line-strong bg-surface px-3.5 font-mono text-body text-ink-muted">
               {maskToken(config?.token ?? '')}
             </div>
-            <Button variant="outline" onClick={() => setReplacingToken(true)}>
+            <Button variant="outline" icon="pencil" onClick={() => setReplacingToken(true)}>
               Replace
             </Button>
           </div>
@@ -183,12 +181,13 @@ function SyncSection() {
 
       <Button
         variant="outline"
+        icon="sync"
         disabled={!config || status.kind === 'syncing'}
         onClick={() => syncNow()}
       >
         Sync now
       </Button>
-    </section>
+    </Section>
   )
 }
 
@@ -202,7 +201,13 @@ function BackupSection() {
   const [error, setError] = useState<string | null>(null)
   const { confirm, dialog: confirmDialog } = useConfirm()
 
-  const synced = syncStatus.kind !== 'unconfigured'
+  // A repository is attached the moment `kind` leaves `unconfigured` — but
+  // attached isn't the same as working: `error` means sync stopped reaching
+  // it, so it's no longer a safety net even though a repo is configured.
+  // `trustworthy` is the one that should decide what this section says and
+  // how urgent the export button looks.
+  const configured = syncStatus.kind !== 'unconfigured'
+  const trustworthy = configured && syncStatus.kind !== 'error'
   const days = state.lastBackupAt === null ? null : daysSince(state.lastBackupAt)
 
   const exportNow = async () => {
@@ -249,11 +254,26 @@ function BackupSection() {
   }
 
   return (
-    <details className="group flex flex-col gap-3">
-      <summary className="group/summary flex cursor-pointer list-none items-center justify-between gap-4 [&::-webkit-details-marker]:hidden">
-        <h2 className="warm text-label uppercase text-ink-muted group-hover/summary:text-ink">
-          Backup
-        </h2>
+    // Chrome gives an open <details> an internal wrapper around everything
+    // after <summary> (it's what animates the expand/collapse), so a `gap`
+    // set here only ever lands between the summary and that wrapper — never
+    // between the elements inside it. The real rhythm has to live on a
+    // wrapper div we own.
+    <details className="group">
+      <summary
+        className={cn(
+          'warm group/summary mb-4 flex cursor-pointer list-none items-center justify-between gap-2.5',
+          'border-b border-line pb-2.5 hover:border-line-strong [&::-webkit-details-marker]:hidden',
+        )}
+      >
+        <span className="flex items-center gap-2.5">
+          <Icon
+            name="download"
+            size={19}
+            className="warm text-ink-faint group-hover/summary:text-ink-muted"
+          />
+          <h2 className="font-display text-[1.3125rem] leading-7 font-medium">Backup</h2>
+        </span>
         <Icon
           name="chevronDown"
           size={16}
@@ -261,49 +281,73 @@ function BackupSection() {
         />
       </summary>
 
-      {synced ? (
-        <Banner tone="info" icon="check">
-          Sync keeps a copy of everything in your private repository — that is the real safety net
-          now. This export is an optional extra, not the only copy.
-        </Banner>
-      ) : (
-        <Banner tone={days === null || days >= 14 ? 'warning' : 'info'} icon="clock">
-          {state.lastBackupAt === null
-            ? 'Never backed up. Your collection lives only in this browser.'
-            : `Last backup ${formatDate(state.lastBackupAt)} · ${plural(days ?? 0, 'day')} ago`}
-        </Banner>
-      )}
+      <div className="flex flex-col gap-4">
+        {syncStatus.kind === 'error' ? (
+          <Banner tone="warning" icon="alert">
+            Sync isn&rsquo;t reaching your repository right now, so it isn&rsquo;t a safety net at
+            the moment — this export is the up-to-date copy until that&rsquo;s fixed above.
+          </Banner>
+        ) : trustworthy ? (
+          <Banner tone="info" icon="check">
+            Sync already keeps a live copy in your private repository — that&rsquo;s the real
+            safety net. Export is just for a copy you hold yourself: handy before a risky change,
+            or to take the collection somewhere sync doesn&rsquo;t reach.
+          </Banner>
+        ) : (
+          <Banner tone={days === null || days >= 14 ? 'warning' : 'info'} icon="clock">
+            {state.lastBackupAt === null
+              ? "Never backed up. Without sync set up above, this browser is the only place your collection exists — and Safari clears storage for sites left untouched for seven days."
+              : `Last backup ${formatDate(state.lastBackupAt)} · ${plural(days ?? 0, 'day')} ago. Still the only copy, until sync is set up above.`}
+          </Banner>
+        )}
 
-      <p className="max-w-prose text-[0.9375rem] leading-6 text-ink-muted text-pretty">
-        One JSON file with every plant, every logged event and the three lists above. On iPhone the
-        share sheet offers &ldquo;Save to Files&rdquo;, which is how it reaches iCloud Drive.
-      </p>
+        {/* Explanation and the buttons it explains stay close together — the
+            gap-2 here is deliberately tighter than the gap-4 around this
+            block, so the pairing reads before the grouping does. */}
+        <div className="flex flex-col gap-2">
+          <p className="max-w-prose text-[0.9375rem] leading-6 text-ink-muted text-pretty">
+            One JSON file with every plant, every logged event and the two lists above — a copy
+            in your own hands, on top of whatever else keeps this collection safe. On iPhone the
+            share sheet offers &ldquo;Save to Files&rdquo;, which is how it reaches iCloud Drive.
+          </p>
 
-      <div className="flex flex-wrap gap-3">
-        <Button variant={synced ? 'outline' : 'accent'} disabled={busy} onClick={exportNow}>
-          Export everything
-        </Button>
-        <Button variant="outline" disabled={busy} onClick={() => fileInput.current?.click()}>
-          Import from a file
-        </Button>
-        <input
-          ref={fileInput}
-          type="file"
-          accept="application/json,.json"
-          className="sr-only"
-          onChange={(event) => {
-            const file = event.target.files?.[0]
-            if (file) void importFrom(file)
-          }}
-        />
+          <div className="flex flex-wrap gap-3">
+            <Button
+              variant={trustworthy ? 'outline' : 'accent'}
+              icon="download"
+              disabled={busy}
+              onClick={exportNow}
+            >
+              Export everything
+            </Button>
+            <Button
+              variant="outline"
+              icon="upload"
+              disabled={busy}
+              onClick={() => fileInput.current?.click()}
+            >
+              Import from a file
+            </Button>
+            <input
+              ref={fileInput}
+              type="file"
+              accept="application/json,.json"
+              className="sr-only"
+              onChange={(event) => {
+                const file = event.target.files?.[0]
+                if (file) void importFrom(file)
+              }}
+            />
+          </div>
+
+          {error ? <Banner tone="warning">{error}</Banner> : null}
+        </div>
+
+        <p className="max-w-prose text-[0.8125rem] leading-5 text-ink-muted text-pretty">
+          Importing replaces everything currently on this device — plants, events and lists all
+          get overwritten by what&rsquo;s in the file.
+        </p>
       </div>
-
-      {error ? <Banner tone="warning">{error}</Banner> : null}
-
-      <p className="max-w-prose text-[0.8125rem] leading-5 text-ink-muted text-pretty">
-        Importing replaces everything here with what is in the file. Safari also clears storage for
-        sites left untouched for seven days, so a long holiday is exactly when this matters.
-      </p>
 
       {confirmDialog}
     </details>
@@ -314,19 +358,16 @@ function BackupSection() {
 
 function ListsSection() {
   return (
-    <section className="flex flex-col gap-8">
-      <div className="flex flex-col gap-2">
-        <SectionHeading>Lists</SectionHeading>
-        <p className="max-w-prose text-[0.9375rem] leading-6 text-ink-muted text-pretty">
-          Renaming an entry moves every plant and every logged event with it. Entries are archived
-          rather than deleted, so an event from years back still resolves to something readable.
-        </p>
-      </div>
+    <Section icon="rows" title="Lists" gap="groups">
+      <p className="max-w-prose text-[0.9375rem] leading-6 text-ink-muted text-pretty">
+        Renaming an entry moves every plant and every logged event with it. Entries are archived
+        rather than deleted, so an event from years back still resolves to something readable.
+      </p>
 
       {VOCAB_KINDS.map((kind) => (
         <VocabList key={kind} kind={kind} />
       ))}
-    </section>
+    </Section>
   )
 }
 
@@ -344,6 +385,20 @@ function VocabList({ kind }: { kind: VocabKind }) {
   return (
     <div className="flex flex-col gap-2">
       <SectionHeading>{`${label(kind)}s`}</SectionHeading>
+
+      <div className="flex gap-2.5">
+        <TextField
+          aria-label={`New ${label(kind).toLowerCase()}`}
+          placeholder={`Add a ${label(kind).toLowerCase()}`}
+          value={adding}
+          onChange={(event) => setAdding(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') void add()
+          }}
+          fieldClassName="flex-1 max-w-sm"
+        />
+        <IconButton icon="plus" label={`Add ${label(kind).toLowerCase()}`} onClick={add} />
+      </div>
 
       {items.length === 0 ? (
         <p className="text-[0.9375rem] text-ink-muted">
@@ -378,20 +433,6 @@ function VocabList({ kind }: { kind: VocabKind }) {
           ))}
         </Rows>
       )}
-
-      <div className="flex gap-2.5">
-        <TextField
-          aria-label={`New ${label(kind).toLowerCase()}`}
-          placeholder={`Add a ${label(kind).toLowerCase()}`}
-          value={adding}
-          onChange={(event) => setAdding(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter') void add()
-          }}
-          fieldClassName="flex-1 max-w-sm"
-        />
-        <IconButton icon="plus" label={`Add ${label(kind).toLowerCase()}`} onClick={add} />
-      </div>
     </div>
   )
 }

@@ -9,7 +9,7 @@
 
 import type { ReactNode } from 'react'
 import { cn } from '~/lib/cn'
-import { Icon } from './Icon'
+import { Icon, type IconName } from './Icon'
 
 /** The accession number. Tracked out so you can read it off a pot without
  *  second-guessing an 8 for a B. */
@@ -121,6 +121,52 @@ export function DaysSinceWater({
         days
       </span>
     </div>
+  )
+}
+
+/**
+ * A named run of fields — or of anything else a screen groups.
+ *
+ * Set in the serif, at the size the sheets set their titles. It has to be a
+ * different *kind* of type from the labels under it, not a heavier weight of
+ * the same one — a heading in `text-label uppercase` sitting directly above
+ * more `text-label uppercase` is a heading you have to work out rather than
+ * see.
+ *
+ * The glyph is a plain faint icon rather than a tinted chip on purpose: chips
+ * mark a row you can act on, and a heading is not one. The hairline does the
+ * separating, so the groups read apart without boxing their contents inside a
+ * card the same colour as what's in it.
+ */
+/** The two rhythms a `Section` body actually uses — a lookup, not a passed-in
+ *  gap class, so it can't collide with the base `flex flex-col` the way a
+ *  bare `className="gap-8"` would (`cn` joins rather than merges; see
+ *  `lib/cn.ts`). */
+const SECTION_GAPS = { fields: 'gap-5', groups: 'gap-8' } as const
+
+export function Section({
+  icon,
+  title,
+  children,
+  gap = 'fields',
+  className,
+}: {
+  icon: IconName
+  title: string
+  children: ReactNode
+  /** `fields` (20px) for a run of fields; `groups` (32px) for a run of
+   *  sub-sections, each with its own heading. */
+  gap?: keyof typeof SECTION_GAPS
+  className?: string
+}) {
+  return (
+    <section className={cn('flex flex-col', SECTION_GAPS[gap], className)}>
+      <div className="flex items-center gap-2.5 border-b border-line pb-2.5">
+        <Icon name={icon} size={19} className="text-ink-faint" />
+        <h2 className="font-display text-[1.3125rem] leading-7 font-medium">{title}</h2>
+      </div>
+      {children}
+    </section>
   )
 }
 
