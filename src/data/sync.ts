@@ -62,7 +62,10 @@ export type SyncStatus =
   | { kind: 'idle'; lastSyncedAt: string | null; eventCount: number }
   | { kind: 'syncing' }
   | { kind: 'offline-pending'; count: number }
-  | { kind: 'error'; message: string }
+  // The count rides along with the message: "something went wrong" on its own
+  // leaves a person wondering whether the edit they just made still exists
+  // anywhere. It does, it is waiting, and the line should say so.
+  | { kind: 'error'; message: string; pendingCount: number }
 
 const CONFIG_KEY = 'syncConfig'
 const STATE_KEY = 'syncState'
@@ -96,7 +99,7 @@ let cachedStatus: SyncStatus = { kind: 'unconfigured' }
 function computeStatus(): SyncStatus {
   if (!config) return { kind: 'unconfigured' }
   if (phase === 'syncing') return { kind: 'syncing' }
-  if (phase === 'error') return { kind: 'error', message: errorMessage }
+  if (phase === 'error') return { kind: 'error', message: errorMessage, pendingCount }
   if (phase === 'offline' || pendingCount > 0) return { kind: 'offline-pending', count: pendingCount }
 
   const eventCount = getState().events.filter((event) => !event.deleted).length

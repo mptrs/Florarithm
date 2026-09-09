@@ -111,6 +111,26 @@ test('a revoked token surfaces the "Fix" state, and Fix reaches Settings', async
   await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible()
 })
 
+test('a failed sync still says how much is waiting, so an edit never looks lost', async ({
+  page,
+}) => {
+  await page.route('https://api.github.com/**', async (route: Route) => {
+    await route.fulfill({ status: 401, body: '{}' })
+  })
+
+  await configureSync(page)
+  await expect(page.getByText('Your access token expired. Sync is paused.')).toBeVisible()
+
+  await page.goto('#new')
+  await page.getByLabel('Genus').fill('Monstera')
+  await page.getByLabel('Name', { exact: true }).fill('Gruyère')
+  await page.getByRole('button', { name: 'Add to the collection' }).click()
+  await expect(page.getByRole('heading', { name: 'Gruyère' })).toBeVisible()
+
+  await page.goto('#settings')
+  await expect(page.getByText(/change(s)? still waiting to sync/)).toBeVisible()
+})
+
 /** A repository that already holds one plant and one photographed entry — the
  *  other device, as far as this one can tell. */
 const REMOTE_PLANT = {
