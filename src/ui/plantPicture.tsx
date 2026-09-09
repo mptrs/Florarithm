@@ -35,17 +35,25 @@ export function PlantPicture({ plant }: { plant: Plant }) {
 /**
  * One plant in the grid.
  *
- * `secondary` is whatever the grouping is not already saying — the species when
- * the run is grouped by place, the place when it is sorted A–Z. That rule is
- * the reason this takes a string rather than reading the plant itself.
+ * `secondary` is the species, and it stays put in every ordering: the species
+ * is what you are reading the tile *for* on a phone, and swapping it out for
+ * the place when the list was sorted A–Z meant the one list you would sort
+ * alphabetically was the one list that would not tell you what the plant was.
+ *
+ * `meta` is whatever the grouping is not already saying — the place, and only
+ * while no drawer label above the tile is carrying it. It gets its own line
+ * rather than trailing the species behind a dot, because half a phone wide
+ * there is no room for two facts on one line and the second one truncates.
  */
 export function PlantTile({
   plant,
   secondary,
+  meta,
   tag,
 }: {
   plant: Plant
   secondary?: string
+  meta?: string
   /** An archived plant carries why it is archived, and is drawn faded. */
   tag?: string
 }) {
@@ -85,27 +93,27 @@ export function PlantTile({
             {tag}
           </span>
         ) : null}
-        {/* Top right, over the photograph and clear of the tag: a sleeping
-            plant is still in the list, and this is the only thing telling you
-            why it has stopped asking to be watered. */}
-        {plant.status === 'dormant' ? (
-          // The same floating ground as the archive tag below it, for the same
-          // reason: over a photograph, three faint letters on their own are a
-          // coin toss between legible and invisible.
-          <span className="absolute top-2 right-2 rounded-full bg-floating px-2 pt-1 pb-0.5">
-            <Dozing />
-          </span>
-        ) : null}
       </div>
 
       <div className="px-3 pt-2 pb-3">
-        <div className="truncate font-display text-[1.0625rem] leading-[1.3125rem] font-medium">
-          {plant.name}
+        {/* The z's sit after the name rather than up on the photograph. It is
+            a fact about the plant, like the species under it, and a mark
+            floating over the picture read as something the app had stuck on
+            top of the plant instead. `min-w-0` on the name is what lets it
+            truncate at the z's rather than pushing them out of the tile. */}
+        <div className="flex items-baseline gap-1">
+          <span className="min-w-0 truncate font-display text-[1.0625rem] leading-[1.3125rem] font-medium">
+            {plant.name}
+          </span>
+          {plant.status === 'dormant' ? <Dozing className="shrink-0 text-[0.6875rem]" /> : null}
         </div>
         {secondary ? (
           <div className="mt-0.5 truncate text-[0.8125rem] leading-4 text-ink-faint">
             {secondary}
           </div>
+        ) : null}
+        {meta ? (
+          <div className="truncate text-[0.8125rem] leading-4 text-ink-faint">{meta}</div>
         ) : null}
       </div>
     </a>

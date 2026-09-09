@@ -379,8 +379,12 @@ test('the collection groups by place, or drops the grouping for A\u2013Z', async
 
   await page.getByRole('button', { name: 'A\u2013Z' }).click()
 
-  // Sorted A\u2013Z there is no label to carry it, so the place moves into the row.
+  // Sorted A\u2013Z there is no label to carry it, so the place moves into the row
+  // \u2014 alongside the species, which is never the thing being traded away.
   await expect(main(page).getByRole('link', { name: /Gruy\u00e8re/ })).toContainText('Living room')
+  await expect(main(page).getByRole('link', { name: /Gruy\u00e8re/ })).toContainText(
+    'Monstera deliciosa',
+  )
   const names = await main(page)
     .getByRole('link')
     .filter({ hasText: /Gruy\u00e8re|Zebra/ })
@@ -394,8 +398,12 @@ test('Today sorts by thirst, or cuts the same list into rooms', async ({ page })
 
   await page.goto('#today')
 
-  // Thirstiest first, and with no label above the row it carries its own place.
+  // Thirstiest first, and with no label above the row it carries its own place
+  // \u2014 after the species, which stays put in either ordering.
   await expect(main(page).getByRole('link', { name: /Gruy\u00e8re/ })).toContainText('Living room')
+  await expect(main(page).getByRole('link', { name: /Gruy\u00e8re/ })).toContainText(
+    'Monstera deliciosa',
+  )
 
   await page.getByRole('button', { name: 'By place' }).click()
 

@@ -8,7 +8,9 @@
  * One rule runs through both orders, and it is Collection's: whatever the list
  * is grouped by never repeats itself inside a row. Sorted thirstiest the row
  * carries the place; grouped by place the drawer label carries it and the row
- * says the species instead.
+ * drops it. The species is not part of that trade and is always there — it is
+ * how you tell two plants in the same room apart, which is exactly the moment
+ * the grouping has taken the room off the row.
  *
  * Nothing is written from here. Today is the list you water *from* — you arrive
  * at the plant by its tag and log it there — so a plant that has had water today
@@ -29,6 +31,7 @@ import {
   livePlants,
   todayList,
   vocabName,
+  vocabNameOrNone,
 } from '~/data/selectors'
 import type { Plant } from '~/data/types'
 import { useSyncStatus } from '~/data/sync'
@@ -132,15 +135,19 @@ export function TodayScreen() {
 /**
  * One plant, in both readings.
  *
- * Below the table the second line carries whatever the grouping is not already
- * saying; from `lg` the place has a column of its own and the species takes the
- * line back — the same trade Collection's row makes, by the same breakpoint.
+ * Below the table the second line carries the species, and the place after it
+ * while no drawer label is saying the room; from `lg` the place has a column of
+ * its own and the line is the species alone — the same trade Collection makes,
+ * by the same breakpoint.
  */
 function TodayRow({ plant, showPlace }: { plant: Plant; showPlace: boolean }) {
   const state = useStore()
   const days = daysSinceWater(state, plant.code)
   const last = lastWaterAt(state, plant.code)
+  // Two readings of the same fact: the column wants a dash where there is no
+  // place, the line below the name wants nothing at all.
   const place = vocabName(state, plant.locationId)
+  const placeInline = vocabNameOrNone(state, plant.locationId)
   const species = formatSpecies(plant)
 
   return (
@@ -151,8 +158,12 @@ function TodayRow({ plant, showPlace }: { plant: Plant; showPlace: boolean }) {
         <span className="truncate font-display text-[1.09375rem] leading-[1.375rem] font-medium">
           {plant.name}
         </span>
+        {/* The species stays whichever way the list is ordered — it is what
+            you read a row for — and the place joins it only while no drawer
+            label above is already saying the room. A full-width row has space
+            for both on one line, so unlike Collection's tile they share it. */}
         <span className="truncate text-[0.8125rem] leading-[1.0625rem] text-ink-muted lg:hidden">
-          {showPlace ? place : species}
+          {[species, showPlace ? placeInline : ''].filter(Boolean).join(' · ')}
         </span>
         {species ? (
           <span className="hidden truncate text-[0.8125rem] leading-[1.0625rem] text-ink-muted lg:block">

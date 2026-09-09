@@ -8,8 +8,13 @@
  *
  * One rule runs through both: whatever the list is grouped by never repeats
  * itself inside a row. Grouped by place, the drawer label says the room, so the
- * tile says the species and the table drops its Place column; sorted A–Z there
- * is no label, so the place moves back in.
+ * table drops its Place column; sorted A–Z there is no label, so the place
+ * moves back in.
+ *
+ * The species is not part of that trade. It stays on the tile in either order,
+ * because on a phone it is the line you are actually reading — the rule is
+ * about not saying the room twice, and it used to cost you the species every
+ * time you sorted alphabetically.
  *
  * Days since water is here and quiet. Today is the list you water from, and two
  * screens shouting the same number at you means you trust neither.
@@ -25,6 +30,7 @@ import {
   isArchiveQuery,
   isThirsty,
   vocabName,
+  vocabNameOrNone,
 } from '~/data/selectors'
 import { useStore } from '~/data/store'
 import type { Plant } from '~/data/types'
@@ -173,7 +179,8 @@ function PlantRuns({
               <PlantTile
                 key={plant.code}
                 plant={plant}
-                secondary={showPlace ? vocabName(state, plant.locationId) : formatSpecies(plant)}
+                secondary={formatSpecies(plant)}
+                meta={showPlace ? vocabNameOrNone(state, plant.locationId) : undefined}
               />
             ))}
           </div>
