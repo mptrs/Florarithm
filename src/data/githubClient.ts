@@ -48,27 +48,86 @@ function headers(config: GitHubConfig, extra?: Record<string, string>): Record<s
 
 type Call = { method?: string; body?: string; headers?: Record<string, string> }
 
+/**
+ * Transient failures are the norm, not the exception.
+ *
+ * One sync round writes `meta.json`, `plants.json` and a file per month in
+ * quick succession — several commits to the same branch within a second or
+ * two. GitHub answers a fair share of those with a 5xx, a 429, or a
+ * secondary rate limit, none of which mean anything is wrong: the same
+ * request a moment later succeeds. Without a wait-and-retry that surfaced as
+ * "sync failed" on a perfectly ordinary edit, which then went away when the
+ * person pressed the button again — the retry they were performing by hand.
+ */
+const MAX_ATTEMPTS = 4
+const BASE_DELAY_MS = 300
+
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+function backoffMs(response: Response, attempt: number): number {
+  // GitHub says how long to wait when it knows; otherwise back off
+  // exponentially. `retry-after` is capped so a rate limit measured in
+  // minutes fails fast instead of hanging the round trip.
+  const retryAfter = Number(response.headers.get('retry-after'))
+  if (Number.isFinite(retryAfter) && retryAfter > 0) return Math.min(retryAfter * 1000, 5000)
+  return BASE_DELAY_MS * 2 ** (attempt - 1)
+}
+
+/** A 403 is three different things wearing one status code: an exhausted
+ *  primary rate limit, a secondary rate limit from writing too fast, or "this
+ *  token cannot touch this repo" — which is exactly what a 401 means. Only
+ *  the last is worth telling the person about. */
+async function isRateLimited(response: Response): Promise<boolean> {
+  if (response.headers.get('x-ratelimit-remaining') === '0') return true
+  if (response.headers.get('retry-after')) return true
+
+  const body = await response
+    .clone()
+    .text()
+    .catch(() => '')
+  return /secondary rate limit|abuse detection/i.test(body)
+}
+
+/** Worth trying again as-is: nothing about the request was wrong. */
+async function isTransient(response: Response): Promise<boolean> {
+  if (response.status >= 500) return true
+  if (response.status === 429) return true
+  return response.status === 403 && (await isRateLimited(response))
+}
+
 /** `path` is relative to `/repos/{owner}/{repo}` — `''` for the repo itself,
  *  `contents/plants.json` for a file. */
 async function request(config: GitHubConfig, path: string, init?: Call): Promise<Response> {
   const base = `${API}/repos/${config.owner}/${config.repo}`
   const url = path ? `${base}/${path}` : base
 
-  let response: Response
-  try {
-    response = await fetch(url, { ...init, headers: headers(config, init?.headers) })
-  } catch (cause) {
-    throw new GitHubNetworkError('Could not reach GitHub.', { cause })
-  }
+  for (let attempt = 1; ; attempt++) {
+    let response: Response
+    try {
+      response = await fetch(url, { ...init, headers: headers(config, init?.headers) })
+    } catch (cause) {
+      throw new GitHubNetworkError('Could not reach GitHub.', { cause })
+    }
 
-  if (response.status === 401 || isPermissionDenied(response)) {
-    throw new GitHubAuthError('The token was refused.')
-  }
-  if (response.status === 409) {
-    throw new GitHubConflictError('Someone else wrote to this file first.')
-  }
+    if (await isTransient(response)) {
+      if (attempt < MAX_ATTEMPTS) {
+        await wait(backoffMs(response, attempt))
+        continue
+      }
+      throw new GitHubApiError(`${init?.method ?? 'GET'} ${path} kept failing`, response.status)
+    }
 
-  return response
+    if (response.status === 401 || response.status === 403) {
+      throw new GitHubAuthError('The token was refused.')
+    }
+    if (response.status === 409) {
+      throw new GitHubConflictError('Someone else wrote to this file first.')
+    }
+
+    return response
+  }
 }
 
 async function call(config: GitHubConfig, path: string, init?: Call): Promise<Response> {
@@ -89,13 +148,6 @@ export async function getDefaultBranch(config: GitHubConfig): Promise<string> {
 
   const body = (await response.json()) as { default_branch: string }
   return body.default_branch
-}
-
-/** A 403 is either "no rate limit left" (transient, not an auth problem) or
- *  "this token cannot touch this repo" (exactly what 401 means). GitHub tells
- *  the two apart with this header. */
-function isPermissionDenied(response: Response): boolean {
-  return response.status === 403 && response.headers.get('x-ratelimit-remaining') !== '0'
 }
 
 type ContentsResponse = { content: string; sha: string; type: string }
@@ -171,17 +223,19 @@ export async function putBinaryFile(
       body: JSON.stringify({ message, content: bytesToBase64(bytes), branch }),
     })
 
+  // No `sha` is ever sent, so this create can never lose real content the way
+  // `putFile` can — a 409 here is the branch ref moving under a plain create,
+  // not two devices fighting over the same bytes. Retrying behind whatever
+  // else just committed is always the right move.
   let response: Response
-  try {
-    response = await attempt()
-  } catch (error) {
-    if (!(error instanceof GitHubConflictError)) throw error
-
-    // No `sha` is ever sent, so this create can never lose real content the
-    // way `putFile` can — a 409 here is the branch ref moving under a plain
-    // create, not two devices fighting over the same bytes. One retry is
-    // enough to land behind whatever else just committed.
-    response = await attempt()
+  for (let tries = 1; ; tries++) {
+    try {
+      response = await attempt()
+      break
+    } catch (error) {
+      if (!(error instanceof GitHubConflictError) || tries === MAX_ATTEMPTS) throw error
+      await wait(BASE_DELAY_MS * 2 ** tries)
+    }
   }
 
   // A path that already exists comes back 422, which is not a failure here:

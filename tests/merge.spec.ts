@@ -277,6 +277,38 @@ test.describe('the GitHub Contents API client', () => {
     ).rejects.toBeInstanceOf(GitHubConflictError)
   })
 
+  test('a 5xx is waited out rather than surfaced — the same request a moment later works', async () => {
+    let calls = 0
+    global.fetch = (async () => {
+      calls += 1
+      return calls < 3
+        ? new Response(null, { status: 502 })
+        : new Response(JSON.stringify({ content: { sha: 'new-sha' } }), { status: 200 })
+    }) as typeof fetch
+
+    expect(await putFile(config, 'plants.json', '[]', 'sha1', 'sync', 'main')).toEqual({
+      sha: 'new-sha',
+    })
+    expect(calls).toBe(3)
+  })
+
+  test('a secondary rate limit is a wait, not a revoked token', async () => {
+    let calls = 0
+    global.fetch = (async () => {
+      calls += 1
+      return calls < 2
+        ? new Response('{"message":"You have exceeded a secondary rate limit"}', {
+            status: 403,
+            headers: { 'x-ratelimit-remaining': '4900' },
+          })
+        : new Response(JSON.stringify({ content: utf8ToBase64('[]'), sha: 'abc123' }), {
+            status: 200,
+          })
+    }) as typeof fetch
+
+    expect(await getFile(config, 'plants.json')).toEqual({ content: '[]', sha: 'abc123' })
+  })
+
   test('a write always names an explicit branch, so it can create the very first commit on a repo with none yet', async () => {
     let body: unknown
     global.fetch = (async (_url, init) => {

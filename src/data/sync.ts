@@ -387,19 +387,30 @@ async function pushIfChanged(
   existing: RemoteFile | null,
   content: string,
 ): Promise<void> {
-  if (existing && existing.content === content) return
+  let known = existing
 
-  try {
-    await putFile(active, path, content, existing?.sha ?? null, COMMIT_MESSAGE, branch)
-  } catch (error) {
-    if (!(error instanceof GitHubConflictError)) throw error
+  // Someone else wrote first — take their latest and push again on top of it.
+  // More than one attempt because the "someone else" is usually this very
+  // sync round: the writes of one round are several commits to one branch
+  // within a second, and the Contents API hands back the sha it had a moment
+  // ago for a little while after each. A single retry lost that race often
+  // enough to fail an ordinary edit.
+  for (let attempt = 1; ; attempt++) {
+    if (known && known.content === content) return
 
-    // Someone else wrote first — take their latest and push again on top of
-    // it. One retry only; a second conflict means this sync round is out of
-    // luck and will simply try again next time.
-    const fresh = await getFile(active, path)
-    if (fresh?.content !== content) {
-      await putFile(active, path, content, fresh?.sha ?? null, COMMIT_MESSAGE, branch)
+    try {
+      await putFile(active, path, content, known?.sha ?? null, COMMIT_MESSAGE, branch)
+      return
+    } catch (error) {
+      if (!(error instanceof GitHubConflictError) || attempt === CONFLICT_ATTEMPTS) throw error
     }
+
+    await new Promise((resolve) => setTimeout(resolve, CONFLICT_BACKOFF_MS * attempt))
+    known = await getFile(active, path)
   }
 }
+
+/** Four tries, widening the gap each time, is enough for the stale sha the
+ *  Contents API serves right after a write to catch up. */
+const CONFLICT_ATTEMPTS = 4
+const CONFLICT_BACKOFF_MS = 400
