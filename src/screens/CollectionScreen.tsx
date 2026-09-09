@@ -8,8 +8,16 @@
  *
  * One rule runs through both: whatever the list is grouped by never repeats
  * itself inside a row. Grouped by place, the drawer label says the room, so the
- * tile says the species and the table drops its Place column; sorted A–Z there
- * is no label, so the place moves back in.
+ * table drops its Place column; sorted A–Z there is no label, so the place
+ * moves back into the column.
+ *
+ * On a phone there is no column for it to move into, and it does not move at
+ * all: the tile says the name and the species, and the room is whatever the
+ * drawer label above it says — nothing, when you have sorted A–Z. The place
+ * had been drawn there as a fainter, smaller run of the same prose as the
+ * species, which is what you do to rank two facts of one kind; these are two
+ * kinds. The room being one tap away is a better answer than a second line
+ * you have to read to identify.
  *
  * Days since water is here and quiet. Today is the list you water from, and two
  * screens shouting the same number at you means you trust neither.
@@ -30,9 +38,10 @@ import { useStore } from '~/data/store'
 import type { Plant } from '~/data/types'
 import { cn } from '~/lib/cn'
 import { formatSpecies, label } from '~/lib/format'
-import { COLLECTION_FILTERS, routes, type CollectionFilter } from '~/lib/router'
+import { COLLECTION_FILTERS, navigate, routes, type CollectionFilter } from '~/lib/router'
 import { Button } from '~/ui/Button'
 import { Chip, ChipStrip, SortSwitch, type SortOption } from '~/ui/Chip'
+import { Dozing } from '~/ui/Dozing'
 import { SearchField } from '~/ui/fields'
 import { PlantThumb, PlantTile } from '~/ui/plantPicture'
 import { EmptyState, ScreenHeader } from '~/ui/primitives'
@@ -98,7 +107,7 @@ export function CollectionScreen({ filter }: { filter: CollectionFilter }) {
             <Chip
               key={candidate}
               selected={candidate === filter}
-              onClick={() => window.location.assign(routes.collection(candidate))}
+              onClick={() => navigate(routes.collection(candidate))}
             >
               {FILTER_LABELS[candidate]}
             </Chip>
@@ -115,7 +124,7 @@ export function CollectionScreen({ filter }: { filter: CollectionFilter }) {
           description={query ? `No plant matches “${query}”.` : emptyDescription(filter)}
           action={
             query ? null : (
-              <Button variant="accent" onClick={() => window.location.assign(routes.new())}>
+              <Button variant="accent" onClick={() => navigate(routes.new())}>
                 Add a plant
               </Button>
             )
@@ -147,8 +156,6 @@ function PlantRuns({
   runs: readonly (readonly [string, readonly Plant[]])[]
   showPlace: boolean
 }) {
-  const state = useStore()
-
   return (
     <div>
       {/* The table header exists only where there are columns to head. */}
@@ -169,11 +176,7 @@ function PlantRuns({
 
           <div className={cn('grid grid-cols-2 gap-3 lg:hidden', place ? '' : 'mt-4')}>
             {members.map((plant) => (
-              <PlantTile
-                key={plant.code}
-                plant={plant}
-                secondary={showPlace ? vocabName(state, plant.locationId) : formatSpecies(plant)}
-              />
+              <PlantTile key={plant.code} plant={plant} secondary={formatSpecies(plant)} />
             ))}
           </div>
 
@@ -194,14 +197,18 @@ function PlantRow({ plant, showPlace }: { plant: Plant; showPlace: boolean }) {
   const state = useStore()
   const days = daysSinceWater(state, plant.code)
   const species = formatSpecies(plant)
+  const dormant = plant.status === 'dormant'
 
   return (
     <RowLink href={routes.plant(plant.code)}>
       <PlantThumb plant={plant} />
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <span className="truncate font-display text-[1.09375rem] leading-[1.375rem] font-medium">
-          {plant.name}
+        <span className="flex items-baseline gap-1.5">
+          <span className="truncate font-display text-[1.09375rem] leading-[1.375rem] font-medium">
+            {plant.name}
+          </span>
+          {dormant ? <Dozing className="shrink-0 self-center" /> : null}
         </span>
         {species ? (
           <span className="truncate text-[0.8125rem] leading-[1.0625rem] text-ink-muted">
@@ -225,7 +232,11 @@ function PlantRow({ plant, showPlace }: { plant: Plant; showPlace: boolean }) {
         <span
           className={cn(
             'w-16 shrink-0 text-right font-mono text-[0.875rem]',
-            isThirsty(days) ? 'font-semibold text-ember' : 'text-ink',
+            // A dormant plant is not late, it is asleep — counting its days
+            // in ember would ask you to water something you have decided not
+            // to water.
+            isThirsty(days) && !dormant ? 'font-semibold text-ember' : 'text-ink',
+            dormant ? 'text-ink-faint' : '',
           )}
         >
           {days ?? '—'}
@@ -278,7 +289,7 @@ function Archive({ plants, query }: { plants: readonly Plant[]; query: string })
 
       <p className="mt-3.5 px-0.5 text-[0.8125rem] leading-[1.125rem] text-ink-faint text-pretty">
         {isArchiveQuery(query)
-          ? 'Plants that died, were given away or are resting. They stay out of every list you water from.'
+          ? 'Plants that died or were given away. A dormant plant is not here — it is still on the shelf, just asleep.'
           : 'Archived, so it is out of every list you water from.'}
       </p>
     </section>
@@ -292,7 +303,7 @@ function emptyTitle(filter: CollectionFilter): string {
 
 function emptyDescription(filter: CollectionFilter): string {
   if (filter === 'archive') {
-    return 'Plants that died, were given away or are resting show up here rather than in the list of things to water.'
+    return 'Plants that died or were given away show up here rather than in the list of things to water.'
   }
   return 'Everything you own, searchable by name, species, code or place.'
 }

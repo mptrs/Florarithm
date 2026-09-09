@@ -85,6 +85,8 @@ export function parseRoute(hash: string): Route {
 }
 
 export function navigate(hash: string): void {
+  remember()
+  goingForward = true
   window.location.hash = hash
 }
 
@@ -114,8 +116,119 @@ export function canGoBack(): boolean {
   return navigatedWithinApp
 }
 
+/* ---------------------------------------------------------------------------
+   Where a new screen starts.
+
+   Going somewhere new starts you at the top of it; going *back* puts you where
+   you were. A hash change does neither on its own — the document never
+   changes, so the offset simply stays where the last screen left it, and a tap
+   on Collection from halfway down Settings dropped you halfway down
+   Collection.
+
+   Both halves are done here rather than left to the browser. The browser does
+   keep a scroll position per history entry, but it restores it the moment the
+   entry becomes current — which under client-side rendering is before React
+   has mounted the screen being returned to. The document is still the *old*
+   screen's height at that instant, so a restore past the end of it is clamped,
+   and a long screen comes back at its top. It looked like it worked when the
+   app was warm; it is a race either way.
+
+   Telling forward from back is the other half, and no event says which:
+   `popstate` fires for a script-driven `location.hash = ...` exactly as it does
+   for the back button (verified in Safari, not assumed), and `history.length`
+   does not grow when a push replaces a forward entry you had just stepped back
+   from. So the app says so itself — every forward move in here is a click on
+   an in-app link or a call to `navigate`/`redirect`, and everything reaching
+   `hashchange` unannounced is a traversal, whether from the back button, a
+   swipe, or the keyboard.
+--------------------------------------------------------------------------- */
+
+let goingForward = false
+
+/** Where each route was left, keyed by hash rather than by history entry:
+ *  two entries showing the same screen should come back to the same place. */
+const scrollPositions = new Map<string, number>()
+
+/** How many frames to hold a restore for. Past this the target is not
+ *  reachable — a shorter screen, an emptied list, a deleted plant — and where
+ *  we landed is the right answer rather than a scroll into blank space. */
+const RESTORE_FRAMES = 10
+
+/**
+ * Put the page at `target`, and keep putting it there for a few frames.
+ *
+ * Two things can move it out from under us in that window, and asking again
+ * costs nothing against either. The screen may not have mounted yet, so the
+ * document is still too short and `scrollTo` lands clamped. And a browser may
+ * do its own restoring anyway: WebKit sets the offset back to 0 *after* the
+ * `hashchange` handler has run, whatever `scrollRestoration` was set to — a
+ * single call was overwritten a frame later and the screen came back at its
+ * top. Chromium at the same moment is already correct, which is exactly the
+ * kind of difference not to build on.
+ */
+function restore(target: number, frames = RESTORE_FRAMES): void {
+  window.scrollTo(0, target)
+  if (frames > 0 && Math.round(window.scrollY) !== target) {
+    window.requestAnimationFrame(() => restore(target, frames - 1))
+  }
+}
+
+/** The route the offsets above are currently being recorded against. */
+let currentHash = typeof window === 'undefined' ? '' : window.location.hash
+
+/**
+ * Write down where this screen is, now.
+ *
+ * Called as the page moves rather than once on the way out. Reading `scrollY`
+ * inside `hashchange` looks like the obvious place and is too late: WebKit has
+ * already put the offset back to 0 by the time that handler runs, so every
+ * screen was remembered as being at its top and "back" faithfully restored
+ * that. Tracking it as it moves means the number is written down while it is
+ * still true.
+ */
+function remember(): void {
+  scrollPositions.set(currentHash, window.scrollY)
+}
+
+if (typeof window !== 'undefined') {
+  // Asked for even though WebKit ignores it — where it is honoured it stops
+  // the browser restoring against a screen React has not mounted yet.
+  if ('scrollRestoration' in window.history) window.history.scrollRestoration = 'manual'
+
+  window.addEventListener('scroll', remember, { passive: true })
+
+  // Capture, so a link still counts even if something between it and the
+  // window stops the bubble.
+  window.addEventListener(
+    'click',
+    (event) => {
+      const link = (event.target as Element | null)?.closest?.('a[href^="#"]')
+      const href = link?.getAttribute('href')
+      // A link to where you already are produces no `hashchange`, so a flag
+      // set here would sit there and spend itself on the next press of Back.
+      if (href && href !== window.location.hash) {
+        remember()
+        goingForward = true
+      }
+    },
+    true,
+  )
+
+  window.addEventListener('hashchange', () => {
+    currentHash = window.location.hash
+    const forward = goingForward
+    goingForward = false
+    restore(forward ? 0 : (scrollPositions.get(currentHash) ?? 0))
+  })
+}
+
 /** Replace rather than push, so "back" does not walk through a redirect. */
 export function redirect(hash: string): void {
+  // Forward for the reader even though it is a replace for `history`: saving
+  // a form and landing on the plant is arriving somewhere new, and arriving
+  // halfway down it because the form was long is the bug this flag fixes.
+  remember()
+  goingForward = true
   window.location.replace(`${window.location.pathname}${window.location.search}${hash}`)
 }
 

@@ -112,6 +112,32 @@ function main(page: Page) {
   return page.getByRole('main')
 }
 
+/**
+ * Which of the two readings this run is looking at.
+ *
+ * Both list screens collapse by breakpoint rather than by prop, and the place
+ * is the one fact whose presence differs: `lg` has a column for it, a phone
+ * does not and does without. This suite runs at both sizes, so the assertion
+ * has to know which one it is in. 1024 is Tailwind's `lg`.
+ */
+function isWide(page: Page): boolean {
+  return (page.viewportSize()?.width ?? 0) >= 1024
+}
+
+/**
+ * Whether a row is showing the room, at whichever width this run is.
+ *
+ * Visibility rather than text, because collapsing by breakpoint means the
+ * desktop Place cell is in the DOM on a phone too, merely `display: none` —
+ * `toContainText` reads straight through that and would pass a row nobody can
+ * see the place in.
+ */
+async function expectPlaceShown(page: Page, name: RegExp, place: string) {
+  const cell = main(page).getByRole('link', { name }).getByText(place, { exact: true })
+  if (isWide(page)) await expect(cell).toBeVisible()
+  else await expect(cell).toBeHidden()
+}
+
 test.beforeEach(async ({ page }) => {
   await page.goto('')
   // Each test starts from an empty collection rather than inheriting one.
@@ -379,8 +405,13 @@ test('the collection groups by place, or drops the grouping for A\u2013Z', async
 
   await page.getByRole('button', { name: 'A\u2013Z' }).click()
 
-  // Sorted A\u2013Z there is no label to carry it, so the place moves into the row.
-  await expect(main(page).getByRole('link', { name: /Gruy\u00e8re/ })).toContainText('Living room')
+  // Sorted A\u2013Z there is no label to carry it. On a desktop it moves into
+  // the Place column; on a phone there is no column and it is simply not
+  // shown \u2014 the sort switch is one tap away. The species is there either way.
+  await expect(main(page).getByRole('link', { name: /Gruy\u00e8re/ })).toContainText(
+    'Monstera deliciosa',
+  )
+  await expectPlaceShown(page, /Gruy\u00e8re/, 'Living room')
   const names = await main(page)
     .getByRole('link')
     .filter({ hasText: /Gruy\u00e8re|Zebra/ })
@@ -394,8 +425,12 @@ test('Today sorts by thirst, or cuts the same list into rooms', async ({ page })
 
   await page.goto('#today')
 
-  // Thirstiest first, and with no label above the row it carries its own place.
-  await expect(main(page).getByRole('link', { name: /Gruy\u00e8re/ })).toContainText('Living room')
+  // Thirstiest first, and with no label above the row: the place shows in the
+  // desktop column and nowhere on a phone. The species is there at both.
+  await expect(main(page).getByRole('link', { name: /Gruy\u00e8re/ })).toContainText(
+    'Monstera deliciosa',
+  )
+  await expectPlaceShown(page, /Gruy\u00e8re/, 'Living room')
 
   await page.getByRole('button', { name: 'By place' }).click()
 
@@ -445,6 +480,64 @@ test('an archived plant is out of the way but still findable', async ({ page }) 
   // ...and by its own name, without knowing there is a word.
   await search.fill('Wolk')
   await expect(main(page).getByRole('link', { name: /Wolk/ })).toContainText('Died')
+})
+
+test('a dormant plant stays on the shelf, asleep rather than archived', async ({ page }) => {
+  const code = await addPlant(page, 'Caladium bicolor', 'Winter', 'Bedroom')
+
+  await page.goto(`#edit/${code}`)
+  await page.getByLabel('Status').selectOption('dormant')
+  await page.getByRole('button', { name: 'Save' }).click()
+
+  // The plant page says it is asleep without saying it is gone.
+  await expect(main(page).getByRole('img', { name: 'Dormant' })).toBeVisible()
+
+  await page.goto('#collection')
+  // Still in the collection, unfiltered — not behind the archive word.
+  await expect(main(page).getByRole('link', { name: /Winter/ })).toBeVisible()
+  await expect(main(page).getByRole('img', { name: 'Dormant' }).first()).toBeVisible()
+
+  // And out of the list you water from.
+  await page.goto('#today')
+  await expect(main(page).getByRole('link', { name: /Winter/ })).toBeHidden()
+})
+
+test('a new screen starts at its top, not where the last one was left', async ({ page }) => {
+  await addPlant(page, 'Monstera deliciosa', 'Gruy\u00e8re', 'Living room')
+
+  // Settings is the one screen long enough to scroll at either size.
+  await page.goto('#settings')
+  await page.evaluate(() => window.scrollTo(0, 400))
+  expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0)
+
+  // A real click on the nav, not page.goto: a browser navigation would not
+  // exercise the thing under test.
+  await page.getByRole('link', { name: 'Collection' }).first().click()
+  await expect(page).toHaveURL(/#collection/)
+  expect(await page.evaluate(() => window.scrollY)).toBe(0)
+})
+
+test('going back puts you where you were', async ({ page }) => {
+  // Only observable on a phone. The desktop sidebar sits in normal flow, so
+  // reaching the nav from halfway down a screen means scrolling up to it
+  // first — by the time the link is clicked the page is already at its top,
+  // and there is no position left to restore.
+  test.skip(isWide(page), 'the desktop nav cannot be reached from a scrolled page')
+
+  await addPlant(page, 'Monstera deliciosa', 'Gruy\u00e8re', 'Living room')
+
+  await page.goto('#settings')
+  await page.evaluate(() => window.scrollTo(0, 400))
+  const parked = await page.evaluate(() => window.scrollY)
+
+  await page.getByRole('link', { name: 'Collection' }).first().click()
+  await expect(page).toHaveURL(/#collection/)
+
+  await page.goBack()
+  await expect(page).toHaveURL(/#settings/)
+  // Polled: the screen has to mount before the offset is reachable, and
+  // WebKit puts the page back at 0 after the handler has already run.
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(parked)
 })
 
 test('the service worker caches what a cold offline start needs', async ({ page }) => {

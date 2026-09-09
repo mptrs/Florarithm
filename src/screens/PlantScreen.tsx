@@ -32,8 +32,9 @@ import { describeEvent, logEvent, removeEvent, useStore } from '~/data/store'
 import type { Plant, PlantEvent } from '~/data/types'
 import { daysSince, formatDate, formatDayMonth, formatMonthYear } from '~/lib/date'
 import { formatPotSize, formatPrice, formatSpecies, label, plural } from '~/lib/format'
-import { plantUrl, routes } from '~/lib/router'
+import { navigate, plantUrl, routes } from '~/lib/router'
 import { cn } from '~/lib/cn'
+import { Dozing } from '~/ui/Dozing'
 import { BackButton, Button, IconButton } from '~/ui/Button'
 import { ActionDial } from '~/ui/ActionDial'
 import { SplitButton } from '~/ui/SplitButton'
@@ -124,6 +125,11 @@ export function PlantScreen({ code }: { code: string }) {
           <div className="min-w-0">
             <h1 className="font-display text-[2.5rem] leading-[2.6875rem] font-medium tracking-[-0.025em]">
               {plant.name}
+              {/* Riding the name rather than sitting in the record below it:
+                  dormancy is the one status that changes how you read
+                  everything else on this page, so it has to arrive with the
+                  name and not four rows later. */}
+              {plant.status === 'dormant' ? <Dozing className="ml-1.5 align-top text-[1.375rem]" /> : null}
             </h1>
             {formatSpecies(plant) ? (
               <p className="-mt-1 text-[1.0625rem] leading-6 text-ink-muted">{formatSpecies(plant)}</p>
@@ -824,7 +830,7 @@ function WishActions({ plant }: { plant: Plant }) {
     <Card className="mt-5 flex flex-col gap-3 p-4">
       <GroupLabel>On the wishlist</GroupLabel>
       {plant.wishNote ? <p className="text-[0.9375rem] text-ink">{plant.wishNote}</p> : null}
-      <Button variant="accent" onClick={() => window.location.assign(routes.have(plant.code))}>
+      <Button variant="accent" onClick={() => navigate(routes.have(plant.code))}>
         I have this now
       </Button>
     </Card>
@@ -845,7 +851,7 @@ function UnknownPlant({ code, ready }: { code: string; ready: boolean }) {
         title="No plant with this code"
         description="Either this sticker belongs to someone else, or you have not added this one yet."
         action={
-          <Button variant="accent" onClick={() => window.location.assign(routes.new())}>
+          <Button variant="accent" onClick={() => navigate(routes.new())}>
             Add a plant
           </Button>
         }

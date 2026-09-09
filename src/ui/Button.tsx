@@ -12,7 +12,7 @@
 
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 import { cn } from '~/lib/cn'
-import { canGoBack, routes } from '~/lib/router'
+import { canGoBack, navigate, routes } from '~/lib/router'
 import { Icon, type IconName } from './Icon'
 
 export type ButtonVariant =
@@ -169,7 +169,7 @@ export function BackButton({
       aria-label="Back"
       onClick={() => {
         if (canGoBack()) window.history.back()
-        else window.location.assign(routes.collection())
+        else navigate(routes.collection())
       }}
       className={cn(
         'lift flex size-10 shrink-0 items-center justify-center rounded-full active:opacity-70',

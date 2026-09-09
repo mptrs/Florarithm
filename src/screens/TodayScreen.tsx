@@ -6,9 +6,14 @@
  * happens a room at a time with a can in your hand, and a ranking is not a route.
  *
  * One rule runs through both orders, and it is Collection's: whatever the list
- * is grouped by never repeats itself inside a row. Sorted thirstiest the row
- * carries the place; grouped by place the drawer label carries it and the row
- * says the species instead.
+ * is grouped by never repeats itself inside a row. On a desktop the place has
+ * a column, and it appears there whenever no drawer label is saying it.
+ *
+ * Below that breakpoint there is no column, and the row does not improvise
+ * one: it says the name and the species, and the room is whatever the label
+ * above it says. The place used to trail the species as smaller, fainter
+ * prose — a ranking of two facts that are not the same kind of fact — and on
+ * a narrow phone it truncated mid-word besides. The switch is one tap.
  *
  * Nothing is written from here. Today is the list you water *from* — you arrive
  * at the plant by its tag and log it there — so a plant that has had water today
@@ -34,7 +39,7 @@ import type { Plant } from '~/data/types'
 import { useSyncStatus } from '~/data/sync'
 import { daysSince, formatDayMonth } from '~/lib/date'
 import { formatSpecies, plural } from '~/lib/format'
-import { routes } from '~/lib/router'
+import { navigate, routes } from '~/lib/router'
 import { Banner } from '~/ui/Banner'
 import { Button } from '~/ui/Button'
 import { SortSwitch, type SortOption } from '~/ui/Chip'
@@ -91,7 +96,7 @@ export function TodayScreen() {
           title="Nothing here yet"
           description="Add your first plant and it will show up here, sorted by how long it has been since it last had water."
           action={
-            <Button variant="accent" onClick={() => window.location.assign(routes.new())}>
+            <Button variant="accent" onClick={() => navigate(routes.new())}>
               Add a plant
             </Button>
           }
@@ -132,9 +137,10 @@ export function TodayScreen() {
 /**
  * One plant, in both readings.
  *
- * Below the table the second line carries whatever the grouping is not already
- * saying; from `lg` the place has a column of its own and the species takes the
- * line back — the same trade Collection's row makes, by the same breakpoint.
+ * The second line is the species, in both orders and at every width; from
+ * `lg` the place appears beside it in a column of its own, and below `lg` it
+ * does not appear at all — the same trade Collection makes, by the same
+ * breakpoint.
  */
 function TodayRow({ plant, showPlace }: { plant: Plant; showPlace: boolean }) {
   const state = useStore()
@@ -151,11 +157,14 @@ function TodayRow({ plant, showPlace }: { plant: Plant; showPlace: boolean }) {
         <span className="truncate font-display text-[1.09375rem] leading-[1.375rem] font-medium">
           {plant.name}
         </span>
-        <span className="truncate text-[0.8125rem] leading-[1.0625rem] text-ink-muted lg:hidden">
-          {showPlace ? place : species}
-        </span>
+        {/* One line, one fact, at every width. It was two — the species with
+            the place trailing it — and the second one had to be shrunk and
+            faded to keep it from reading as the equal of the first, which is
+            the treatment for ranking two facts of one kind rather than
+            separating two kinds. `lg` has a column for the place; here the
+            drawer label has it, or nothing does. */}
         {species ? (
-          <span className="hidden truncate text-[0.8125rem] leading-[1.0625rem] text-ink-muted lg:block">
+          <span className="truncate text-[0.8125rem] leading-[1.0625rem] text-ink-muted">
             {species}
           </span>
         ) : null}
@@ -196,7 +205,7 @@ function BackupReminder({
     <Banner
       tone="warning"
       action={
-        <Button size="sm" variant="danger" onClick={() => window.location.assign(routes.settings())}>
+        <Button size="sm" variant="danger" onClick={() => navigate(routes.settings())}>
           Back up
         </Button>
       }

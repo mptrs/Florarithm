@@ -1,0 +1,46 @@
+{
+  "pages": [
+    { "id": "page-1", "name": "Shipped" },
+    { "id": "page-2", "name": "Explored" }
+  ],
+  "artboards": [
+    { "file": "Main.dc.html",          "page": "page-1", "x": 0,    "y": 0, "w": 390, "h": 780, "title": "Shipped — the grouping carries it" },
+    { "file": "Before.dc.html",        "page": "page-1", "x": 500,  "y": 0, "w": 390, "h": 780, "title": "Before" },
+    { "file": "LabelRegister.dc.html", "page": "page-2", "x": 0,    "y": 0, "w": 390, "h": 780, "title": "Place in the label register" },
+    { "file": "OwnLane.dc.html",       "page": "page-2", "x": 500,  "y": 0, "w": 390, "h": 780, "title": "Place gets its own lane" },
+    { "file": "Marker.dc.html",        "page": "page-2", "x": 1000, "y": 0, "w": 390, "h": 780, "title": "Place with its pin" }
+  ],
+  "annotations": [
+    {
+      "id": "decision",
+      "x": 0, "y": -250, "w": 390, "page": "page-1",
+      "text": "SHIPPED\n\nThe phone does not say the place at all. Sorted by place the drawer label says the room once for a whole run; sorted A–Z the room is not the question you are asking, and the switch is one tap.\n\nBeyond the ranking going away: the tile is the same height in both orderings, so the grid stops going ragged when you switch the sort, and the second line can never compete with anything.\n\nDesktop is unchanged — it has a column for the place, and a column is not prose."
+    },
+    {
+      "id": "before",
+      "x": 500, "y": -250, "w": 390, "page": "page-1",
+      "text": "BEFORE\n\nThe species and the place drawn as one prose block under the name, ranked apart by a size and a shade.\n\nThat is the treatment for two facts of one kind. These are two kinds: the species is what the plant IS, the place is where it happens to be standing. Ranking them only made the eye read both lines to find out which was which — and on a narrow phone the loser truncated mid-word."
+    },
+    {
+      "id": "explored",
+      "x": 0, "y": -230, "w": 890, "page": "page-2",
+      "text": "The three that were not taken. All of them answer 'different kind of fact' by giving the place a different FORM; the shipped answer gives it no form at all, which turned out to be the one that also fixes the ragged grid and the truncation."
+    },
+    {
+      "id": "note-label",
+      "x": 0, "y": -110, "w": 390, "page": "page-2",
+      "text": "LABEL REGISTER\n\nThe place set in the app's own place type — the specimen the drawer label uses to say SLAAPKAMER above a group. The register change does the separating: no dot, no contest between greys.\n\nWhy not: still a second line to read, and caps run long."
+    },
+    {
+      "id": "note-lane",
+      "x": 500, "y": -110, "w": 390, "page": "page-2",
+      "text": "ITS OWN LANE\n\nA chip on the picture, a fixed 84px lane on the row. Also gives a constant tile height.\n\nWhy not: a chip on a photograph is busier than one on paper, and the lane costs every row 84px for a fact you only sometimes want."
+    },
+    {
+      "id": "note-pin",
+      "x": 1000, "y": -110, "w": 390, "page": "page-2",
+      "text": "WITH ITS PIN\n\nThe place keeps its prose and gains the glyph the form puts over 'Where it lives'.\n\nWhy not: one pin per row and per tile is a lot of small marks on a page whose whole manner is quiet, and 11px of pin is close to mush."
+    }
+  ],
+  "launch": { "view": "canvas", "page": "page-1" }
+}

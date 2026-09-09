@@ -17,6 +17,7 @@ import { useStore } from '~/data/store'
 import type { Plant } from '~/data/types'
 import { cn } from '~/lib/cn'
 import { routes } from '~/lib/router'
+import { Dozing } from './Dozing'
 import { Plate } from './Plate'
 
 /** The photograph or the plate, filling whatever box it is given. */
@@ -34,9 +35,22 @@ export function PlantPicture({ plant }: { plant: Plant }) {
 /**
  * One plant in the grid.
  *
- * `secondary` is whatever the grouping is not already saying — the species when
- * the run is grouped by place, the place when it is sorted A–Z. That rule is
- * the reason this takes a string rather than reading the plant itself.
+ * `secondary` is the species, in every ordering — and it is the only thing
+ * under the name. The place is not here at all.
+ *
+ * That is the answer to a question this tile kept getting wrong. The species
+ * and the place are not two points on one scale — the species is what the
+ * plant *is*, the place is where it happens to be standing — so drawing the
+ * place as smaller, fainter prose under the species said "less important"
+ * when the honest thing to say was "different kind of fact". Sizing it down
+ * only made the eye read both lines to find out which was which.
+ *
+ * So the grouping carries it instead. Sorted by place, the drawer label says
+ * the room once for a whole run rather than once per tile; sorted A–Z the
+ * room is not the question you are asking, and it is one tap back. What the
+ * tile gains is a constant height in both orderings — the grid stopped going
+ * ragged when you switch the sort — and a second line that never competes
+ * with anything.
  */
 export function PlantTile({
   plant,
@@ -87,11 +101,19 @@ export function PlantTile({
       </div>
 
       <div className="px-3 pt-2 pb-3">
-        <div className="truncate font-display text-[1.0625rem] leading-[1.3125rem] font-medium">
-          {plant.name}
+        {/* The z's sit after the name rather than up on the photograph. It is
+            a fact about the plant, like the species under it, and a mark
+            floating over the picture read as something the app had stuck on
+            top of the plant instead. `min-w-0` on the name is what lets it
+            truncate at the z's rather than pushing them out of the tile. */}
+        <div className="flex items-baseline gap-1">
+          <span className="min-w-0 truncate font-display text-[1.0625rem] leading-[1.3125rem] font-medium">
+            {plant.name}
+          </span>
+          {plant.status === 'dormant' ? <Dozing className="shrink-0 text-[0.6875rem]" /> : null}
         </div>
         {secondary ? (
-          <div className="mt-0.5 truncate text-[0.8125rem] leading-4 text-ink-faint">
+          <div className="mt-0.5 truncate text-[0.8125rem] leading-4 text-ink-muted">
             {secondary}
           </div>
         ) : null}
