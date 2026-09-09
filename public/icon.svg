@@ -1,8 +1,28 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="96" fill="#f6f2ea"/>
-  <g fill="none" stroke="#26603f" stroke-width="26" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M256 400V220"/>
-    <path d="M256 268c-70 0-104-38-104-96 0-16 4-32 10-46 62 4 94 40 94 96Z"/>
-    <path d="M256 300c70 0 104-38 104-96 0-16-4-32-10-46-62 4-94 40-94 96Z"/>
+  <!-- Temporary logo: the lucide flower from the icon set, the same mark that
+       sits in the middle of a plant's QR code. The colours are the app's
+       --color-surface and --color-leaf tokens, written out as hex because this
+       file is loaded outside the stylesheet, and swapped for their dark-theme
+       values when the reader's system asks for dark. -->
+  <style>
+    :root { --plate: #fefdfb; --mark: #22663a; }
+    @media (prefers-color-scheme: dark) {
+      :root { --plate: #211e1a; --mark: #79c58e; }
+    }
+  </style>
+  <rect width="512" height="512" rx="96" fill="var(--plate)"/>
+  <g transform="translate(102.4 102.4) scale(12.8)"
+     fill="none" stroke="var(--mark)" stroke-width="2"
+     stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="3"/>
+    <path d="M12 16.5A4.5 4.5 0 1 1 7.5 12 4.5 4.5 0 1 1 12 7.5a4.5 4.5 0 1 1 4.5 4.5 4.5 4.5 0 1 1-4.5 4.5"/>
+    <path d="M12 7.5V9"/>
+    <path d="M7.5 12H9"/>
+    <path d="M16.5 12H15"/>
+    <path d="M12 16.5V15"/>
+    <path d="m8 8 1.88 1.88"/>
+    <path d="M14.12 9.88 16 8"/>
+    <path d="m8 16 1.88-1.88"/>
+    <path d="M14.12 14.12 16 16"/>
   </g>
 </svg>
