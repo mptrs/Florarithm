@@ -131,6 +131,37 @@ test('a failed sync still says how much is waiting, so an edit never looks lost'
   await expect(page.getByText(/change(s)? still waiting to sync/)).toBeVisible()
 })
 
+test('a repository that keeps refusing is left alone rather than hammered', async ({ page }) => {
+  let requests = 0
+  await page.route('https://api.github.com/**', async (route: Route) => {
+    requests += 1
+    await route.fulfill({ status: 401, body: '{}' })
+  })
+
+  await configureSync(page)
+  await expect(page.getByText('Your access token expired. Sync is paused.')).toBeVisible()
+
+  const afterFirstFailure = requests
+
+  // Three edits in a row, each of which used to start its own round trip.
+  // The cooldown a failure leaves behind now swallows all of them.
+  for (const name of ['Gruyère', 'Brie', 'Comté']) {
+    await page.goto('#new')
+    await page.getByLabel('Genus').fill('Monstera')
+    await page.getByLabel('Name', { exact: true }).fill(name)
+    await page.getByRole('button', { name: 'Add to the collection' }).click()
+    await expect(page.getByRole('heading', { name })).toBeVisible()
+  }
+
+  await page.waitForTimeout(2000)
+  expect(requests).toBe(afterFirstFailure)
+
+  // The person, on the other hand, is never made to wait.
+  await page.goto('#settings')
+  await page.getByRole('button', { name: 'Sync now' }).click()
+  await expect.poll(() => requests).toBeGreaterThan(afterFirstFailure)
+})
+
 /** A repository that already holds one plant and one photographed entry — the
  *  other device, as far as this one can tell. */
 const REMOTE_PLANT = {
