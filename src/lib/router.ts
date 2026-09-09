@@ -88,6 +88,28 @@ export function navigate(hash: string): void {
   window.location.hash = hash
 }
 
+/**
+ * Whether this page has moved to a different in-app route since it loaded.
+ *
+ * A sticker's QR code, a shared link, a bookmark — all of them can land
+ * straight on `#p=CODE` as the tab's very first navigation, with nothing
+ * of ours underneath it in `history`. `history.length` alone can't tell
+ * that apart from an ordinary in-app visit: the tab may already have
+ * browsed elsewhere before the app ever loaded, which counts toward the
+ * same number. A hash change is the one thing that only happens once this
+ * app is actually choosing where to go, so it is what "back" trusts.
+ */
+let navigatedWithinApp = false
+window.addEventListener('hashchange', () => {
+  navigatedWithinApp = true
+})
+
+/** True once `history.back()` is guaranteed to land on an earlier route of
+ *  this app, rather than wherever the tab was before it loaded here. */
+export function canGoBack(): boolean {
+  return navigatedWithinApp
+}
+
 /** Replace rather than push, so "back" does not walk through a redirect. */
 export function redirect(hash: string): void {
   window.location.replace(`${window.location.pathname}${window.location.search}${hash}`)

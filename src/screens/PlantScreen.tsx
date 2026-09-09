@@ -116,9 +116,19 @@ export function PlantScreen({ code }: { code: string }) {
             line at the far edge of it. The QR is the other half and lives down
             on the photograph, next to the place. */}
         <div className="flex items-start justify-between gap-3">
-          <h1 className="min-w-0 font-display text-[2.5rem] leading-[2.6875rem] font-medium tracking-[-0.025em]">
-            {plant.name}
-          </h1>
+          {/* Name and species share this box so the gap between them is
+              fixed to the name's own line, not to whatever height the
+              buttons beside them happen to be — a wish, with no buttons
+              row at all, would otherwise read with different spacing than
+              an owned plant. */}
+          <div className="min-w-0">
+            <h1 className="font-display text-[2.5rem] leading-[2.6875rem] font-medium tracking-[-0.025em]">
+              {plant.name}
+            </h1>
+            {formatSpecies(plant) ? (
+              <p className="-mt-1 text-[1.0625rem] leading-6 text-ink-muted">{formatSpecies(plant)}</p>
+            ) : null}
+          </div>
           {plant.wish ? null : (
             <div className="flex shrink-0 items-center gap-2">
               <IconButton
@@ -151,9 +161,6 @@ export function PlantScreen({ code }: { code: string }) {
             </div>
           )}
         </div>
-        {formatSpecies(plant) ? (
-          <p className="mt-1.5 text-[1.0625rem] leading-6 text-ink-muted">{formatSpecies(plant)}</p>
-        ) : null}
 
         {plant.wish ? (
           <WishActions plant={plant} />

@@ -12,7 +12,7 @@
 
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 import { cn } from '~/lib/cn'
-import { routes } from '~/lib/router'
+import { canGoBack, routes } from '~/lib/router'
 import { Icon, type IconName } from './Icon'
 
 export type ButtonVariant = 'primary' | 'accent' | 'solid' | 'outline' | 'tinted' | 'quiet' | 'danger'
@@ -133,9 +133,14 @@ export function IconButton({
  * the same arrow on paper, where all that would buy is a button drawn around a
  * button. Same glyph, same size, same tap target either way.
  *
- * Falling back to Today matters more than it looks: arriving by tapping the
- * sticker on a pot opens a fresh tab with nothing behind it, and a back button
- * that does nothing is worse than no back button.
+ * Falling back to Collection matters more than it looks: arriving by tapping
+ * the sticker on a pot opens a fresh tab with nothing of ours behind it, and
+ * a back button that does nothing is worse than no back button. `canGoBack`
+ * is what tells the two cases apart — the tab's raw history length can't,
+ * since a tab that already had browsing behind it before the app ever
+ * loaded looks identical to one with an in-app page to return to. Collection
+ * rather than Today: a plant reached with nothing behind it is a plant you
+ * own, found by its own sticker, not a card off today's watering list.
  */
 export function BackButton({
   variant = 'chip',
@@ -149,8 +154,8 @@ export function BackButton({
       type="button"
       aria-label="Back"
       onClick={() => {
-        if (window.history.length > 1) window.history.back()
-        else window.location.assign(routes.today())
+        if (canGoBack()) window.history.back()
+        else window.location.assign(routes.collection())
       }}
       className={cn(
         'lift flex size-10 shrink-0 items-center justify-center rounded-full active:opacity-70',

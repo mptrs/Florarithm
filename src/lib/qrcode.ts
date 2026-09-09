@@ -11,10 +11,11 @@ export type QrMatrix = {
   isDark: (row: number, col: number) => boolean
 }
 
-/** Type 0 lets the encoder pick the smallest version that fits; 'M' survives
- *  a corner torn off a printed sticker without losing the link. */
+/** Type 0 lets the encoder pick the smallest version that fits; 'H' survives
+ *  both a corner torn off a printed sticker and the flower sitting over its
+ *  own middle without losing the link. */
 export function encodeQr(data: string): QrMatrix {
-  const qr = qrcodegen(0, 'M')
+  const qr = qrcodegen(0, 'H')
   qr.addData(data)
   qr.make()
   const size = qr.getModuleCount()
