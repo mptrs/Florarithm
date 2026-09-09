@@ -186,8 +186,99 @@ export const childrenByParent = memo((state) => {
   return grouped
 })
 
+/** Oldest first: a branch reads in the order the cuttings were taken. */
 export function childrenOf(state: State, code: string): Plant[] {
-  return childrenByParent(state).get(code) ?? []
+  return [...(childrenByParent(state).get(code) ?? [])].sort(
+    (a, b) => a.createdAt.localeCompare(b.createdAt) || a.name.localeCompare(b.name),
+  )
+}
+
+/**
+ * The line above a plant, oldest first.
+ *
+ * Walks `parent.code` up until it runs out. The `seen` set is not paranoia:
+ * nothing in the record stops A naming B as its parent while B names A, and a
+ * loop here would hang the page rather than draw a wrong tree.
+ *
+ * A tombstoned ancestor ends the walk — the line is only as long as the plants
+ * that are still on the shelf. Dead and given-away ones stay: they are still
+ * where the cutting came from, and the rail marks them as what they are.
+ */
+export function ancestorsOf(state: State, code: string): Plant[] {
+  const line: Plant[] = []
+  const seen = new Set<string>([code])
+
+  let current = findPlant(state, code)
+  while (current?.parent) {
+    const parent = findPlant(state, current.parent.code)
+    if (!parent || parent.deleted || seen.has(parent.code)) break
+    line.unshift(parent)
+    seen.add(parent.code)
+    current = parent
+  }
+
+  return line
+}
+
+/** One plant and everything propagated off it, as deep as it goes. */
+export type Descendant = { plant: Plant; children: Descendant[] }
+
+export function descendantsOf(state: State, code: string): Descendant[] {
+  const seen = new Set<string>([code])
+
+  const walk = (parentCode: string): Descendant[] => {
+    const branch: Descendant[] = []
+    for (const plant of childrenOf(state, parentCode)) {
+      if (seen.has(plant.code)) continue
+      seen.add(plant.code)
+      branch.push({ plant, children: walk(plant.code) })
+    }
+    return branch
+  }
+
+  return walk(code)
+}
+
+/** Every code below this one, flat. What a plant may not be propagated from:
+ *  pick your own cutting as your parent and the line eats itself. */
+export function descendantCodes(state: State, code: string): Set<string> {
+  const codes = new Set<string>()
+  const queue = [code]
+
+  while (queue.length > 0) {
+    for (const child of childrenOf(state, queue.pop() as string)) {
+      if (codes.has(child.code)) continue
+      codes.add(child.code)
+      queue.push(child.code)
+    }
+  }
+
+  return codes
+}
+
+/**
+ * Everything the Family rail draws: the line up, the tree down, and the two
+ * counts its heading is set from.
+ *
+ * `generations` counts the whole line the plant belongs to, not its distance
+ * from the top — a cutting of a cutting with two cuttings of its own reads
+ * "four generations" whichever of the four you happen to have open.
+ */
+export function lineageOf(state: State, code: string) {
+  const ancestors = ancestorsOf(state, code)
+  const descendants = descendantsOf(state, code)
+
+  const depth = (branch: Descendant[]): number =>
+    branch.reduce((deepest, node) => Math.max(deepest, 1 + depth(node.children)), 0)
+  const count = (branch: Descendant[]): number =>
+    branch.reduce((total, node) => total + 1 + count(node.children), 0)
+
+  return {
+    ancestors,
+    descendants,
+    plants: ancestors.length + 1 + count(descendants),
+    generations: ancestors.length + 1 + depth(descendants),
+  }
 }
 
 // --- screens ----------------------------------------------------------------
