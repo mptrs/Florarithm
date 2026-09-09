@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <!-- Temporary logo: the lucide flower from the icon set, the same mark that
        sits in the middle of a plant's QR code. The colours are the app's
-       --color-surface and --color-leaf tokens, written out as hex because this
+       surface and leaf tokens, written out as hex because this
        file is loaded outside the stylesheet, and swapped for their dark-theme
        values when the reader's system asks for dark. -->
   <style>
