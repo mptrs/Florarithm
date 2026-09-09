@@ -249,7 +249,7 @@ export function LogSheet({
                         else picker.current?.click()
                       } else setMode(action.mode)
                     }}
-                    className="warm group flex flex-col items-center gap-2.5 active:opacity-70 hover:text-ink"
+                    className="warm group mx-auto flex w-fit flex-col items-center gap-2.5 active:opacity-70 hover:text-ink"
                   >
                     <span
                       className={cn(

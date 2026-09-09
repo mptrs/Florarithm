@@ -212,6 +212,14 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
         // the real back button silently does nothing, only working on the
         // second press once it reaches a genuinely different entry.
         window.history.back()
+      } else if (wish) {
+        // A brand-new wish came from the Wishlist's own "Add a wish"
+        // button in the overwhelming case, so that is where saving one
+        // returns to — not a detail page it may never otherwise be
+        // visited from. (A wish flagged from a parent plant's "cutting"
+        // form still ends up here rather than back on that plant; it is
+        // still listed under the parent's Family card either way.)
+        redirect(routes.wishlist())
       } else {
         // A new plant, a cutting, or a promoted wish lands on a page that
         // didn't exist before saving — there is nothing to go back to, so

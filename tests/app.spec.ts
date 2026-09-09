@@ -301,14 +301,24 @@ test('promoting a wish keeps its code and its history', async ({ page }) => {
   // A wish is the species and a note, nothing else: there is no name field
   // here, so the name it carries is the one its species makes.
   await page.getByRole('button', { name: 'Add to wishlist' }).click()
-  await expect(page.getByText('On the wishlist')).toBeVisible()
 
-  const code = new URL(page.url()).hash.replace('#p=', '')
+  // Saving a wish returns to the Wishlist it was added from — it has no
+  // detail page of its own to land on instead.
+  await expect(page.getByRole('heading', { name: 'Wishlist' })).toBeVisible()
+  const addLink = page.getByRole('link', { name: 'Add to collection' })
+  await expect(addLink).toBeVisible()
+
+  // The row's own link carries the wish's code; that link is the one way
+  // from here into the collection.
+  const code = new URL(await addLink.getAttribute('href') as string, page.url()).hash.replace(
+    '#have/',
+    '',
+  )
   expect(code).toMatch(/^[A-Z0-9]{3}-[0-9A-F]{4}$/)
 
   // A wish has no name of its own — the species is all it carries until you
   // own it, so naming it is part of taking it into the collection.
-  await page.getByRole('button', { name: 'I have this now' }).click()
+  await addLink.click()
 
   // Promoting is the first moment a name can be typed, and the form opens
   // holding the one the wish already had rather than an empty field.
