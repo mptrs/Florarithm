@@ -3,7 +3,7 @@
  *
  * Lucide (https://lucide.dev), ISC licensed, vendored as inline paths rather
  * than pulled in as a package: this app has four runtime dependencies and an
- * icon library would be a fifth for thirty-six glyphs. The names below are
+ * icon library would be a fifth for thirty-nine glyphs. The names below are
  * ours — what the icon *means* here — mapped onto Lucide's, which is noted
  * above each one so a swap is a lookup rather than a redraw.
  *

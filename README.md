@@ -14,8 +14,11 @@ step without either of those things.
 
 - **A tag opens the plant.** The sticker carries `…/Florarithm/#p=MON-8F3A`,
   which lands on that plant with the actions already in view.
-- **The drop logs a watering.** Tapping it fans out three things: watered,
-  watered with fertilizer, and everything else. No confirmation step.
+- **The drop logs a watering.** On a phone it sits in the corner a thumb rests
+  in and never scrolls away; tapping it fans out three things: watered, watered
+  with fertilizer, and everything else. No confirmation step — the water splashes
+  and the entry is in. A desktop has no thumb, so the same three things become a
+  split button on the plant's title row.
 - Also logged: repotting (which updates the pot and medium of the plant
   itself), new leaves, blooming, and free notes — each of them datable, so the
   watering you forgot on Tuesday can still be recorded on Thursday.
@@ -70,7 +73,7 @@ src/
     selectors  everything derived, computed and never stored
     photos     the photographs, read on demand and cached by event
     backup     export and import
-  ui/          the design system as components
+  ui/          the design system as components (see DESIGN.md)
   layout/      the shell: tab bar on a phone, sidebar on a desktop
   screens/     one file per screen
 ```
@@ -101,14 +104,20 @@ that id. The other order leaves a row promising a picture that never loads if
 the write fails; this one leaves bytes nobody points at, which nobody can see.
 
 **Every mutation a person could regret is reversible where it is visible.**
-`logEvent` still returns an `UndoAction` for callers that want one, but the
-plant page does not use it: an entry is corrected or removed from the row it is
-written on, which survives a reload in a way a three-second bar does not.
+Nothing in `store.ts` hands back an undo closure: an entry is corrected or
+removed from the row it is written on, which survives a reload in a way a
+three-second bar does not — and, unlike a hard delete behind an undo bar, a
+tombstone merges correctly with another device. What is left of the toast is a
+confirmation for actions that navigate away before you can see the result.
 
-**Colour, type and spacing come from tokens.** `src/styles.css` clears
+**Colour, type, spacing and motion come from tokens.** `src/styles.css` clears
 Tailwind's stock palette, so `bg-red-500` does not exist — every colour has to
-be a token like `bg-water` or `text-ink-muted`. Dark mode redefines the same
-variable names, so no component knows which theme is on.
+be a token like `bg-water` or `text-ink-muted`. Each one carries both themes in
+a single `light-dark()` declaration read against the root's `color-scheme`, so
+there is no second copy of the palette to forget and no component knows which
+theme is on. Hover has its own tokens (`-deep`) and its own two utilities
+(`lift` for anything pressable, `warm` for a row), both on the app's one curve,
+`--ease-grow`. `DESIGN.md` is the full system.
 
 **Components choose their look with variant props, never with passed-in
 utilities.** `className` is for placement only — margin, width, `hidden md:block`.
@@ -123,6 +132,10 @@ bar at `md`. Nothing to keep in sync and no flash of the wrong layout.
 documented exception at 36, because a mis-tap there changes a filter rather than
 a record. Inputs never go below 16px, or Safari zooms the page in on focus and
 never zooms back out.
+
+**Nothing resting on paper casts a shadow.** Cards, sheets, banners, rows,
+inputs and both navigations are flat. A shadow means the thing is over a
+photograph, over the page, or under a pointer — see Elevation in `DESIGN.md`.
 
 ## Writing a tag
 

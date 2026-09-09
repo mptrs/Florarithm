@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-09-05T21:17:23Z",
+  "generatedAt": "2026-09-09T10:31:08Z",
   "title": "Design System: Florarithm",
   "extensions": {
     "colorMeta": {
@@ -81,25 +81,125 @@
       }
     },
     "typographyMeta": {
-      "display": { "displayName": "Display", "purpose": "Screen titles, always in the serif." },
-      "title": { "displayName": "Title", "purpose": "Sheet and section titles, in the serif." },
-      "heading": { "displayName": "Heading", "purpose": "Sub-section headings, interface sans." },
-      "body": { "displayName": "Body", "purpose": "All copy and form input text; the 16px floor." },
-      "label": { "displayName": "Label", "purpose": "Uppercase field labels and eyebrows." },
-      "metric": { "displayName": "Metric", "purpose": "The one number that matters most on a row (days since water), mono for tabular alignment." },
-      "code": { "displayName": "Code", "purpose": "Plant codes and other short machine-produced strings, mono." }
+      "display": {
+        "displayName": "Display",
+        "purpose": "Screen titles, always in the serif."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Sheet and section titles, in the serif."
+      },
+      "heading": {
+        "displayName": "Heading",
+        "purpose": "Sub-section headings, interface sans."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "All copy and form input text; the 16px floor."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Uppercase field labels and eyebrows."
+      },
+      "metric": {
+        "displayName": "Metric",
+        "purpose": "The one number that matters most on a row (days since water), mono for tabular alignment."
+      },
+      "code": {
+        "displayName": "Code",
+        "purpose": "Plant codes and other short machine-produced strings, mono."
+      },
+      "micro": {
+        "displayName": "Micro",
+        "purpose": "A count beside a chip, a date at the end of a history row; mono in practice."
+      }
     },
     "shadows": [
       {
+        "name": "hover",
+        "value": "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+        "purpose": "Hover only, never at rest — the pressed-away-from-paper half of the lift on a filled button or a plant tile."
+      },
+      {
+        "name": "over-photo",
+        "value": "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)",
+        "purpose": "A control laid over a photograph (back button, QR button, place chip), which needs separation from an image it cannot predict. Steps up on hover."
+      },
+      {
         "name": "floating",
         "value": "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
-        "purpose": "The undo toast only — the sole element in the system allowed to float above the page."
+        "purpose": "Genuinely floating and temporary: the drop and its fanned options, the toast."
+      },
+      {
+        "name": "menu",
+        "value": "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)",
+        "purpose": "A menu panel opened over the page: the split button caret menu, the wishlist overflow menu."
       }
     ],
     "breakpoints": [
-      { "name": "md", "value": "768px" },
-      { "name": "lg", "value": "1024px" }
-    ]
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      }
+    ],
+    "motion": {
+      "easing": {
+        "name": "ease-grow",
+        "value": "cubic-bezier(0.2, 0.8, 0.24, 1)",
+        "purpose": "One curve for the whole app — quick off the mark, long settle. Nothing springs, nothing overshoots."
+      },
+      "hovers": [
+        {
+          "name": "lift",
+          "duration": "200ms",
+          "purpose": "Everything pressable: the colour deepens and the surface rises 1px. Dropped under prefers-reduced-motion; the colour change still carries the state."
+        },
+        {
+          "name": "warm",
+          "duration": "200ms",
+          "purpose": "Rows, menu items and nav stops: colour, background and border only. A hundred rows rising under a travelling cursor is weather, not feedback."
+        }
+      ],
+      "entrances": [
+        {
+          "name": "veil-in",
+          "duration": "220ms",
+          "purpose": "A scrim fading in place."
+        },
+        {
+          "name": "rise-in",
+          "duration": "280ms",
+          "purpose": "A sheet coming off the edge it is attached to."
+        },
+        {
+          "name": "panel-in",
+          "duration": "190ms",
+          "purpose": "A menu or a centred desktop sheet scaling up a hair from its own corner."
+        },
+        {
+          "name": "toast-in",
+          "duration": "200ms",
+          "purpose": "The confirmation pill."
+        }
+      ],
+      "signature": [
+        {
+          "name": "splash",
+          "duration": "500ms",
+          "purpose": "Drops thrown outward from the button that logged a watering, redrawn on every press so it never becomes an icon of a splash."
+        },
+        {
+          "name": "ripple",
+          "duration": "720ms",
+          "purpose": "The ring that spreads past the button the splash left."
+        }
+      ],
+      "reducedMotion": "Every animation above is dropped or reduced under prefers-reduced-motion; no state depends on movement to read."
+    }
   },
   "components": [
     {
@@ -108,7 +208,7 @@
       "refersTo": "button-primary",
       "description": "The WATER button — the one loud, filled action on a plant screen.",
       "html": "<button class=\"ds-btn-primary\">WATER</button>",
-      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 64px; padding: 0 24px; border-radius: 6px; border: 1px solid transparent; background: oklch(0.455 0.104 236); color: oklch(0.985 0.004 85); font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 1.1875rem; font-weight: 600; letter-spacing: 0.12em; transition: opacity 0.15s; } .ds-btn-primary:hover { opacity: 0.9; } .ds-btn-primary:active { opacity: 0.7; } .ds-btn-primary:focus-visible { outline: 2px solid oklch(0.455 0.098 152); outline-offset: 2px; } .ds-btn-primary:disabled { opacity: 0.4; pointer-events: none; }"
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 64px; padding: 0 24px; border-radius: 6px; border: 1px solid transparent; background: oklch(0.455 0.104 236); color: oklch(0.985 0.004 85); font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 1.1875rem; font-weight: 600; letter-spacing: 0.12em; transition: color 200ms cubic-bezier(0.2,0.8,0.24,1), background-color 200ms cubic-bezier(0.2,0.8,0.24,1), box-shadow 200ms cubic-bezier(0.2,0.8,0.24,1), transform 200ms cubic-bezier(0.2,0.8,0.24,1); } @media (hover: hover) { .ds-btn-primary:not(:disabled):hover { background: oklch(0.405 0.104 236); box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); transform: translateY(-1px); } } .ds-btn-primary:active { opacity: 0.7; transform: translateY(0); } .ds-btn-primary:focus-visible { outline: 2px solid oklch(0.455 0.098 152); outline-offset: 2px; } .ds-btn-primary:disabled { opacity: 0.4; pointer-events: none; } @media (prefers-reduced-motion: reduce) { .ds-btn-primary:hover, .ds-btn-primary:active { transform: none; } }"
     },
     {
       "name": "Outline Button",
@@ -116,15 +216,15 @@
       "refersTo": "button-outline",
       "description": "The default, unopinionated button — transparent fill, hairline border.",
       "html": "<button class=\"ds-btn-outline\">Cancel</button>",
-      "css": ".ds-btn-outline { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 48px; padding: 0 16px; border-radius: 6px; border: 1px solid oklch(0.8 0.012 80); background: transparent; color: oklch(0.255 0.014 65); font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 1rem; font-weight: 500; transition: opacity 0.15s; } .ds-btn-outline:hover { opacity: 0.85; } .ds-btn-outline:active { opacity: 0.7; } .ds-btn-outline:focus-visible { outline: 2px solid oklch(0.455 0.098 152); outline-offset: 2px; } .ds-btn-outline:disabled { opacity: 0.4; pointer-events: none; }"
+      "css": ".ds-btn-outline { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 48px; padding: 0 16px; border-radius: 6px; border: 1px solid oklch(0.8 0.012 80); background: transparent; color: oklch(0.255 0.014 65); font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 1rem; font-weight: 500; transition: color 200ms cubic-bezier(0.2,0.8,0.24,1), background-color 200ms cubic-bezier(0.2,0.8,0.24,1), border-color 200ms cubic-bezier(0.2,0.8,0.24,1), transform 200ms cubic-bezier(0.2,0.8,0.24,1); } @media (hover: hover) { .ds-btn-outline:not(:disabled):hover { background: oklch(0.944 0.01 85); border-color: oklch(0.655 0.012 72); transform: translateY(-1px); } } .ds-btn-outline:active { opacity: 0.7; transform: translateY(0); } .ds-btn-outline:focus-visible { outline: 2px solid oklch(0.455 0.098 152); outline-offset: 2px; } .ds-btn-outline:disabled { opacity: 0.4; pointer-events: none; }"
     },
     {
       "name": "Filter Chip",
       "kind": "chip",
       "refersTo": "chip-filter",
-      "description": "Narrows a list. 36px — below the touch floor on purpose, since a mis-tap only changes what you're looking at.",
+      "description": "Narrows a list. 36px — below the touch floor on purpose, since a mis-tap only changes what you're looking at. The 44px `choice` chip is the sibling that writes data.",
       "html": "<button class=\"ds-chip\">All</button>\n<button class=\"ds-chip ds-chip--selected\">Wishlist <span class=\"ds-chip__count\">6</span></button>",
-      "css": ".ds-chip { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 14px; border-radius: 9999px; border: 1px solid oklch(0.8 0.012 80); background: transparent; color: oklch(0.51 0.014 68); font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 0.875rem; font-weight: 500; white-space: nowrap; transition: opacity 0.15s; } .ds-chip:active { opacity: 0.7; } .ds-chip:focus-visible { outline: 2px solid oklch(0.455 0.098 152); outline-offset: 2px; } .ds-chip--selected { border-color: transparent; background: oklch(0.255 0.014 65); color: oklch(0.968 0.008 85); font-weight: 600; } .ds-chip__count { font-family: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace; font-size: 0.75rem; color: oklch(0.655 0.012 72); } .ds-chip--selected .ds-chip__count { color: inherit; opacity: 0.7; }"
+      "css": ".ds-chip { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 14px; border-radius: 9999px; border: 1px solid oklch(0.8 0.012 80); background: transparent; color: oklch(0.51 0.014 68); font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 0.875rem; font-weight: 500; white-space: nowrap; transition: color 200ms cubic-bezier(0.2,0.8,0.24,1), background-color 200ms cubic-bezier(0.2,0.8,0.24,1), border-color 200ms cubic-bezier(0.2,0.8,0.24,1), transform 200ms cubic-bezier(0.2,0.8,0.24,1); } @media (hover: hover) { .ds-chip:hover { background: oklch(0.944 0.01 85); color: oklch(0.255 0.014 65); transform: translateY(-1px); } } .ds-chip:active { opacity: 0.7; transform: translateY(0); } .ds-chip:focus-visible { outline: 2px solid oklch(0.455 0.098 152); outline-offset: 2px; } .ds-chip--selected { border-color: transparent; background: oklch(0.255 0.014 65); color: oklch(0.968 0.008 85); font-weight: 600; } @media (hover: hover) { .ds-chip--selected:hover { background: oklch(0.185 0.014 65); color: oklch(0.968 0.008 85); } } .ds-chip__count { font-family: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace; font-size: 0.75rem; color: oklch(0.655 0.012 72); } .ds-chip--selected .ds-chip__count { color: inherit; opacity: 0.7; }"
     },
     {
       "name": "Text Input",
@@ -132,15 +232,15 @@
       "refersTo": "input-text",
       "description": "The shared 48px-tall field every text/number/date input is built from.",
       "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"e.g. Monstera deliciosa\" />",
-      "css": ".ds-input { height: 48px; width: 100%; border-radius: 4px; border: 1px solid oklch(0.8 0.012 80); background: oklch(0.995 0.003 85); padding: 0 14px; color: oklch(0.255 0.014 65); font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 1rem; } .ds-input::placeholder { color: oklch(0.655 0.012 72); } .ds-input:focus { border-color: oklch(0.455 0.098 152); outline: none; }"
+      "css": ".ds-input { height: 48px; width: 100%; border-radius: 4px; border: 1px solid oklch(0.8 0.012 80); background: oklch(0.995 0.003 85); padding: 0 14px; color: oklch(0.255 0.014 65); font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 1rem; transition: color 200ms cubic-bezier(0.2,0.8,0.24,1), background-color 200ms cubic-bezier(0.2,0.8,0.24,1), border-color 200ms cubic-bezier(0.2,0.8,0.24,1); } .ds-input::placeholder { color: oklch(0.655 0.012 72); } .ds-input:hover { border-color: oklch(0.655 0.012 72); } .ds-input:focus { border-color: oklch(0.455 0.098 152); outline: none; }"
     },
     {
       "name": "Sidebar Nav Item",
       "kind": "nav",
       "refersTo": "nav-item-sidebar",
-      "description": "A desktop sidebar entry; active state gets a tinted fill rather than a bar or underline.",
+      "description": "A desktop sidebar entry. Active gets a tinted fill rather than a bar or underline; hover takes on ground without rising (the `warm` utility), because a column of rows lifting under a travelling cursor is weather.",
       "html": "<a class=\"ds-nav-item ds-nav-item--active\" href=\"#\"><svg class=\"ds-nav-item__icon\" width=\"19\" height=\"19\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 3s6 6.2 6 10a6 6 0 0 1-12 0c0-3.8 6-10 6-10Z\"/></svg><span class=\"ds-nav-item__label\">Today</span><span class=\"ds-nav-item__count\">3</span></a>",
-      "css": ".ds-nav-item { display: flex; align-items: center; gap: 10px; height: 44px; border-radius: 6px; padding: 0 10px; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 0.9375rem; text-decoration: none; color: oklch(0.51 0.014 68); font-weight: 500; } .ds-nav-item:hover { background: oklch(0.944 0.01 85); } .ds-nav-item__label { flex: 1; } .ds-nav-item__count { font-family: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace; font-size: 0.8125rem; color: oklch(0.655 0.012 72); } .ds-nav-item--active { background: oklch(0.944 0.026 152); color: oklch(0.455 0.098 152); font-weight: 600; } .ds-nav-item--active .ds-nav-item__count { color: inherit; }"
+      "css": ".ds-nav-item { display: flex; align-items: center; gap: 10px; height: 44px; border-radius: 6px; padding: 0 10px; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 0.9375rem; text-decoration: none; color: oklch(0.51 0.014 68); font-weight: 500; transition: color 200ms cubic-bezier(0.2,0.8,0.24,1), background-color 200ms cubic-bezier(0.2,0.8,0.24,1), border-color 200ms cubic-bezier(0.2,0.8,0.24,1); } .ds-nav-item:hover { background: oklch(0.944 0.01 85); color: oklch(0.255 0.014 65); } .ds-nav-item__label { flex: 1; } .ds-nav-item__count { font-family: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace; font-size: 0.8125rem; color: oklch(0.655 0.012 72); } .ds-nav-item--active { background: oklch(0.944 0.026 152); color: oklch(0.455 0.098 152); font-weight: 600; } .ds-nav-item--active .ds-nav-item__count { color: inherit; }"
     },
     {
       "name": "Empty State Card",
@@ -148,36 +248,69 @@
       "refersTo": "card-empty-state",
       "description": "What a screen shows with nothing in it — a state, not an error.",
       "html": "<div class=\"ds-card\"><h2 class=\"ds-card__title\">No plants yet</h2><p class=\"ds-card__body\">Add your first plant to start logging water, growth and notes.</p><button class=\"ds-btn-accent\">Add a plant</button></div>",
-      "css": ".ds-card { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; border-radius: 10px; border: 1px solid oklch(0.886 0.01 80); background: oklch(0.995 0.003 85); padding: 28px 20px; } .ds-card__title { font-family: 'Newsreader', Georgia, 'Times New Roman', serif; font-size: 1.5rem; font-weight: 500; margin: 0; } .ds-card__body { max-width: 60ch; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 0.9375rem; line-height: 1.5rem; color: oklch(0.51 0.014 68); margin: 0; } .ds-btn-accent { display: inline-flex; align-items: center; justify-content: center; height: 48px; padding: 0 16px; border-radius: 6px; border: none; background: oklch(0.455 0.098 152); color: oklch(0.985 0.004 85); font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 1rem; font-weight: 500; }"
+      "css": ".ds-card { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; border-radius: 12px; border: 1px solid oklch(0.886 0.01 80); background: oklch(0.995 0.003 85); padding: 28px 20px; } .ds-card__title { font-family: 'Newsreader', Georgia, 'Times New Roman', serif; font-size: 1.5rem; font-weight: 500; margin: 0; } .ds-card__body { max-width: 60ch; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 0.9375rem; line-height: 1.5rem; color: oklch(0.51 0.014 68); margin: 0; } .ds-btn-accent { display: inline-flex; align-items: center; justify-content: center; height: 48px; padding: 0 16px; border-radius: 6px; border: none; background: oklch(0.455 0.098 152); color: oklch(0.985 0.004 85); font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 1rem; font-weight: 500;  transition: color 200ms cubic-bezier(0.2,0.8,0.24,1), background-color 200ms cubic-bezier(0.2,0.8,0.24,1), box-shadow 200ms cubic-bezier(0.2,0.8,0.24,1), transform 200ms cubic-bezier(0.2,0.8,0.24,1); } @media (hover: hover) { .ds-btn-accent:hover { background: oklch(0.405 0.098 152); box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); transform: translateY(-1px); } } .ds-btn-accent:active { opacity: 0.7; transform: translateY(0); }"
+    },
+    {
+      "name": "Record Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "The container the plant page groups by. A run of label/value rows all weighing the same is what made that screen unreadable; 16px corners, a hairline, and no shadow at rest.",
+      "html": "<div class=\"ds-record\"><div class=\"ds-record__row\"><span class=\"ds-record__chip\"><svg width=\"17\" height=\"17\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z\"/></svg></span><span class=\"ds-record__label\">Watered</span><span class=\"ds-record__value\">8 days ago</span></div><div class=\"ds-record__row ds-record__row--last\"><span class=\"ds-record__chip ds-record__chip--leaf\"><svg width=\"17\" height=\"17\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M11 20a10 10 0 0 0 10-10 25.9 25.9 0 0 0-1.04-7.281 1 1 0 0 0-1.755-.325C15.833 5.5 13 5.5 9.8 6.1A7 7 0 0 0 11 20\"/><path d=\"M2 21a5 5 0 0 1 2.911-4.544C7.613 15.212 8.351 15.24 11 13\"/></svg></span><span class=\"ds-record__label\">New leaf</span><span class=\"ds-record__value\">3 Sep 2026</span></div></div>",
+      "css": ".ds-record { border-radius: 16px; border: 1px solid oklch(0.886 0.01 80); background: oklch(0.995 0.003 85); padding: 0 18px; } .ds-record__row { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-bottom: 1px solid oklch(0.886 0.01 80); font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; } .ds-record__row--last { border-bottom: none; } .ds-record__chip { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; flex: none; border-radius: 9999px; background: oklch(0.944 0.028 236); color: oklch(0.455 0.104 236); } .ds-record__chip--leaf { background: oklch(0.944 0.026 152); color: oklch(0.455 0.098 152); } .ds-record__label { flex: 1; font-size: 0.9375rem; font-weight: 500; color: oklch(0.255 0.014 65); } .ds-record__value { font-family: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace; font-size: 0.8125rem; color: oklch(0.655 0.012 72); }"
     }
   ],
   "narrative": {
-    "northStar": "The Specimen Ledger",
-    "overview": "Florarithm reads like a herbarium record card crossed with an accounting ledger: square-cornered, typed rather than drawn, and quiet by default so that the one fact worth noticing — a plant is thirsty, a task is done — is the only thing that speaks. Names are set in a serif, like a specimen label; everything a machine produced (codes, dates, day counts) is set in mono so columns of numbers line up without effort. Color is treated as ink applied for meaning, not decoration: leaf and water sit at the same lightness and chroma so neither competes with the other, and warmth (ember) is the only color allowed to be louder, because a warning that is exactly as loud as everything else has stopped being a warning.\n\nThe system rejects anything that reads as playful, glossy, or gamified. There are no gradients, no drop shadows on resting surfaces, no rounded-everything softness — chips are the sole exception, and that exception is meaningful. Density and warmth come from a slightly warm, low-chroma paper tone rather than from ornament.",
+    "northStar": "The Specimen Ledger, on warm paper",
+    "overview": "Florarithm reads like a herbarium record card: names set in a serif the way a specimen label sets them, and everything a machine recorded — codes, dates, day counts — set in mono so columns of figures line up without effort. It is quiet by default so the one fact worth noticing is the only thing that speaks. The system started as a strict ledger and softened deliberately as the app grew: cards group the plant page rather than hairlines, corners are 12px and 16px where 4px read as a mistake, and round shapes are now common rather than a single exception. Shadows exist, but only for something genuinely off the page — over a photograph, over the page, or under a pointer. Colour is ink applied for meaning: leaf and water sit at the same lightness and chroma so neither competes, and ember alone is allowed to be louder.",
     "keyCharacteristics": [
-      "Square-ish, ledger-like forms; roundness is reserved for chips alone.",
       "Serif for what a person named; mono for what a machine recorded.",
-      "One saturated color per meaning, never color for its own sake.",
-      "Flat at rest; the only shadow in the system belongs to an ephemeral toast.",
-      "Warm, low-chroma parchment neutrals rather than true gray or true white."
+      "One saturated colour per meaning, never colour for its own sake.",
+      "Warm, low-chroma parchment neutrals rather than true grey or true white.",
+      "Flat on paper; shadow only for what is actually above the page.",
+      "Every interactive element answers a pointer, and the answer always deepens.",
+      "One markup for phone and desktop, split by breakpoint alone."
     ],
     "rules": [
-      { "name": "The One Loud Color Rule", "body": "Only ember is allowed to sit at a visibly higher chroma than its siblings. Every other accent is tuned to match leaf and water's lightness and chroma exactly, so urgency is never accidentally implied by a color choice alone.", "section": "colors" },
-      { "name": "The Specimen Label Rule", "body": "A plant's own name is always set in Newsreader; nothing else in the interface is. If it's a name someone gave a living thing, it gets the serif — everything else, including a screen title for a non-plant screen, uses the interface sans or mono instead.", "section": "typography" },
-      { "name": "The Flat-By-Default Rule", "body": "If it's still on screen a second from now, it has no shadow. Shadows are reserved for things that are about to disappear.", "section": "elevation" },
-      { "name": "The One Round Thing Rule", "body": "Full roundness is reserved for chips. If a new component needs to feel selectable-and-transient the way a chip does, it can round fully; anything that holds or writes data stays square-ish.", "section": "shapes" }
+      {
+        "name": "The One Loud Colour Rule",
+        "body": "Only ember sits at a visibly higher chroma than its siblings. Every other accent matches leaf and water's lightness and chroma exactly, so urgency is never implied by a colour choice alone."
+      },
+      {
+        "name": "No Colour Outside the Tokens",
+        "body": "@theme clears Tailwind's stock palette with --color-*: initial, so bg-red-500 does not exist. A design system you can step around is a suggestion."
+      },
+      {
+        "name": "The Specimen Label Rule",
+        "body": "A plant's own name is always Newsreader — as is any title that names a screen or a sheet, and a Section heading. Everything else is the interface sans or the mono."
+      },
+      {
+        "name": "Nothing on Paper Casts a Shadow",
+        "body": "Cards, sheets, banners, rows, inputs and navigation are flat at rest in both themes. A shadow means the thing is over a photograph, over the page, or under a pointer."
+      },
+      {
+        "name": "Round is for Controls, Corners are for Containers",
+        "body": "Anything that holds or writes a value — a field, a card, a row, a panel — keeps a corner. Anything you press, choose, or that marks a moment may be round."
+      },
+      {
+        "name": "Hover Deepens, Never Fades",
+        "body": "A filled variant steps to its -deep token; an outline or quiet one takes on sunk ground. opacity dims the label along with the ground and reads as disabled — the one state a control under the cursor must not be in."
+      }
     ],
     "dos": [
-      "Do put a plant's own name in Newsreader and machine-produced data (codes, dates, day counts) in IBM Plex Mono with tabular figures.",
+      "Do put a plant's own name in Newsreader, and anything a machine produced — codes, dates, day counts — in IBM Plex Mono with tabular figures.",
       "Do keep leaf and water visually equal in weight; let ember alone carry extra urgency.",
-      "Do use a -tint color for a \"this already happened, calm down\" state instead of a second confirmation UI.",
-      "Do keep every control that writes data at least 44px tall (touch) and every text input at 16px, full stop."
+      "Do deepen on hover, with -deep for a fill and sunk for an outline.",
+      "Do reach for lift on something you press and warm on a row.",
+      "Do use a -tint for a 'this already happened' state instead of a second confirmation UI.",
+      "Do keep every control that writes data at least 44px tall and every text input at 16px, full stop."
     ],
     "donts": [
-      "Don't add a shadow to anything that stays on screen — shadows are reserved for the undo toast alone.",
-      "Don't round anything fully except chips; a rounded data field or button reads as off-system.",
-      "Don't introduce a fourth saturated accent color; every meaning in the app is already assigned to leaf, water, or ember.",
-      "Don't style a component with passed-in utility classes for anything but placement (margin, width, visibility) — look comes from variant/size/tone props only."
+      "Don't give a resting surface a shadow.",
+      "Don't fade on hover — opacity reads as disabled.",
+      "Don't round a container that holds data, and don't put a corner on a mark.",
+      "Don't introduce a fourth saturated accent; every meaning is already assigned to leaf, water or ember.",
+      "Don't write a colour, size or radius that is not a token.",
+      "Don't style a component with passed-in utility classes for anything but placement — look comes from variant/size/tone props only."
     ]
   }
 }
