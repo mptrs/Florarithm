@@ -17,7 +17,7 @@ import { isoToInputValue, nowISO } from '~/lib/date'
 import { newId } from '~/lib/id'
 import { generatePlantCode } from '~/lib/plantCode'
 import * as db from './db'
-import { migrateEvents, migrateVocab, needsMigration } from './migrate'
+import { migrateEvents, migratePlant, migrateVocab, needsMigration } from './migrate'
 import { dropPhotos, refilePhoto } from './photos'
 import type {
   Id,
@@ -113,36 +113,6 @@ export async function load(): Promise<void> {
   }
 }
 
-/**
- * Everything a stored plant might be missing, filled in on read and written
- * straight back, so the collection never needs a dedicated migration step.
- */
-function migratePlant(plant: Plant): Plant {
-  const withSpecies = migrateLegacySpecies(plant)
-  // Added after the fact, and absent means only "never typed" — so an empty
-  // string is the whole migration, and the backup format stays at 3.
-  return typeof withSpecies.variegation === 'string'
-    ? withSpecies
-    : { ...withSpecies, variegation: '' }
-}
-
-/**
- * Plants written before the genus/species/cultivar split had one free-text
- * `species` field, e.g. `Monstera deliciosa 'Thai Constellation'`. Split it
- * once, on read.
- */
-function migrateLegacySpecies(plant: Plant): Plant {
-  if (typeof (plant as unknown as Record<string, unknown>).genus === 'string') return plant
-
-  const legacy = String((plant as unknown as { species?: unknown }).species ?? '')
-  const cultivarMatch = legacy.match(/['"‘’“”]([^'"‘’“”]+)['"‘’“”]/)
-  const cultivar = cultivarMatch?.[1]?.trim() ?? ''
-  const withoutCultivar = (cultivarMatch ? legacy.slice(0, cultivarMatch.index) : legacy).trim()
-  const [genus = '', species = ''] = withoutCultivar.split(/\s+/)
-
-  return { ...plant, genus, species, cultivar }
-}
-
 // --- plants -----------------------------------------------------------------
 
 export type PlantDraft = {
@@ -151,6 +121,7 @@ export type PlantDraft = {
   name: string
   genus: string
   species: string
+  cross: string
   cultivar: string
   variegation: string
   locationId: Id | null

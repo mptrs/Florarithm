@@ -10,7 +10,7 @@
  */
 
 import { nowISO } from '~/lib/date'
-import { migrateEvents, migrateVocab } from './migrate'
+import { migrateEvents, migratePlant, migrateVocab } from './migrate'
 import {
   BACKUP_FORMAT,
   BACKUP_VERSION,
@@ -115,7 +115,9 @@ export function parseBackup(text: string): Backup {
     format: BACKUP_FORMAT,
     version: BACKUP_VERSION,
     exportedAt: candidate.exportedAt ?? nowISO(),
-    plants: candidate.plants,
+    // A plant from an older export is missing whichever fields were added
+    // after it was written; the same patch the database gets at boot.
+    plants: candidate.plants.map(migratePlant),
     // A version 2 file still names a fertilizer brand on every watering; it
     // comes in as a plain yes/no, and the list it pointed at is dropped.
     events: migrateEvents(candidate.events),

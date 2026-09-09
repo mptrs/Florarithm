@@ -31,7 +31,7 @@ import {
   type System,
 } from '~/data/types'
 import { formatDate, isoToInputValue, inputValueToISO, todayInputValue } from '~/lib/date'
-import { formatSpecies, label } from '~/lib/format'
+import { formatSpecies, label, normalizeCross } from '~/lib/format'
 import { suggestNameAI } from '~/lib/aiNameGenerator'
 import { cn } from '~/lib/cn'
 import { redirect, routes } from '~/lib/router'
@@ -74,6 +74,10 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
   const [wish, setWish] = useState(false)
   const [genus, setGenus] = useState('')
   const [species, setSpecies] = useState('')
+  /** Not stored: a plant with a cross written on it is a hybrid, and one
+   *  without is not. The switch only says whether the field is on screen. */
+  const [hybrid, setHybrid] = useState(false)
+  const [cross, setCross] = useState('')
   const [cultivar, setCultivar] = useState('')
   const [variegation, setVariegation] = useState('')
   const [name, setName] = useState('')
@@ -103,6 +107,8 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
       setWish(promote ? false : existing.wish)
       setGenus(existing.genus)
       setSpecies(existing.species)
+      setCross(existing.cross)
+      setHybrid(existing.cross !== '')
       setCultivar(existing.cultivar)
       setVariegation(existing.variegation)
       setName(existing.name)
@@ -127,6 +133,8 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
         if (source) {
           setGenus(source.genus)
           setSpecies(source.species)
+          setCross(source.cross)
+          setHybrid(source.cross !== '')
           setCultivar(source.cultivar)
           setVariegation(source.variegation)
         }
@@ -168,6 +176,7 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
 
       const genusTrimmed = genus.trim()
       const speciesTrimmed = species.trim()
+      const crossTrimmed = hybrid ? cross.trim() : ''
       const cultivarTrimmed = cultivar.trim()
       const variegationTrimmed = variegation.trim()
 
@@ -178,12 +187,14 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
           formatSpecies({
             genus: genusTrimmed,
             species: speciesTrimmed,
+            cross: crossTrimmed,
             cultivar: cultivarTrimmed,
             variegation: variegationTrimmed,
           }) ||
           'Unnamed',
         genus: genusTrimmed,
         species: speciesTrimmed,
+        cross: crossTrimmed,
         cultivar: cultivarTrimmed,
         variegation: variegationTrimmed,
         locationId,
@@ -298,11 +309,6 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
                 onChange={(event) => setGenus(event.target.value)}
                 placeholder="Monstera"
                 fieldClassName="flex-1"
-                hint={
-                  existing || wish
-                    ? undefined
-                    : 'The plant code is drawn from this, not from the name — a sticker cannot be rewritten.'
-                }
               />
               <TextField
                 label="Species"
@@ -310,6 +316,7 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
                 onChange={(event) => setSpecies(event.target.value)}
                 placeholder="deliciosa"
                 fieldClassName="flex-1"
+                disabled={hybrid}
               />
             </div>
 
@@ -343,6 +350,40 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
                 ))}
               </SelectField>
             </div>
+
+            {/* Under the cultivar and the variegation, because a hybrid is the
+                rarer thing to be recording — and behind a switch, so the plant
+                that is simply a species never has to look at a field that does
+                not apply to it.
+
+                A plant is a species or it is a cross, never both, so throwing
+                the switch empties the other one rather than leaving a
+                contradiction to be saved. Nothing is hidden while still set.
+
+                No hint under any of these four: the labels are the words off
+                the plant label itself, and a line of prose under each one only
+                made the section harder to read than the thing it explained.
+                The `×` is taught by the placeholder, where it costs nothing. */}
+            <ToggleField
+              label="This is a hybrid"
+              checked={hybrid}
+              onChange={(next) => {
+                setHybrid(next)
+                if (next) setSpecies('')
+                else setCross('')
+              }}
+            />
+
+            {hybrid ? (
+              /* Full width because parentage is long and often nested, which is
+                 also why it is one field and not a seed/pollen pair. */
+              <TextField
+                label="Cross"
+                value={cross}
+                onChange={(event) => setCross(normalizeCross(event.target.value))}
+                placeholder="papillilaminum × crystallinum"
+              />
+            ) : null}
 
             {wish ? null : (
               <Field

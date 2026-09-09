@@ -10,9 +10,9 @@ import { expect, test } from '@playwright/test'
 import { codePrefix, generatePlantCode, isPlantCode } from '../src/lib/plantCode'
 import { nextInLine, splitLineage } from '../src/lib/nameGenerator'
 import { parseBackup, BackupParseError } from '../src/data/backup'
-import { migrateEvent, migrateVocab } from '../src/data/migrate'
+import { migrateEvent, migratePlant, migrateVocab } from '../src/data/migrate'
 import { daysBetween, inputValueToISO, isoToInputValue } from '../src/lib/date'
-import { toRoman, fromRoman } from '../src/lib/format'
+import { formatSpecies, normalizeCross, toRoman, fromRoman } from '../src/lib/format'
 import { parseRoute } from '../src/lib/router'
 import { currentPhotoEvent } from '../src/data/selectors'
 import type { State } from '../src/data/store'
@@ -190,6 +190,85 @@ test.describe('reading version 2', () => {
   })
 })
 
+test.describe('hybrids', () => {
+  // Most collector Anthuriums are a cross with no cultivar, and writing that
+  // in the cultivar field would quote a variety nobody registered.
+  test('a cross stands where the epithet would', () => {
+    expect(
+      formatSpecies({
+        genus: 'Anthurium',
+        species: '',
+        cross: 'papillilaminum × crystallinum',
+        cultivar: '',
+      }),
+    ).toBe('Anthurium papillilaminum × crystallinum')
+  })
+
+  test('a cultivar on a cross puts the parentage in brackets', () => {
+    expect(
+      formatSpecies({
+        genus: 'Anthurium',
+        species: '',
+        cross: 'papillilaminum × crystallinum',
+        cultivar: 'Dark Mama',
+      }),
+    ).toBe("Anthurium (papillilaminum × crystallinum) 'Dark Mama'")
+  })
+
+  test('the variegation still trails everything', () => {
+    expect(
+      formatSpecies({
+        genus: 'Anthurium',
+        species: '',
+        cross: 'papillilaminum × crystallinum',
+        cultivar: '',
+        variegation: 'albo',
+      }),
+    ).toBe('Anthurium papillilaminum × crystallinum albo')
+  })
+
+  test('a plain species is written exactly as it was before the field existed', () => {
+    expect(
+      formatSpecies({ genus: 'Monstera', species: 'deliciosa', cultivar: 'Thai Constellation' }),
+    ).toBe("Monstera deliciosa 'Thai Constellation'")
+  })
+
+  test('a lone x becomes a multiplication sign, inside a word it does not', () => {
+    expect(normalizeCross('papillilaminum x crystallinum')).toBe('papillilaminum × crystallinum')
+    expect(normalizeCross('luxurians x ')).toBe('luxurians × ')
+    expect(normalizeCross('regale')).toBe('regale')
+  })
+
+  test('a plant stored before the field existed reads back with it empty', () => {
+    const stored = {
+      code: 'MON-0001',
+      name: 'Bert',
+      genus: 'Monstera',
+      species: 'deliciosa',
+      cultivar: '',
+      variegation: '',
+    } as unknown as Plant
+
+    const migrated = migratePlant(stored)
+    expect(migrated.cross).toBe('')
+    expect(migrated.species).toBe('deliciosa')
+    expect(formatSpecies(migrated)).toBe('Monstera deliciosa')
+  })
+
+  test('a plant that already has the field is handed back untouched', () => {
+    const current = {
+      code: 'ANT-0001',
+      name: 'Vlek',
+      genus: 'Anthurium',
+      species: '',
+      cross: 'papillilaminum × crystallinum',
+      cultivar: '',
+      variegation: '',
+    } as unknown as Plant
+    expect(migratePlant(current)).toBe(current)
+  })
+})
+
 test.describe('dates', () => {
   test('days are counted by calendar day, not by elapsed hours', () => {
     // Watered late last night, looked at this morning: one day, not zero.
@@ -236,6 +315,7 @@ test.describe("the plant's picture", () => {
     name: 'Gruyère',
     genus: 'Monstera',
     species: '',
+    cross: '',
     cultivar: '',
     variegation: '',
     locationId: null,

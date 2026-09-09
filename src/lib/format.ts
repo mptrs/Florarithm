@@ -14,9 +14,15 @@ export function formatPotSize(cm: number | null): string {
   return cm === null ? '—' : `${cm} cm`
 }
 
-/** `Alocasia reginula 'Ninja' albo` from the four separate fields — the one
- *  place that puts them back together, so they never get joined two different
- *  ways in two different screens.
+/** `Alocasia reginula 'Ninja' albo` from the separate fields — the one place
+ *  that puts them back together, so they never get joined two different ways
+ *  in two different screens.
+ *
+ *  A cross stands where the epithet would: `Anthurium papillilaminum ×
+ *  crystallinum`. Put a cultivar on top of one and the parentage goes in
+ *  brackets — `Anthurium (papillilaminum × crystallinum) 'Dark Mama'` — which
+ *  is how that plant is written, and says the quoted name is a selection out
+ *  of the cross rather than another parent in it.
  *
  *  The variegation is the only part that stays unquoted, and it trails the
  *  cultivar even when there is no cultivar to trail: `Monstera deliciosa albo`
@@ -24,17 +30,29 @@ export function formatPotSize(cm: number | null): string {
 export function formatSpecies({
   genus,
   species,
+  cross = '',
   cultivar,
   variegation = '',
 }: {
   genus: string
   species: string
+  /** Wins over `species` if some imported record carries both. */
+  cross?: string
   cultivar: string
   variegation?: string
 }): string {
-  const binomial = [genus, species].filter(Boolean).join(' ')
+  const epithet = cross ? (cultivar ? `(${cross})` : cross) : species
+  const binomial = [genus, epithet].filter(Boolean).join(' ')
   const named = cultivar ? (binomial ? `${binomial} '${cultivar}'` : `'${cultivar}'`) : binomial
   return [named, variegation].filter(Boolean).join(' ')
+}
+
+/** A lone `x` between the parents becomes `×`, so one collection is not spelled
+ *  two ways and a search for either character finds both. Applied as you type,
+ *  which it can be because the swap is one character for one and leaves the
+ *  caret where it was. Never touches the `x` inside a word. */
+export function normalizeCross(value: string): string {
+  return value.replace(/(^|\s)[xX](?=\s|$)/g, '$1×')
 }
 
 /** `I`, `II`, `III` … Used by the name generator so a cutting reads as the next
