@@ -37,6 +37,11 @@ const CONTROL_FACE = cn(
   // stays leaf while the cursor is over it.
   'warm hover:border-ink-faint',
   'focus:border-leaf focus:outline-none',
+  // A disabled control is a field that is off right now, not a field that is
+  // gone: it keeps its outline and its label, loses the hover, and reads as
+  // faint. Species and cross switch each other off this way.
+  'disabled:border-line disabled:bg-transparent disabled:text-ink-faint',
+  'disabled:hover:border-line disabled:cursor-not-allowed',
 )
 
 /**

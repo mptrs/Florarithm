@@ -207,6 +207,7 @@ const REMOTE_PLANT = {
   name: 'Gruyère',
   genus: 'Monstera',
   species: 'deliciosa',
+  cross: '',
   cultivar: '',
   variegation: '',
   locationId: null,

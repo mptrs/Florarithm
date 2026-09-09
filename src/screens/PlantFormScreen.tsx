@@ -31,7 +31,7 @@ import {
   type System,
 } from '~/data/types'
 import { formatDate, isoToInputValue, inputValueToISO, todayInputValue } from '~/lib/date'
-import { formatSpecies, label } from '~/lib/format'
+import { formatSpecies, label, normalizeCross } from '~/lib/format'
 import { suggestNameAI } from '~/lib/aiNameGenerator'
 import { cn } from '~/lib/cn'
 import { redirect, routes } from '~/lib/router'
@@ -74,6 +74,7 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
   const [wish, setWish] = useState(false)
   const [genus, setGenus] = useState('')
   const [species, setSpecies] = useState('')
+  const [cross, setCross] = useState('')
   const [cultivar, setCultivar] = useState('')
   const [variegation, setVariegation] = useState('')
   const [name, setName] = useState('')
@@ -103,6 +104,7 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
       setWish(promote ? false : existing.wish)
       setGenus(existing.genus)
       setSpecies(existing.species)
+      setCross(existing.cross)
       setCultivar(existing.cultivar)
       setVariegation(existing.variegation)
       setName(existing.name)
@@ -127,6 +129,7 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
         if (source) {
           setGenus(source.genus)
           setSpecies(source.species)
+          setCross(source.cross)
           setCultivar(source.cultivar)
           setVariegation(source.variegation)
         }
@@ -168,6 +171,7 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
 
       const genusTrimmed = genus.trim()
       const speciesTrimmed = species.trim()
+      const crossTrimmed = cross.trim()
       const cultivarTrimmed = cultivar.trim()
       const variegationTrimmed = variegation.trim()
 
@@ -178,12 +182,14 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
           formatSpecies({
             genus: genusTrimmed,
             species: speciesTrimmed,
+            cross: crossTrimmed,
             cultivar: cultivarTrimmed,
             variegation: variegationTrimmed,
           }) ||
           'Unnamed',
         genus: genusTrimmed,
         species: speciesTrimmed,
+        cross: crossTrimmed,
         cultivar: cultivarTrimmed,
         variegation: variegationTrimmed,
         locationId,
@@ -310,8 +316,29 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
                 onChange={(event) => setSpecies(event.target.value)}
                 placeholder="deliciosa"
                 fieldClassName="flex-1"
+                disabled={cross.trim() !== ''}
               />
             </div>
+
+            {/* A plant is a species or it is a cross, never both, so the two
+                fields switch each other off rather than sitting there inviting
+                a contradiction. Whichever one is empty comes back the moment
+                you clear the other — no mode to set, and nothing to undo.
+
+                Full width because parentage is long and often nested, which is
+                also why it is one field and not a seed/pollen pair. */}
+            <TextField
+              label="Cross"
+              value={cross}
+              onChange={(event) => setCross(normalizeCross(event.target.value))}
+              placeholder="papillilaminum × crystallinum"
+              disabled={species.trim() !== ''}
+              hint={
+                species.trim()
+                  ? 'Clear the species to record a hybrid instead.'
+                  : 'For a hybrid with no species of its own — type x between the parents.'
+              }
+            />
 
             <div className="flex gap-3">
               <TextField
@@ -320,6 +347,9 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
                 onChange={(event) => setCultivar(event.target.value)}
                 placeholder="Ninja"
                 fieldClassName="flex-1"
+                hint={
+                  cross.trim() ? 'A named selection out of the cross, if it has one.' : undefined
+                }
               />
               {/* A select, not a suggest box: the terms are a short fixed set,
                   and every other short fixed set in the app is a select. A

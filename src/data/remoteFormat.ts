@@ -8,7 +8,7 @@
  * silently accepts a malformed remote file corrupts both devices at once.
  */
 
-import { migrateEvents, migrateVocab } from './migrate'
+import { migrateEvents, migratePlant, migrateVocab } from './migrate'
 import {
   BACKUP_FORMAT,
   BACKUP_VERSION,
@@ -65,7 +65,9 @@ export function buildPlantsFile(plants: readonly Plant[]): string {
 export function parsePlantsFile(text: string): Plant[] {
   const parsed = parseJson(text, 'plants.json')
   if (!Array.isArray(parsed)) throw new RemoteParseError('plants.json is not a list.')
-  return parsed as Plant[]
+  // The repository may have been written by an older build of this same app,
+  // which is the one case where a plant arrives with a field simply missing.
+  return (parsed as Plant[]).map(migratePlant)
 }
 
 export function buildEventsFile(events: readonly PlantEvent[]): string {

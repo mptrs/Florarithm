@@ -319,6 +319,29 @@ test('deleting a plant forever tombstones it rather than erasing it outright', a
   await expect(page.getByText('No plant with this code')).toBeVisible()
 })
 
+test('a hybrid is recorded as a cross, not as a cultivar', async ({ page }) => {
+  await page.goto('#new')
+  await page.getByLabel('Genus').fill('Anthurium')
+  // Typing a plain x is what the keyboard offers; the field makes it a ×.
+  await page.getByLabel('Cross').fill('papillilaminum x crystallinum')
+  await expect(page.getByLabel('Cross')).toHaveValue('papillilaminum × crystallinum')
+
+  // A plant is a species or it is a cross, so the other field switches off.
+  await expect(page.getByLabel('Species', { exact: true })).toBeDisabled()
+
+  await page.getByLabel('Name', { exact: true }).fill('Vlek')
+  await page.getByLabel('Place').fill('Living room')
+  await page.getByRole('button', { name: 'Add to the collection' }).click()
+
+  // No quotes anywhere: nobody registered this variety.
+  await expect(page.getByText('Anthurium papillilaminum × crystallinum')).toBeVisible()
+
+  // And it is findable by the parent, typed with the character on the keyboard.
+  await page.goto('#collection')
+  await page.getByPlaceholder('Name, species or place').fill('papillilaminum x cry')
+  await expect(page.getByRole('link', { name: /Vlek/ })).toBeVisible()
+})
+
 test('promoting a wish keeps its code and its history', async ({ page }) => {
   await page.goto('#new/wish')
   await page.getByLabel('Genus').fill('Philodendron')

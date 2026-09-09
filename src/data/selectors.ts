@@ -11,7 +11,7 @@
  */
 
 import { daysSince, yearOf } from '~/lib/date'
-import { formatSpecies } from '~/lib/format'
+import { formatSpecies, normalizeCross } from '~/lib/format'
 import type { CollectionFilter } from '~/lib/router'
 import type { State } from './store'
 import type { EventType, Id, Plant, PlantEvent, VocabItem, VocabKind } from './types'
@@ -260,10 +260,11 @@ function byName(a: Plant, b: Plant): number {
 function matchesQuery(state: State, plant: Plant, needle: string): boolean {
   if (!needle) return true
   const place = vocabName(state, plant.locationId)
-  return [plant.name, formatSpecies(plant), plant.code, place]
-    .join(' ')
+  // Both sides through the same `x` → `×` swap, so a hybrid can be searched
+  // for with the character actually on the keyboard.
+  return normalizeCross([plant.name, formatSpecies(plant), plant.code, place].join(' '))
     .toLowerCase()
-    .includes(needle)
+    .includes(normalizeCross(needle))
 }
 
 // --- the archive ------------------------------------------------------------
