@@ -12,7 +12,7 @@ The builder themself (and possibly a partner sharing the same household), tendin
 
 ## Product Purpose
 
-A plant logbook you open by tapping an NFC tag stuck to the pot. It exists so that logging care (watering, fertilizing, repotting, new leaves, blooming, notes) is as close to zero-friction as possible — tap the tag, tap WATER, done, with undo always available. Success is a complete, trustworthy history of each plant's care without the app ever feeling like a chore to update.
+A plant logbook you open by tapping an NFC tag stuck to the pot. It exists so that logging care (watering, fertilizing, repotting, new leaves, blooming, notes) is as close to zero-friction as possible — tap the tag, tap the drop, done, with no confirmation step. A wrong entry is corrected or removed from the row it is written on rather than through an undo bar. Success is a complete, trustworthy history of each plant's care without the app ever feeling like a chore to update.
 
 ## Positioning
 
@@ -34,9 +34,10 @@ Most plant-care apps push notifications and try to predict when a plant needs wa
 - Family lineage: cuttings and corms point at a parent plant; a name generator continues the line (Fluweel, Fluweel II, Fluweel III) so the family tree reads without a diagram.
 - Events are append-only (soft-deleted via a `deleted` flag, never removed) so multi-device sync can merge by union safely.
 - No derived values are ever stored — days since watering, average rhythm, leaves this year, collection value are all computed at render time from the event log, to avoid the log and a cached value disagreeing.
-- Every regrettable mutation returns an `UndoAction`.
-- Three runtime dependencies only: React, ReactDOM, `idb`.
-- Roadmap: M1 (done) single device; M2 (done) private-repo sync; M3 photos + QR fallback for a dead sticker; M4 multi-generation family tree, pest tracking with repeat treatments, achievements.
+- A wrong entry is corrected in place: swipe a history row left to delete it, right to edit it (hover buttons instead, from `md` up). No undo bar — a tombstone survives a reload and merges correctly with another device, which a three-second bar does not.
+- Photographs are attached to log entries rather than kept as a gallery of their own, capped at a 1600px JPEG, stored in their own IndexedDB store and synced as one file per event.
+- Four runtime dependencies: React, ReactDOM, `idb` and `qrcode-generator`. `@mlc-ai/web-llm` is a fifth in `package.json` but is only ever reached through a dynamic `import()`, so a build that never opens the AI name suggester never fetches it.
+- Roadmap: M1 (done) single device; M2 (done) private-repo sync; M3 (done) photos + QR fallback for a dead sticker; M4 (later) multi-generation family tree, pest tracking with repeat treatments, achievements.
 
 ## Brand Commitments
 
@@ -46,12 +47,12 @@ Name: Florarithm. Voice is dry, precise, and understated rather than cheerful or
 
 - Live app: https://mptrs.github.io/Florarithm/
 - README.md documents the full feature set, architecture, and conventions in detail.
-- Existing design mockups/system under `design/` (Main, Today, Plant, Collection, Wishlist, Settings, New — phone and desktop — plus a components/patterns reference and `florarithm-design-system.html`).
+- `DESIGN.md` is the design system of record, derived from the shipped code (`src/styles.css` for tokens, `src/ui/` for components). Design canvases under `design/` are a historical record of how each screen was arrived at, not a spec — where they and the code disagree, the code is right.
 - No user testimonials, benchmarks, or third-party evidence exist or should be fabricated — this is a personal project with one (or two) real users.
 
 ## Product Principles
 
-- Frictionless logging beats complete logging: one tap, no confirmation, undo instead of "are you sure?".
+- Frictionless logging beats complete logging: one tap, no confirmation, and a correction made on the row where the mistake is visible instead of "are you sure?".
 - Show history, don't predict it — the app reflects the user's own fixed watering schedule back at them rather than guessing.
 - No derived state is ever the source of truth; the event log is, always.
 - No account, no server, no dependency the user didn't choose — data stays on-device with an opt-in private sync.
@@ -59,4 +60,4 @@ Name: Florarithm. Voice is dry, precise, and understated rather than cheerful or
 
 ## Accessibility & Inclusion
 
-No specific accessibility requirement has been established beyond the general practices already in code (44px minimum touch targets for anything that writes data, 16px+ inputs to avoid iOS zoom, token-driven color/dark-mode).
+No specific accessibility requirement has been established beyond the general practices already in code: 44px minimum touch targets for anything that writes data (filter chips the one documented exception at 36px), 16px+ inputs to avoid iOS zoom, token-driven colour with a single-declaration dark mode, a visible `leaf` focus ring on every control, and `prefers-reduced-motion` honoured throughout — no state ever depends on movement to read. The known gap is a keyboard route to the swipe row's edit and delete on a phone.
