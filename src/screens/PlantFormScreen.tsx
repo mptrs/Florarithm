@@ -29,6 +29,7 @@ import {
 import {
   deletePlantForever,
   ensureVocabItem,
+  logEvent,
   savePlant,
   useStore,
   type State,
@@ -46,7 +47,14 @@ import {
   type PlantEvent,
   type System,
 } from '~/data/types'
-import { formatDate, isoToInputValue, inputValueToISO, todayInputValue } from '~/lib/date'
+import {
+  daysBetween,
+  formatDate,
+  isoToInputValue,
+  inputValueToISO,
+  nowISO,
+  todayInputValue,
+} from '~/lib/date'
 import { formatSpecies, label, plural } from '~/lib/format'
 import { suggestNameAI } from '~/lib/aiNameGenerator'
 import { cn } from '~/lib/cn'
@@ -223,8 +231,38 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
         status,
         photoEventId: photoEventId || null,
         wish,
-        wishNote: wishNote.trim(),
+        // Promoting empties it: the note moves into the log below rather than
+        // staying in a field that nothing renders once the plant is yours.
+        wishNote: promote ? '' : wishNote.trim(),
       })
+
+      if (promote && existing) {
+        // Dated the day it arrived, not the day the form was filled in — the
+        // origin date is the one the plant page reads back as "in the
+        // collection since", and the wait has to end where that begins.
+        const arrived = inputValueToISO(originDate) ?? nowISO()
+        const waited = Math.max(0, daysBetween(existing.createdAt, arrived))
+        const said = existing.wishNote.trim()
+
+        // What you wrote about why you wanted it, kept in your own words and
+        // dated the day you wrote it. It goes in first so it sits under the
+        // arrival in the log, which reads newest first.
+        if (said) {
+          await logEvent({
+            plantCode: plant.code,
+            type: 'note',
+            date: existing.createdAt,
+            text: said,
+          })
+        }
+
+        await logEvent({
+          plantCode: plant.code,
+          type: 'note',
+          date: arrived,
+          text: `From the wishlist · ${waited === 0 ? 'same day' : plural(waited, 'day')}`,
+        })
+      }
 
       showToast(
         existing && !promote
