@@ -278,7 +278,7 @@ test('deleting a plant forever tombstones it rather than erasing it outright', a
   await logFromDial(page, 'Watered')
 
   await page.goto(`#edit/${code}`)
-  await page.getByRole('button', { name: 'Delete this plant' }).click()
+  await page.getByRole('button', { name: 'Delete this plant for good' }).click()
   // A native confirm() is a silent no-op in an installed, standalone PWA on
   // iOS, so the confirmation is an in-app sheet rather than window.confirm.
   await page.getByRole('dialog').getByRole('button', { name: 'Delete' }).click()
