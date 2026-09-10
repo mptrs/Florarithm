@@ -17,6 +17,8 @@ import { usePhoto } from '~/data/photos'
 import {
   childrenOf,
   countThisYear,
+  lineageOf,
+  type Descendant,
   currentPhotoEvent,
   daysSinceWater,
   eventsByMonth,
@@ -28,7 +30,7 @@ import {
   lastWaterAt,
   vocabName,
 } from '~/data/selectors'
-import { describeEvent, logEvent, removeEvent, useStore } from '~/data/store'
+import { describeEvent, logEvent, removeEvent, useStore, type State } from '~/data/store'
 import type { Plant, PlantEvent } from '~/data/types'
 import { daysSince, formatDate, formatDayMonth, formatMonthYear } from '~/lib/date'
 import { formatPotSize, formatPrice, formatSpecies, label, plural } from '~/lib/format'
@@ -758,7 +760,7 @@ function EntryPhoto({ event }: { event: PlantEvent }) {
   )
 }
 
-function detailOf(event: PlantEvent, state: ReturnType<typeof useStore>): string {
+function detailOf(event: PlantEvent, state: ReturnType<typeof useStore>): ReactNode {
   switch (event.type) {
     case 'water':
       return event.fertilized ? 'with fertiliser' : ''
@@ -768,7 +770,20 @@ function detailOf(event: PlantEvent, state: ReturnType<typeof useStore>): string
       return [size, medium, event.reason].filter(Boolean).join(' · ')
     }
     case 'note':
-      return event.text
+      if (event.fromWishlist === undefined) return event.text
+      // The mark sits inside the sentence rather than replacing the row's own
+      // glyph: this is a note like any other note, and the mark is there to say
+      // what those days were spent waiting for. Inline and sat on the text
+      // baseline with `align`, not nudged with a transform — a transform moves
+      // the drawing and leaves the line box where it was, which is what makes
+      // an icon look a pixel wrong at one size and right at another.
+      return (
+        <>
+          <Icon name="waited" size={14} className="mr-1.5 inline align-[-0.155em] text-ink-faint" />
+          {event.fromWishlist === 0 ? 'same day' : plural(event.fromWishlist, 'day')}
+          {event.text ? ` · ${event.text}` : ''}
+        </>
+      )
     default:
       return ''
 
@@ -777,50 +792,262 @@ function detailOf(event: PlantEvent, state: ReturnType<typeof useStore>): string
 
 // --- family -----------------------------------------------------------------
 
+/**
+ * The family, as a rail rather than two flat lists.
+ *
+ * A cutting of a cutting is the normal case in this collection, and the two
+ * lists this used to be — one parent above, its children below — could only
+ * ever show one step in each direction. Everything here is one indent per
+ * generation off a single hairline: the line above the plant, the plant, and
+ * everything propagated off it, however deep that goes.
+ *
+ * Three things keep a big family readable. Your own line is drawn in full.
+ * Plants off the same parent — siblings, which are not on your line down — sit
+ * small and grey. And a branch below a cutting rolls up to one row until you
+ * open it, because "three more off Terra" is the whole answer most of the time.
+ */
 function Family({ plant }: { plant: Plant }) {
   const state = useStore()
-  const parent = plant.parent ? findPlant(state, plant.parent.code) : null
-  const children = childrenOf(state, plant.code)
+  const { ancestors, descendants, plants, generations } = lineageOf(state, plant.code)
+  const siblings = plant.parent
+    ? childrenOf(state, plant.parent.code).filter((other) => other.code !== plant.code)
+    : []
 
-  if (!parent && children.length === 0) return null
+  if (ancestors.length === 0 && descendants.length === 0) return null
+
+  // Siblings keep their place in the order the cuttings were taken: the ones
+  // older than this plant sit above it, the later ones below. Same rail, same
+  // reading direction as everything else on it.
+  const before = siblings.filter((other) => other.createdAt <= plant.createdAt)
+  const after = siblings.filter((other) => other.createdAt > plant.createdAt)
+
+  // The rail is built from the outside in: the oldest ancestor wraps the next,
+  // and so on down to the plant, so one `border-left` per level draws the
+  // indent and the line at once with no absolute geometry to keep in step.
+  let rail: ReactNode = (
+    <>
+      {before.map((sibling) => (
+        <SiblingRow key={sibling.code} plant={sibling} />
+      ))}
+
+      <div className="my-0.5 -ml-7 min-h-touch rounded-lg bg-leaf-tint py-2 pr-2 pl-7">
+        <div className="relative flex items-baseline justify-between gap-2.5">
+          <Bead kind="self" />
+          <span className="flex min-w-0 items-baseline gap-1.5 font-display text-[1.1875rem] leading-6 font-semibold">
+            <span className="truncate">{plant.name}</span>
+            <StatusMark status={plant.status} />
+          </span>
+          <span className="shrink-0 text-label uppercase text-leaf">This one</span>
+        </div>
+        <span className="mt-px block truncate font-mono text-micro tracking-[0.08em] text-ink-muted">
+          {[plant.code, describeParent(state, plant)].filter(Boolean).join(' · ')}
+        </span>
+      </div>
+
+      {descendants.length > 0 ? (
+        <Rail>
+          {descendants.map((node) => (
+            <Branch key={node.plant.code} node={node} />
+          ))}
+        </Rail>
+      ) : null}
+
+      {after.map((sibling) => (
+        <SiblingRow key={sibling.code} plant={sibling} />
+      ))}
+    </>
+  )
+
+  for (let index = ancestors.length - 1; index >= 0; index -= 1) {
+    const ancestor = ancestors[index] as Plant
+    rail = (
+      <>
+        <KinRow plant={ancestor} note={describeParent(state, ancestor) || describeRoot(ancestor)} />
+        <Rail>{rail}</Rail>
+      </>
+    )
+  }
 
   return (
     <section className="mt-7">
-      <GroupLabel>Family</GroupLabel>
-      <Card className="mt-2 px-4.5">
-        {parent && plant.parent ? (
-          <a
-            href={routes.plant(parent.code)}
-            className="warm flex min-h-touch items-center gap-3.5 border-b border-line py-3 last:border-b-0 hover:bg-sunk"
-          >
-            <Icon name="scissors" size={19} className="text-ink-faint" />
-            <span className="flex-1 font-display text-[1.125rem] font-medium text-leaf">
-              {parent.name}
-            </span>
-            <span className="text-[0.8125rem] text-ink-muted">
-              grown from a {plant.parent.method}
-            </span>
-          </a>
-        ) : null}
+      <div className="flex items-baseline justify-between gap-4">
+        <GroupLabel>Family</GroupLabel>
+        <span className="text-[0.8125rem] text-ink-faint">
+          {plants + siblings.length > generations ? `${plants + siblings.length} plants · ` : ''}
+          {plural(generations, 'generation')}
+        </span>
+      </div>
 
-        {children.map((child) => (
-          <a
-            key={child.code}
-            href={routes.plant(child.code)}
-            className="warm flex min-h-touch items-center gap-3.5 border-b border-line py-3 last:border-b-0 hover:bg-sunk"
-          >
-            <Icon name="scissors" size={19} className="text-ink-faint" />
-            <span className="flex-1 font-display text-[1.125rem] font-medium text-leaf">
-              {child.name}
-            </span>
-            <span className="text-[0.8125rem] text-ink-muted">
-              {child.parent?.method} · {formatDayMonth(child.createdAt)}
-            </span>
-          </a>
-        ))}
+      <Card className="mt-2 px-4.5 pt-3.5 pb-4">
+        <Rail className="ml-2">{rail}</Rail>
       </Card>
     </section>
   )
+}
+
+/** One generation's worth of indent, and the hairline it hangs off. */
+function Rail({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <div className={cn('relative border-l border-line pl-5', className)}>{children}</div>
+  )
+}
+
+/**
+ * The bead where a row meets the rail.
+ *
+ * Centred on the NAME rather than on the row: rows are two lines high and
+ * siblings are one, and a mark measured from the top of the row lands
+ * somewhere different in each of them — which is exactly how it read. So it
+ * hangs off the name's own line box and stays put whatever is under it.
+ *
+ * The left offsets are `pl-5` plus half the bead: the rail is 20px to the left
+ * of the name, and the bead has to sit on the line, not beside it.
+ */
+function Bead({ kind }: { kind: 'kin' | 'own' | 'self' | 'sibling' | 'more' }) {
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        'absolute top-1/2 -translate-y-1/2 rounded-full',
+        kind === 'self'
+          ? '-left-[1.59375rem] size-[0.6875rem] bg-leaf'
+          : kind === 'sibling'
+            ? '-left-[1.46875rem] size-[0.4375rem] bg-line-strong'
+            : 'size-[0.5625rem] -left-[1.53125rem] border-[1.5px] bg-surface',
+        kind === 'own' ? 'border-leaf' : '',
+        kind === 'kin' ? 'border-line-strong' : '',
+        kind === 'more' ? 'border border-dashed border-line-strong' : '',
+      )}
+    />
+  )
+}
+
+/** A cutting, and whatever came off it — rolled up until you ask. */
+function Branch({ node }: { node: Descendant }) {
+  const [open, setOpen] = useState(false)
+  const below = countBelow(node)
+
+  return (
+    <>
+      <KinRow plant={node.plant} note={describeCutting(node.plant)} own />
+
+      {below === 0 ? null : (
+        <Rail>
+          {open ? (
+            node.children.map((child) => <Branch key={child.plant.code} node={child} />)
+          ) : (
+            <button
+              type="button"
+              onClick={() => setOpen(true)}
+              className="warm relative flex min-h-touch items-center gap-2 py-1.5 text-left text-[0.9375rem] text-ink-muted hover:text-ink"
+            >
+              <Bead kind="more" />
+              {below} more off {node.plant.name}
+              <Icon name="chevronDown" size={16} className="text-ink-faint" />
+            </button>
+          )}
+        </Rail>
+      )}
+    </>
+  )
+}
+
+/** A plant on the line: a name you can open, what it came off, and when. */
+function KinRow({ plant, note, own = false }: { plant: Plant; note: string; own?: boolean }) {
+  return (
+    <a
+      href={routes.plant(plant.code)}
+      className="warm block min-h-touch py-2 hover:opacity-80"
+    >
+      <span className="relative flex items-baseline justify-between gap-2.5">
+        <Bead kind={own ? 'own' : 'kin'} />
+        <span className="flex min-w-0 items-baseline gap-1.5 font-display text-[1.125rem] leading-6 font-medium text-leaf">
+          <span className="truncate">{plant.name}</span>
+          <StatusMark status={plant.status} />
+        </span>
+      </span>
+      <span className="mt-px block truncate font-mono text-micro tracking-[0.08em] text-ink-faint">
+        {[plant.code, note].filter(Boolean).join(' · ')}
+      </span>
+    </a>
+  )
+}
+
+/**
+ * Off the same parent, not on your line down: present, and quiet about it.
+ *
+ * Quiet is the type and the colour, never the reach — it is a link to another
+ * plant like every other row here, so it keeps the 44px floor.
+ */
+function SiblingRow({ plant }: { plant: Plant }) {
+  return (
+    <a
+      href={routes.plant(plant.code)}
+      className="warm relative flex min-h-touch items-center gap-2 py-1.5 hover:opacity-80"
+    >
+      <Bead kind="sibling" />
+      <span className="min-w-0 truncate font-display text-[1rem] leading-[1.375rem] text-ink-muted">
+        {plant.name}
+      </span>
+      <StatusMark status={plant.status} />
+      <span className="shrink-0 font-mono text-micro tracking-[0.08em] text-ink-faint">
+        {plant.code}
+      </span>
+    </a>
+  )
+}
+
+/**
+ * What a plant on the rail is now, when that is no longer "alive on a shelf".
+ *
+ * A line does not end because a plant did — its cuttings are still here, and
+ * the rail would read as a lie without saying which of them you still have.
+ * Dormant already wears its z's on the plant page's own title; these two had
+ * nothing, so they get the glyph rather than a word that would double the
+ * height of every row it lands on.
+ */
+function StatusMark({ status }: { status: Plant['status'] }) {
+  if (status !== 'died' && status !== 'given-away') return null
+
+  const dead = status === 'died'
+  const word = dead ? 'Died' : 'Given away'
+
+  // `Icon` is `aria-hidden` by design — colour and geometry only — so the word
+  // rides a wrapper, the same way `Dozing` carries "Dormant".
+  return (
+    <span
+      role="img"
+      aria-label={word}
+      title={word}
+      className="inline-flex shrink-0 self-center text-ink-faint"
+    >
+      <Icon name={dead ? 'died' : 'givenAway'} size={15} />
+    </span>
+  )
+}
+
+function countBelow(node: Descendant): number {
+  return node.children.reduce((total, child) => total + 1 + countBelow(child), 0)
+}
+
+/** `corm off Marla` — how this plant came to be, when it came off another. */
+function describeParent(state: State, plant: Plant): string {
+  if (!plant.parent) return ''
+  const parent = findPlant(state, plant.parent.code)
+  return parent ? `${plant.parent.method} off ${parent.name}` : plant.parent.method
+}
+
+/** Where a line starts: not a cutting of anything, so how it arrived instead. */
+function describeRoot(plant: Plant): string {
+  const year = (plant.origin.date ?? plant.createdAt).slice(0, 4)
+  return [plant.origin.type ? label(plant.origin.type).toLowerCase() : null, year]
+    .filter(Boolean)
+    .join(' · ')
+}
+
+/** The same fact from above, where the parent's name is the row you are under. */
+function describeCutting(plant: Plant): string {
+  return [plant.parent?.method, formatDayMonth(plant.createdAt)].filter(Boolean).join(' · ')
 }
 
 // --- wishlist ---------------------------------------------------------------

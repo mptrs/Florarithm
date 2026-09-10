@@ -16,8 +16,24 @@
 
 import { useEffect, useState } from 'react'
 import { usePhoto } from '~/data/photos'
-import { findPlant, ownedPlants, photoEventsFor, vocabName, vocabOf } from '~/data/selectors'
-import { deletePlantForever, ensureVocabItem, savePlant, useStore } from '~/data/store'
+import {
+  ancestorsOf,
+  childrenOf,
+  descendantCodes,
+  findPlant,
+  ownedPlants,
+  photoEventsFor,
+  vocabName,
+  vocabOf,
+} from '~/data/selectors'
+import {
+  deletePlantForever,
+  ensureVocabItem,
+  logEvent,
+  savePlant,
+  useStore,
+  type State,
+} from '~/data/store'
 import {
   ORIGIN_TYPES,
   PLANT_STATUSES,
@@ -27,11 +43,19 @@ import {
   type OriginType,
   type PlantStatus,
   type PropagationMethod,
+  type Plant,
   type PlantEvent,
   type System,
 } from '~/data/types'
-import { formatDate, isoToInputValue, inputValueToISO, todayInputValue } from '~/lib/date'
-import { formatSpecies, label, normalizeCross } from '~/lib/format'
+import {
+  daysBetween,
+  formatDate,
+  isoToInputValue,
+  inputValueToISO,
+  nowISO,
+  todayInputValue,
+} from '~/lib/date'
+import { formatSpecies, label, normalizeCross, plural } from '~/lib/format'
 import { suggestNameAI } from '~/lib/aiNameGenerator'
 import { cn } from '~/lib/cn'
 import { redirect, routes } from '~/lib/router'
@@ -50,6 +74,8 @@ import {
   TextField,
   ToggleField,
 } from '~/ui/fields'
+import { Icon } from '~/ui/Icon'
+import { GroupLabel } from '~/ui/Card'
 import { CodeBadge, Section } from '~/ui/primitives'
 
 type Props = {
@@ -69,7 +95,12 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
 
   const locations = vocabOf(state, 'location')
   const mediums = vocabOf(state, 'medium')
-  const candidates = ownedPlants(state).filter((plant) => plant.code !== code)
+  // Not itself, and nothing already below it: a plant that descends from its
+  // own cutting is a loop, and a loop is a family tree that never ends.
+  const offspring = code ? descendantCodes(state, code) : null
+  const candidates = ownedPlants(state).filter(
+    (plant) => plant.code !== code && !offspring?.has(plant.code),
+  )
 
   const [wish, setWish] = useState(false)
   const [genus, setGenus] = useState('')
@@ -211,8 +242,27 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
         status,
         photoEventId: photoEventId || null,
         wish,
-        wishNote: wishNote.trim(),
+        // Promoting empties it: the note moves into the log below rather than
+        // staying in a field that nothing renders once the plant is yours.
+        wishNote: promote ? '' : wishNote.trim(),
       })
+
+      if (promote && existing) {
+        // Dated the day it arrived, not the day the form was filled in — the
+        // origin date is the one the plant page reads back as "in the
+        // collection since", and the wait has to end where that begins.
+        const arrived = inputValueToISO(originDate) ?? nowISO()
+        const waited = Math.max(0, daysBetween(existing.createdAt, arrived))
+        // One entry, dated the day it arrived: the wait in its own field, and
+        // whatever you wrote about why you wanted it as the note itself.
+        await logEvent({
+          plantCode: plant.code,
+          type: 'note',
+          date: arrived,
+          text: existing.wishNote.trim(),
+          fromWishlist: waited,
+        })
+      }
 
       showToast(
         existing && !promote
@@ -287,17 +337,28 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
         </div>
       </div>
 
-      <ToggleField
-        label="This is still a wish"
-        checked={wish}
-        onChange={setWish}
-        hint={
-          wish
-            ? 'A wish only records what it is and why you want it — no place or care yet. Turn this off once you actually have it.'
-            : undefined
-        }
-        className="border-y border-line py-1"
-      />
+      {/* Only while adding. Which side of the line a record is on is settled
+          once, when it is written: a plant you own does not become a wish
+          again, and a wish becomes a plant through "I have this now" — on the
+          wishlist row and on the wish's own page — which is a decision with a
+          date on it rather than a switch you can graze past on your way to
+          fixing a typo. Leaving it here also let a plant keep a parent it had
+          no business keeping: the Family section hides itself for a wish, so
+          the switch could carry a line off into a record that cannot show
+          it. */}
+      {existing ? null : (
+        <ToggleField
+          label="This is still a wish"
+          checked={wish}
+          onChange={setWish}
+          hint={
+            wish
+              ? 'A wish only records what it is and why you want it — no place or care yet.'
+              : undefined
+          }
+          className="border-y border-line py-1"
+        />
+      )}
 
       <div className="flex flex-col gap-7 lg:flex-row lg:gap-12">
         <div className="flex flex-col gap-7 lg:w-[32rem] lg:shrink-0">
@@ -480,6 +541,19 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
                     ))}
                   </SelectField>
 
+                  {parentPlant ? <Lineage state={state} parent={parentPlant} /> : null}
+
+                  {existing && childrenOf(state, existing.code).length > 0 ? (
+                    <div className="flex gap-3 rounded-lg bg-ember-tint px-4 py-3.5">
+                      <Icon name="alert" size={19} className="mt-0.5 text-ember" />
+                      <p className="text-[0.8125rem] leading-5 text-pretty">
+                        {existing.name} has{' '}
+                        {plural(descendantCodes(state, existing.code).size, 'plant')} of its own
+                        below it. Moving it to another parent moves that whole branch with it.
+                      </p>
+                    </div>
+                  ) : null}
+
                   {parentPlant ? (
                     <Field label="How">
                       <div className="flex flex-wrap gap-2">
@@ -638,6 +712,50 @@ function DeleteRow({ onDelete, wish }: { onDelete: () => void; wish?: boolean })
  * is just noise. "Newest" stays first and selected by default, so the plant
  * keeps looking after itself unless you say otherwise.
  */
+/**
+ * The line you are joining, drawn rather than described.
+ *
+ * Naming a parent is the only thing this form asks for, and it decides more
+ * than it looks like it does — every generation above the parent comes with
+ * it. So the form shows what it just committed to, in the order the plant page
+ * will read it back.
+ */
+function Lineage({ state, parent }: { state: State; parent: Plant }) {
+  const line = [...ancestorsOf(state, parent.code), parent]
+
+  return (
+    <div className="rounded-lg border border-line bg-surface px-4 py-3.5">
+      <div className="flex items-baseline justify-between gap-3">
+        <GroupLabel>The line so far</GroupLabel>
+        <span className="text-[0.8125rem] text-ink-faint">
+          {plural(line.length + 1, 'generation')}
+        </span>
+      </div>
+
+      <div className="mt-2.5 flex flex-wrap items-center gap-2">
+        {line.map((plant, index) => (
+          <span key={plant.code} className="flex items-center gap-2">
+            <span
+              className={cn(
+                'font-display',
+                index === line.length - 1
+                  ? 'text-[1.0625rem] font-medium text-leaf'
+                  : 'text-[1rem] text-ink-muted',
+              )}
+            >
+              {plant.name}
+            </span>
+            <Icon name="chevronRight" size={14} className="text-line-strong" />
+          </span>
+        ))}
+        <span className="inline-flex h-6.5 items-center rounded-full bg-leaf-tint px-2.5 text-[0.8125rem] font-semibold text-leaf">
+          this one
+        </span>
+      </div>
+    </div>
+  )
+}
+
 function PhotoChoice({
   photos,
   chosen,
