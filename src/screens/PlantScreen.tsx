@@ -99,6 +99,7 @@ export function PlantScreen({ code }: { code: string }) {
         showQr={showQr}
         onShowQr={() => setShowQr(true)}
         onHideQr={() => setShowQr(false)}
+        onAddPhoto={() => setIntent({ kind: 'new' })}
       />
 
       {/* The sheet of content rides up over the bottom of the hero, and keeps
@@ -265,6 +266,24 @@ function useScrolled(): number {
   return scrolled
 }
 
+/** From `md` the hero is `md:static`, not `md:sticky` — the picture no longer
+ *  scrolls past its frame, so the drift that pulls it up through that slack on
+ *  a phone has nothing to compensate for on a desktop and only pushes the
+ *  photograph off-centre as the page scrolls. */
+function useIsDesktop(): boolean {
+  const [isDesktop, setIsDesktop] = useState(false)
+
+  useEffect(() => {
+    const query = window.matchMedia('(min-width: 768px)')
+    setIsDesktop(query.matches)
+    const onChange = () => setIsDesktop(query.matches)
+    query.addEventListener('change', onChange)
+    return () => query.removeEventListener('change', onChange)
+  }, [])
+
+  return isDesktop
+}
+
 
 /**
  * The photograph, or the drawn plate standing in for one.
@@ -279,17 +298,20 @@ function Hero({
   showQr,
   onShowQr,
   onHideQr,
+  onAddPhoto,
 }: {
   plant: Plant
   showQr: boolean
   onShowQr: () => void
   onHideQr: () => void
+  onAddPhoto: () => void
 }) {
   const state = useStore()
   const photoEvent = currentPhotoEvent(state, plant.code)
   const photo = usePhoto(photoEvent?.id ?? null)
   const frame = useRef<HTMLDivElement>(null)
   const scrolled = useScrolled()
+  const isDesktop = useIsDesktop()
   const place = vocabName(state, plant.locationId)
 
   // A photograph belongs to an event; `photo` and `photoEvent` are read from
@@ -306,9 +328,11 @@ function Hero({
   const box = shownPhoto ? 'h-[21.25rem] md:h-72' : 'h-[13.5rem] md:h-56'
 
   // Clamped to the slack the picture actually has, so its bottom edge never
-  // lifts off the frame and shows the paper behind it.
+  // lifts off the frame and shows the paper behind it. Zero from `md`, where
+  // the frame is static rather than sticky and the picture has no slack to
+  // drift through in the first place.
   const slack = (frame.current?.offsetHeight ?? 0) * DRIFT
-  const drift = Math.min(scrolled * DRIFT, slack)
+  const drift = isDesktop ? 0 : Math.min(scrolled * DRIFT, slack)
 
   return (
     <>
@@ -330,6 +354,19 @@ function Hero({
           <Plate />
         )}
       </div>
+
+      {shownPhoto ? null : (
+        <div className={cn('pointer-events-none absolute inset-x-0 top-0 z-10 flex items-center justify-center', box)}>
+          <button
+            type="button"
+            onClick={onAddPhoto}
+            className="lift pointer-events-auto flex items-center gap-2 rounded-full bg-floating px-4 py-2.5 text-[0.875rem] font-semibold text-ink shadow-md active:opacity-70 hover:bg-surface hover:shadow-lg"
+          >
+            <Icon name="image" size={17} />
+            Add a photo
+          </button>
+        </div>
+      )}
 
       {/* Above the sheet rather than under it, so the overflow menu can open
           over the record instead of being clipped by the photograph's edge.
@@ -721,15 +758,25 @@ function EntryRow({
             </div>
           ) : null}
         </div>
-        <span className="shrink-0 font-mono text-micro text-ink-faint group-hover:md:hidden">
-          {formatDayMonth(event.date)}
-        </span>
-        <RowActions
-          onEdit={edit}
-          onDelete={remove}
-          editLabel={editLabel}
-          deleteLabel={deleteLabel}
-        />
+        {/* The date sits in the flow, flush against the row's own edge — the
+            actions take no space of their own, so nothing ever pushes it in
+            from there. They only exist on hover, overlaid on the same spot,
+            fading in as the date eases out under them. */}
+        <div className="relative flex shrink-0 items-center">
+          <div className="grid grid-cols-[1fr] overflow-hidden transition-[grid-template-columns] duration-200 ease-grow md:group-hover:grid-cols-[0fr]">
+            <span className="min-w-0 overflow-hidden whitespace-nowrap font-mono text-micro text-ink-faint opacity-100 transition-opacity duration-150 md:group-hover:opacity-0">
+              {formatDayMonth(event.date)}
+            </span>
+          </div>
+          <div className="absolute inset-y-0 right-0 flex items-center">
+            <RowActions
+              onEdit={edit}
+              onDelete={remove}
+              editLabel={editLabel}
+              deleteLabel={deleteLabel}
+            />
+          </div>
+        </div>
       </div>
     </SwipeRow>
   )
