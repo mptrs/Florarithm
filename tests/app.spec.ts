@@ -36,6 +36,16 @@ async function addPlant(page: Page, species: string, name: string, place = 'Livi
  */
 async function logFromDial(page: Page, option: 'Watered' | 'Watered with fertiliser') {
   const dial = page.getByRole('button', { name: 'Log activity' })
+  const water = page.getByRole('button', { name: 'Water', exact: true })
+
+  // `isVisible()` reads the DOM as it is *right now* — it does not wait. Called
+  // straight after a hash navigation, the previous page can still be on screen
+  // for a beat while React renders the new one, and it would misread that beat
+  // as "no drop" and fall into the desktop branch, which then hangs waiting
+  // for a "Water" button that a phone never grows. Waiting for either shape to
+  // exist first turns that race into a wait.
+  await expect(dial.or(water)).toBeVisible()
+
   if (await dial.isVisible()) {
     await dial.click()
     await page.getByRole('button', { name: option, exact: true }).click()
@@ -43,7 +53,7 @@ async function logFromDial(page: Page, option: 'Watered' | 'Watered with fertili
   }
 
   if (option === 'Watered') {
-    await page.getByRole('button', { name: 'Water', exact: true }).click()
+    await water.click()
     return
   }
   await page.getByRole('button', { name: 'More ways to log' }).click()
@@ -53,12 +63,15 @@ async function logFromDial(page: Page, option: 'Watered' | 'Watered with fertili
 /** The sheet of everything that is not a plain watering. */
 async function openLogSheet(page: Page) {
   const dial = page.getByRole('button', { name: 'Log activity' })
+  const caret = page.getByRole('button', { name: 'More ways to log' })
+  await expect(dial.or(caret)).toBeVisible()
+
   if (await dial.isVisible()) {
     await dial.click()
     await page.getByRole('button', { name: 'Log something else' }).click()
     return
   }
-  await page.getByRole('button', { name: 'More ways to log' }).click()
+  await caret.click()
   await page.getByRole('menuitem', { name: 'Log something else', exact: true }).click()
 }
 
@@ -159,10 +172,13 @@ test('a scanned sticker opens the plant with the actions already in view', async
   await page.goto(`#p=${code}`)
 
   // The drop on a phone, the split button's primary segment on a desktop:
-  // whichever this viewport offers, it is the way to log something.
+  // whichever this viewport offers, it is the way to log something. Waiting
+  // for either to exist before picking one keeps this from reading the DOM
+  // mid-render and picking the shape this viewport doesn't have.
   const dial = page.getByRole('button', { name: 'Log activity' })
-  const action = (await dial.isVisible()) ? dial : page.getByRole('button', { name: 'Water', exact: true })
-  await expect(action).toBeVisible()
+  const water = page.getByRole('button', { name: 'Water', exact: true })
+  await expect(dial.or(water)).toBeVisible()
+  const action = (await dial.isVisible()) ? dial : water
   await expect(page.getByRole('heading', { name: 'Gruyère' })).toBeVisible()
 
   // "In view" is the point — it must not need a scroll.
