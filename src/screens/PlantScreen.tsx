@@ -771,8 +771,10 @@ function EntryRow({
         {/* The date sits in the flow, flush against the row's own edge — the
             actions take no space of their own, so nothing ever pushes it in
             from there. They only exist on hover, overlaid on the same spot,
-            fading in as the date eases out under them. */}
-        <div className="relative flex shrink-0 items-center">
+            fading in as the date eases out under them. While they show, the
+            slot widens to their width (two 44px buttons + gap) so the text
+            truncates before them instead of running underneath. */}
+        <div className="relative flex shrink-0 items-center justify-end transition-[min-width] duration-200 ease-grow md:group-hover:min-w-[5.75rem]">
           <div className="grid grid-cols-[1fr] overflow-hidden transition-[grid-template-columns] duration-200 ease-grow md:group-hover:grid-cols-[0fr]">
             <span className="min-w-0 overflow-hidden whitespace-nowrap font-mono text-micro text-ink-faint opacity-100 transition-opacity duration-150 md:group-hover:opacity-0">
               {formatDayMonth(event.date)}
