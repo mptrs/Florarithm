@@ -363,7 +363,12 @@ function Hero({
             className="lift pointer-events-auto flex items-center gap-2 rounded-full bg-floating px-4 py-2.5 text-[0.875rem] font-semibold text-ink shadow-md active:opacity-70 hover:bg-surface hover:shadow-lg"
           >
             <Icon name="image" size={17} />
-            Add a photo
+            {/* Not "Add a photo" — that name already belongs to the button
+                inside the log sheet this opens, one layer in. Two buttons
+                sharing a name is a strict-mode violation for a11y-role
+                queries (tests included), and a real ambiguity for anyone
+                using a screen reader between the two. */}
+            Photograph this plant
           </button>
         </div>
       )}
