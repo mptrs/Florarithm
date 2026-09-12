@@ -343,12 +343,17 @@ function Hero({
         {shownPhoto ? (
           // Taller than the frame it sits in, and pulled up through that slack
           // at a fraction of the page's speed: the sheet moves, the picture
-          // drifts, and the gap between the two reads as depth.
+          // drifts, and the gap between the two reads as depth. That slack is
+          // a mobile-only need — the frame is `md:static`, nothing drifts, and
+          // the image is a plain block sitting at the top of it, so the extra
+          // 30% would just crop off the bottom instead of centring anything.
+          // `md:h-full` drops the slack there and lets `object-cover`'s own
+          // default centring take over.
           <img
             src={shownPhoto}
             alt={`${plant.name}, photographed ${formatDate(photoEvent!.date)}`}
             style={{ transform: `translate3d(0, ${-drift}px, 0)` }}
-            className="h-[130%] w-full object-cover will-change-transform"
+            className="h-[130%] w-full object-cover will-change-transform md:h-full"
           />
         ) : (
           <Plate />
