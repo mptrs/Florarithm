@@ -160,5 +160,8 @@ in Chrome on Android. Reading works everywhere, because the tag just holds a URL
   the same private repository as `photos/YYYY-MM/<event id>.jpg` — one file
   each, next to the log that describes them. They are still out of the backup
   file, which stays a single readable JSON.
-- **M4 — later.** A family tree over several generations, pests with repeat
-  treatments, achievements.
+- **M4 — under way.** The family tree over several generations is done: the
+  Family card on the plant page is a rail carrying the line above the plant and
+  everything propagated off it, however deep, built from the `parent` edge that
+  was already there — no schema change. Still to come: pests with repeat
+  treatments, and achievements.
