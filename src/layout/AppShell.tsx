@@ -13,10 +13,11 @@
 import type { ReactNode } from 'react'
 import { cn } from '~/lib/cn'
 import { useStore } from '~/data/store'
-import { countOf } from '~/data/selectors'
+import { countOf, findPlant } from '~/data/selectors'
 import { useSyncStatus } from '~/data/sync'
 import { routes, type Route } from '~/lib/router'
 import { Icon, type IconName } from '~/ui/Icon'
+import { requestLog } from '~/ui/logRequest'
 import { SyncStatusPill } from '~/ui/SyncStatusPill'
 import { ToastHost } from '~/ui/toast'
 
@@ -81,7 +82,7 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
         <div className="mx-auto w-full max-w-5xl">{children}</div>
       </main>
 
-      <BottomNav active={active} />
+      <BottomNav route={route} active={active} />
       <ToastHost />
     </div>
   )
@@ -144,34 +145,90 @@ function Sidebar({ active }: { active: NavKey | null }) {
   )
 }
 
-function BottomNav({ active }: { active: NavKey | null }) {
+/**
+ * What the tab bar's centre button does here.
+ *
+ * It is the one action on the bar, and the action is "add to what you are
+ * looking at": a plant to the collection, an entry to a plant's record, a wish
+ * to the wishlist. On a plant page it is drawn in ink and says Log, so the
+ * change reads before the label does — ink is the colour the log sheet already
+ * uses for things written down. A wish takes no entries, so its page keeps New.
+ */
+type CentreAction =
+  | { kind: 'link'; label: string; href: string; tone: 'leaf' }
+  | { kind: 'log'; label: string; tone: 'ink' }
+
+function centreAction(route: Route, state: ReturnType<typeof useStore>): CentreAction {
+  if (route.name === 'plant') {
+    const plant = findPlant(state, route.code)
+    if (plant && !plant.deleted && !plant.wish) return { kind: 'log', label: 'Log', tone: 'ink' }
+  }
+  if (route.name === 'collection' && route.filter === 'wishlist') {
+    return { kind: 'link', label: 'New', href: routes.newWish(), tone: 'leaf' }
+  }
+  return { kind: 'link', label: 'New', href: routes.new(), tone: 'leaf' }
+}
+
+function BottomNav({ route, active }: { route: Route; active: NavKey | null }) {
+  const state = useStore()
+  const centre = centreAction(route, state)
+
   return (
     <nav className="safe-bottom fixed inset-x-0 bottom-0 z-30 flex border-t border-line bg-surface pt-2.5 md:hidden">
       {NAV_ITEMS.map((item) => {
         const isActive = item.key === active
+        const itemClass = 'flex flex-1 flex-col items-center gap-1 pb-2.5'
 
-        // The one action on a bar of destinations: a filled leaf disc that
-        // cuts the bar's own hairline rather than sitting politely inside it,
-        // so it reads as a button and not as a fifth place to be.
-        const isAction = item.key === 'new'
+        if (item.key === 'new') {
+          // The one action on a bar of destinations: a filled disc that cuts
+          // the bar's own hairline rather than sitting politely inside it, so
+          // it reads as a button and not as a fifth place to be.
+          const disc = (
+            <>
+              <span
+                className={cn(
+                  '-mt-4.5 flex size-12 items-center justify-center rounded-full',
+                  centre.tone === 'ink' ? 'bg-ink text-paper' : 'bg-leaf text-on-accent',
+                )}
+              >
+                <Icon name="plus" size={26} />
+              </span>
+              <span className={cn('text-[0.6875rem]', isActive || centre.kind === 'log' ? 'font-semibold' : '')}>
+                {centre.label}
+              </span>
+            </>
+          )
+
+          return centre.kind === 'log' ? (
+            <button
+              key={item.key}
+              type="button"
+              aria-label="Log activity"
+              onClick={requestLog}
+              className={cn(itemClass, 'text-ink active:opacity-70')}
+            >
+              {disc}
+            </button>
+          ) : (
+            <a
+              key={item.key}
+              href={centre.href}
+              aria-current={isActive ? 'page' : undefined}
+              className={cn(itemClass, 'text-leaf')}
+            >
+              {disc}
+            </a>
+          )
+        }
 
         return (
           <a
             key={item.key}
             href={item.href}
             aria-current={isActive ? 'page' : undefined}
-            className={cn(
-              'flex flex-1 flex-col items-center gap-1 pb-2.5',
-              isAction || isActive ? 'text-leaf' : 'text-ink-faint',
-            )}
+            className={cn(itemClass, isActive ? 'text-leaf' : 'text-ink-faint')}
           >
-            {isAction ? (
-              <span className="-mt-4.5 flex size-12 items-center justify-center rounded-full bg-leaf text-on-accent">
-                <Icon name={item.icon} size={26} />
-              </span>
-            ) : (
-              <Icon name={item.icon} size={23} />
-            )}
+            <Icon name={item.icon} size={23} />
             <span className={cn('text-[0.6875rem]', isActive ? 'font-semibold' : '')}>
               {item.shortLabel ?? item.label}
             </span>
