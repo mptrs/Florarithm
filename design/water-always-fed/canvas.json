@@ -1,0 +1,635 @@
+{
+  "pages": [
+    {
+      "id": "log-placement",
+      "name": "Log placement"
+    },
+    {
+      "id": "photo-grid",
+      "name": "Photo + grid"
+    },
+    {
+      "id": "photo-first",
+      "name": "Photo first \u2014 flows"
+    },
+    {
+      "id": "log-sheet",
+      "name": "Log activity"
+    },
+    {
+      "id": "one-press",
+      "name": "Water, one press"
+    }
+  ],
+  "artboards": [
+    {
+      "file": "Main.dc.html",
+      "title": "A \u00b7 Fan of two",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "one-press"
+    },
+    {
+      "file": "OneTap.dc.html",
+      "title": "B \u00b7 One tap pours",
+      "x": 490,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "one-press"
+    },
+    {
+      "file": "Hold.dc.html",
+      "title": "C \u00b7 Hold to pour",
+      "x": 980,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "one-press"
+    },
+    {
+      "file": "InTheCard.dc.html",
+      "title": "D \u00b7 Water beside Last watered",
+      "x": 1470,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "one-press"
+    },
+    {
+      "file": "SheetAlone.dc.html",
+      "title": "Log sheet \u00b7 Water on its own",
+      "x": 0,
+      "y": 1064,
+      "w": 390,
+      "h": 844,
+      "page": "one-press"
+    },
+    {
+      "file": "SheetMerged.dc.html",
+      "title": "Log sheet \u00b7 Water joins Repot",
+      "x": 490,
+      "y": 1064,
+      "w": 390,
+      "h": 844,
+      "page": "one-press"
+    },
+    {
+      "file": "Settings.dc.html",
+      "title": "Settings \u00b7 the habit switch",
+      "x": 980,
+      "y": 1064,
+      "w": 390,
+      "h": 844,
+      "page": "one-press"
+    },
+    {
+      "file": "Desktop.dc.html",
+      "title": "Desktop \u00b7 two plain buttons",
+      "x": 0,
+      "y": 2128,
+      "w": 1440,
+      "h": 900,
+      "page": "one-press"
+    },
+    {
+      "file": "LogWaterLast.dc.html",
+      "title": "1 \u00b7 Water last, as \u201canother day\u201d",
+      "page": "log-sheet",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "LogGrid.dc.html",
+      "title": "2 \u00b7 One grid, no groups",
+      "page": "log-sheet",
+      "x": 490,
+      "y": 0,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "LogList.dc.html",
+      "title": "3 \u00b7 A list that says what it asks",
+      "page": "log-sheet",
+      "x": 980,
+      "y": 0,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "LogPhotoFirst.dc.html",
+      "title": "4 \u00b7 New: the photo leads",
+      "page": "log-sheet",
+      "x": 1470,
+      "y": 0,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "LogSayIt.dc.html",
+      "title": "5 \u00b7 New: say it in a sentence",
+      "page": "log-sheet",
+      "x": 1960,
+      "y": 0,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "V1.dc.html",
+      "title": "1 \u00b7 As built: \u2026 beside the link",
+      "page": "log-placement",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "V2.dc.html",
+      "title": "2 \u00b7 Stacked above the drop",
+      "page": "log-placement",
+      "x": 490,
+      "y": 0,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "V3.dc.html",
+      "title": "3 \u00b7 A bar: Log activity + the drop",
+      "page": "log-placement",
+      "x": 980,
+      "y": 0,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "V4.dc.html",
+      "title": "4 \u00b7 Spelled out on the name\u2019s row",
+      "page": "log-placement",
+      "x": 1470,
+      "y": 0,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "V5.dc.html",
+      "title": "5 \u00b7 The tab bar\u2019s + becomes Log",
+      "page": "log-placement",
+      "x": 1960,
+      "y": 0,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "V6.dc.html",
+      "title": "6 \u00b7 The circles, on the Care tab",
+      "page": "log-placement",
+      "x": 2450,
+      "y": 0,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "E1.dc.html",
+      "title": "1 \u00b7 Tap \u2026",
+      "page": "photo-grid",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "E2.dc.html",
+      "title": "2 \u00b7 Date, camera, grid \u2014 tap the date",
+      "page": "photo-grid",
+      "x": 490,
+      "y": 0,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "E3.dc.html",
+      "title": "3 \u00b7 The day it happened",
+      "page": "photo-grid",
+      "x": 980,
+      "y": 0,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "E4.dc.html",
+      "title": "4 \u00b7 Back, dated \u2014 tap the camera",
+      "page": "photo-grid",
+      "x": 1470,
+      "y": 0,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "E5.dc.html",
+      "title": "5 \u00b7 Take it",
+      "page": "photo-grid",
+      "x": 1960,
+      "y": 0,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "E6.dc.html",
+      "title": "6 \u00b7 Same grid, now with the photo",
+      "page": "photo-grid",
+      "x": 2450,
+      "y": 0,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "E7.dc.html",
+      "title": "7 \u00b7 Filed on 12 Sept, with the photo",
+      "page": "photo-grid",
+      "x": 2940,
+      "y": 0,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "A1.dc.html",
+      "title": "A1 \u00b7 Tap \u2026",
+      "page": "photo-first",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "A2.dc.html",
+      "title": "A2 \u00b7 The sheet opens on the camera",
+      "page": "photo-first",
+      "x": 490,
+      "y": 0,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "A3.dc.html",
+      "title": "A3 \u00b7 Take it",
+      "page": "photo-first",
+      "x": 980,
+      "y": 0,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "A4.dc.html",
+      "title": "A4 \u00b7 Say what it shows",
+      "page": "photo-first",
+      "x": 1470,
+      "y": 0,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "A5.dc.html",
+      "title": "A5 \u00b7 Logged, with the photo",
+      "page": "photo-first",
+      "x": 1960,
+      "y": 0,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "B1.dc.html",
+      "title": "B1 \u00b7 Tap the photo pill on the hero",
+      "page": "photo-first",
+      "x": 0,
+      "y": 1100,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "B2.dc.html",
+      "title": "B2 \u00b7 Take it",
+      "page": "photo-first",
+      "x": 490,
+      "y": 1100,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "B3.dc.html",
+      "title": "B3 \u00b7 Full-screen review",
+      "page": "photo-first",
+      "x": 980,
+      "y": 1100,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "B4.dc.html",
+      "title": "B4 \u00b7 Logged; the plant wears it",
+      "page": "photo-first",
+      "x": 1470,
+      "y": 1100,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "C1.dc.html",
+      "title": "C1 \u00b7 Tap the photo pill",
+      "page": "photo-first",
+      "x": 0,
+      "y": 2200,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "C2.dc.html",
+      "title": "C2 \u00b7 Take it \u2014 it is logged now",
+      "page": "photo-first",
+      "x": 490,
+      "y": 2200,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "C3.dc.html",
+      "title": "C3 \u00b7 Optional: what was it?",
+      "page": "photo-first",
+      "x": 980,
+      "y": 2200,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "C4.dc.html",
+      "title": "C4 \u00b7 The row upgrades in place",
+      "page": "photo-first",
+      "x": 1470,
+      "y": 2200,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "D1.dc.html",
+      "title": "D1 \u00b7 Grid sheet, photo slot on top",
+      "page": "photo-first",
+      "x": 0,
+      "y": 3300,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "D2.dc.html",
+      "title": "D2 \u00b7 Take it",
+      "page": "photo-first",
+      "x": 490,
+      "y": 3300,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "D3.dc.html",
+      "title": "D3 \u00b7 Same circles, now with the photo",
+      "page": "photo-first",
+      "x": 980,
+      "y": 3300,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "D4.dc.html",
+      "title": "D4 \u00b7 Logged, with the photo",
+      "page": "photo-first",
+      "x": 1470,
+      "y": 3300,
+      "w": 390,
+      "h": 844
+    }
+  ],
+  "annotations": [
+    {
+      "id": "impact",
+      "x": -300,
+      "y": 0,
+      "w": 240,
+      "text": "What changes if fertiliser is always in the water\n\n\u2022 Data: nothing new. Every watering is stored with fertilized: true, so the history stays true if the habit ever stops.\n\u2022 Care: the Last fertilised row goes \u2014 it would always say the same as Last watered.\n\u2022 History: \u201cwith fertiliser\u201d disappears from every row; it would be on all of them.\n\u2022 Same-day fold: pressing water after fertiliser no longer means anything, so that half of the rule goes quiet.\n\u2022 Log sheet and split button lose their Fertiliser option.",
+      "page": "one-press"
+    },
+    {
+      "id": "a",
+      "x": 0,
+      "y": -150,
+      "w": 390,
+      "text": "A \u00b7 Smallest change. Still two taps, as decided. But a fan of two is half an arc \u2014 the question is whether it still needs to fan at all.",
+      "page": "one-press"
+    },
+    {
+      "id": "b",
+      "x": 490,
+      "y": -150,
+      "w": 390,
+      "text": "B \u00b7 Drop waters on tap; the ink chip beside it opens the sheet. One tap, like you asked. Cost: it undoes the deliberate two taps, and a mis-tap means swiping the row away (no undo).",
+      "page": "one-press"
+    },
+    {
+      "id": "c",
+      "x": 980,
+      "y": -150,
+      "w": 390,
+      "text": "C \u00b7 Hold ~0.5 s and the ring fills, then it pours. A plain tap opens the sheet. One motion, still deliberate. Cost: a hidden gesture \u2014 needs the hint the first few times.",
+      "page": "one-press"
+    },
+    {
+      "id": "d",
+      "x": 1470,
+      "y": -150,
+      "w": 390,
+      "text": "D \u00b7 Water lives next to the fact it changes; the corner button is just \u201clog\u201d. Cost: only on the Care tab, and mid-screen instead of under the thumb.",
+      "page": "one-press"
+    },
+    {
+      "id": "sheet",
+      "x": 0,
+      "y": 914,
+      "w": 880,
+      "text": "Log sheet \u00b7 With Fertiliser gone, Watering is a group of one. Left keeps it anyway; right folds Water in with Repot as things you did.",
+      "page": "one-press"
+    },
+    {
+      "id": "set",
+      "x": 980,
+      "y": 914,
+      "w": 390,
+      "text": "Settings \u00b7 One switch, collection-wide. Per plant would be possible, but you described a habit, not a plant.",
+      "page": "one-press"
+    },
+    {
+      "id": "desk",
+      "x": 0,
+      "y": 2008,
+      "w": 900,
+      "text": "Desktop \u00b7 A split button with one item behind its caret is a menu for nothing. Two plain buttons instead: Water, and Log activity.",
+      "page": "one-press"
+    },
+    {
+      "id": "lp-1",
+      "x": 0,
+      "y": -150,
+      "w": 390,
+      "page": "log-placement",
+      "text": "1 \u00b7 As built. Quiet and out of the way \u2014 too far out of the way: it reads as a menu for the plant, not as the second thing you do here."
+    },
+    {
+      "id": "lp-2",
+      "x": 490,
+      "y": -150,
+      "w": 390,
+      "page": "log-placement",
+      "text": "2 \u00b7 A 48 px + right above the drop, in the same thumb reach. Water stays biggest and closest to the corner. Cost: two floating buttons over the record."
+    },
+    {
+      "id": "lp-3",
+      "x": 980,
+      "y": -150,
+      "w": 390,
+      "page": "log-placement",
+      "text": "3 \u00b7 One bar over the tab bar: Log activity written out, the drop at its end. The most obvious of the six. Cost: the widest thing floating over the page."
+    },
+    {
+      "id": "lp-4",
+      "x": 1470,
+      "y": -150,
+      "w": 390,
+      "page": "log-placement",
+      "text": "4 \u00b7 \u201c+ Log\u201d as a real button on the name\u2019s row. Visible the moment the page opens. Cost: top of the screen, out of thumb reach."
+    },
+    {
+      "id": "lp-5",
+      "x": 1960,
+      "y": -150,
+      "w": 390,
+      "page": "log-placement",
+      "text": "5 \u00b7 New. On a plant page the tab bar\u2019s centre button logs to this plant (ink, \u201cLog\u201d); everywhere else it stays New plant. No new button at all. Cost: the same place meaning two things."
+    },
+    {
+      "id": "lp-6",
+      "x": 2450,
+      "y": -150,
+      "w": 390,
+      "page": "log-placement",
+      "text": "6 \u00b7 New. The log\u2019s own circles sit on the Care tab, one tap straight into the right entry. Cost: only on Care, and it makes that tab busier."
+    },
+    {
+      "id": "lp-intro",
+      "x": -300,
+      "y": 0,
+      "w": 240,
+      "page": "log-placement",
+      "text": "Where Log activity lives on a phone\n\nWater is first: the drop stays where it is, the biggest thing under the thumb. Log is second \u2014 it should be findable without hunting, but never compete with the drop."
+    },
+    {
+      "id": "pg-intro",
+      "x": -300,
+      "y": 0,
+      "w": 240,
+      "page": "photo-grid",
+      "text": "A + 2, with the date\n\nOne sheet: the date on top, the camera under it, the grid under that.\n\n\u2022 Without a photo it works exactly as now: tap a circle and it is logged on the chosen day.\n\u2022 With a photo, the same circles log that entry with the photo attached, and a sixth circle, Photo only, appears in the spot the old Photo button had.\n\u2022 The date sits first because it applies to everything below it, photo included.\n\nThe Add a photo chip and the Photo circle both go: the camera tile replaces them."
+    },
+    {
+      "id": "pg-q",
+      "x": 0,
+      "y": 924,
+      "w": 880,
+      "page": "photo-grid",
+      "text": "Open questions\n\u2022 A photo taken today but logged for 12 Sept: file it on the picked day (as drawn), or keep the photo\u2019s own date?\n\u2022 Should the photo from a New leaf or Blooming also become the plant\u2019s photo, the way a photograph already does?"
+    },
+    {
+      "id": "pf-a",
+      "x": -300,
+      "y": 0,
+      "w": 240,
+      "text": "A \u00b7 The sheet opens on the camera\n\nThe \u2026 opens a sheet whose first question is a photo; the other things sit underneath as small chips. After the shutter you tag what the photo shows and log it.\n\nFor: one place for everything, closest to what you have.\nAgainst: five steps for a new leaf, and a Note now sits behind \u201cNothing to photograph?\u201d.",
+      "page": "photo-first"
+    },
+    {
+      "id": "pf-b",
+      "x": -300,
+      "y": 1100,
+      "w": 240,
+      "text": "B \u00b7 Straight from the hero\n\nThe \u201cPhotograph this plant\u201d pill already sits on the photograph. It goes to the camera, then a full-screen review where you say what it shows and whether it becomes the plant\u2019s photo.\n\nFor: the photo lands where photos live; no \u2026 needed.\nAgainst: once a plant has a photo the pill is gone, so it needs another home on the hero.",
+      "page": "photo-first"
+    },
+    {
+      "id": "pf-c",
+      "x": -300,
+      "y": 2200,
+      "w": 240,
+      "text": "C \u00b7 Log first, ask after\n\nThe shutter logs a Photo entry straight away. A card offers New leaf, Blooming, Repot; tap one and the same row becomes that entry with the photo. Ignore it and it stays a photo.\n\nFor: fewest taps; nothing is lost if you walk away.\nAgainst: a card that asks something after the fact, every time.",
+      "page": "photo-first"
+    },
+    {
+      "id": "pf-d",
+      "x": -300,
+      "y": 3300,
+      "w": 240,
+      "text": "D \u00b7 The grid you now have, with a photo slot\n\nThe shipped grid, minus its Photo circle: the \u201cAdd a photo\u201d chip grows into a slot on top. Take one, and any circle logs that entry with it; \u201cJust the photo\u201d logs it bare.\n\nFor: smallest step from what is built; photo stays optional.\nAgainst: the photo is still a detour rather than the lead.",
+      "page": "photo-first"
+    },
+    {
+      "id": "ls-intro",
+      "x": -300,
+      "y": 0,
+      "w": 240,
+      "text": "Log activity, round two\n\nWater is one press on the drop now, so the sheet is for everything else. Water stays reachable for one reason: the day you forgot to log it.\n\nThe three I made in the app\u2019s own language come first. The last two are new ideas.",
+      "page": "log-sheet"
+    },
+    {
+      "id": "ls-1",
+      "x": 0,
+      "y": -150,
+      "w": 390,
+      "text": "1 \u00b7 The sheet you have, with the plant first and Water turned into one quiet row at the foot: \u201cWatered on another day\u201d. Cost: still three groups to scan.",
+      "page": "log-sheet"
+    },
+    {
+      "id": "ls-2",
+      "x": 490,
+      "y": -150,
+      "w": 390,
+      "text": "2 \u00b7 Six circles, no labels over them, in the order you reach for them. Half the height. Cost: loses the did / the plant did / written-down reading.",
+      "page": "log-sheet"
+    },
+    {
+      "id": "ls-3",
+      "x": 980,
+      "y": -150,
+      "w": 390,
+      "text": "3 \u00b7 Rows that say what each one will ask for \u2014 a repot asks three things, a new leaf asks nothing. Cost: taller, and less of a gesture than tapping a circle.",
+      "page": "log-sheet"
+    },
+    {
+      "id": "ls-4",
+      "x": 1470,
+      "y": -150,
+      "w": 390,
+      "text": "4 \u00b7 New. You are usually stood in front of the plant because something happened. The camera opens first; you tag what the photo shows, and it logs as that entry with the picture. Cost: a note or a repot without a photo is one step further.",
+      "page": "log-sheet"
+    },
+    {
+      "id": "ls-5",
+      "x": 1960,
+      "y": -150,
+      "w": 390,
+      "text": "5 \u00b7 New. Type or dictate one sentence; the sheet reads it back as entries before anything is logged, and you remove what it got wrong. The in-browser model the name dice already uses could do the reading. Cost: the most to build, and it has to be right often enough to trust.",
+      "page": "log-sheet"
+    }
+  ],
+  "launch": {
+    "view": "canvas",
+    "page": "log-placement"
+  }
+}

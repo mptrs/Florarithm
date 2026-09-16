@@ -23,50 +23,37 @@ import { Icon, type IconName } from '~/ui/Icon'
 import { DateChip, DatePicker } from '~/ui/DatePicker'
 import { NumberField, SuggestField, TextAreaField, TextField } from '~/ui/fields'
 import { Sheet } from '~/ui/Sheet'
-import { GroupLabel, type ChipTone } from '~/ui/Card'
+import { type ChipTone } from '~/ui/Card'
 import { cn } from '~/lib/cn'
 
 type Action = { icon: IconName; tone: ChipTone; label: string; mode: Mode }
 
 /**
- * The seven things that can be logged, in three groups.
+ * What can be logged, in one grid, in the order you reach for them.
  *
- * Ungrouped, seven identical circles are a wall to read every time — and four
- * of them being the same green said only "not a watering", which is not a
- * thing anybody is looking for. The groups answer the question you actually
- * arrive with: was this something you did to the plant, something the plant
- * did, or something you want to remember.
+ * Watering is one press on the drop, so this sheet is for everything else. The
+ * groups it used to have went with the labels over them; five or six circles
+ * are few enough to read without them. Water is last, because it is only here
+ * for the day you forgot to log it.
+ *
+ * The photo is not one of them until there is one. Before, the camera tile
+ * above the grid is how a picture gets taken; after, every circle logs its
+ * entry with that picture, and "Photo only" appears for a picture that is not
+ * of anything in particular.
  *
  * Tone follows the history's own mapping, so an entry looks the same here as
  * it will in the record: blue is a watering, green is the plant, ink is
- * bookkeeping. That is why fertiliser is blue and not green — a fertilised
- * watering is not a different kind of entry, it is a watering with fertiliser
- * in it, stored as one and already drawn blue in the history.
+ * bookkeeping.
  */
-const GROUPS: { label: string; actions: Action[] }[] = [
-  {
-    label: 'Watering',
-    actions: [
-      { icon: 'droplet', tone: 'water', label: 'Water', mode: 'water' },
-      { icon: 'fertilizer', tone: 'water', label: 'Fertiliser', mode: 'fertilise' },
-    ],
-  },
-  {
-    label: 'The plant',
-    actions: [
-      { icon: 'leaf', tone: 'leaf', label: 'New leaf', mode: 'leaf' },
-      { icon: 'bloom', tone: 'leaf', label: 'Blooming', mode: 'bloom' },
-      { icon: 'pot', tone: 'leaf', label: 'Repot', mode: 'repot' },
-    ],
-  },
-  {
-    label: 'Written down',
-    actions: [
-      { icon: 'note', tone: 'ink', label: 'Note', mode: 'note' },
-      { icon: 'image', tone: 'ink', label: 'Photo', mode: 'photo' },
-    ],
-  },
+const ACTIONS: Action[] = [
+  { icon: 'leaf', tone: 'leaf', label: 'New leaf', mode: 'leaf' },
+  { icon: 'bloom', tone: 'leaf', label: 'Blooming', mode: 'bloom' },
+  { icon: 'pot', tone: 'leaf', label: 'Repot', mode: 'repot' },
+  { icon: 'note', tone: 'ink', label: 'Note', mode: 'note' },
+  { icon: 'droplet', tone: 'water', label: 'Water', mode: 'water' },
 ]
+
+const PHOTO_ONLY: Action = { icon: 'image', tone: 'ink', label: 'Photo only', mode: 'photo' }
 
 const FILL: Record<ChipTone, string> = {
   water: 'bg-water text-on-accent',
@@ -74,7 +61,7 @@ const FILL: Record<ChipTone, string> = {
   ink: 'bg-ink text-paper',
 }
 
-type Mode = 'actions' | 'date' | 'water' | 'fertilise' | 'leaf' | 'bloom' | 'note' | 'repot' | 'photo'
+type Mode = 'actions' | 'date' | 'water' | 'leaf' | 'bloom' | 'note' | 'repot' | 'photo'
 
 /** What the sheet was opened to do: pick an action, or fix an existing entry. */
 export type LogIntent = { kind: 'new' } | { kind: 'edit'; event: PlantEvent }
@@ -99,10 +86,13 @@ export function LogSheet({
   plant,
   intent,
   onClose,
+  onLogged,
 }: {
   plant: Plant
   intent: LogIntent | null
   onClose: () => void
+  /** A new entry was written — not an edit, which starts from the record. */
+  onLogged: () => void
 }) {
   const [mode, setMode] = useState<Mode>('actions')
   const [date, setDate] = useState(nowISO)
@@ -110,6 +100,9 @@ export function LogSheet({
   const [returnTo, setReturnTo] = useState<Mode>('actions')
   const [photo, setPhoto] = useState<PreparedPhoto | null>(null)
   const [photoError, setPhotoError] = useState('')
+  /** A note or a repot opened in place, under the grid, so the date and the
+   *  photograph above stay part of what is being written. */
+  const [open, setOpen] = useState<'note' | 'repot' | null>(null)
   const picker = useRef<HTMLInputElement>(null)
 
   // Opening on an existing entry lands straight in its form, carrying its date.
@@ -117,6 +110,7 @@ export function LogSheet({
     if (!intent) return
     setPhoto(null)
     setPhotoError('')
+    setOpen(null)
     if (intent.kind === 'edit') {
       setDate(intent.event.date)
       setMode(intent.event.type === 'repot' ? 'repot' : 'note')
@@ -176,6 +170,12 @@ export function LogSheet({
 
     await logEvent({ ...draft, date, ...attached })
     onClose()
+    onLogged()
+  }
+
+  const logged = () => {
+    onClose()
+    onLogged()
   }
 
   const openDate = (from: Mode) => {
@@ -187,7 +187,6 @@ export function LogSheet({
     actions: 'Log activity',
     date: 'When?',
     water: 'Log activity',
-    fertilise: 'Log activity',
     leaf: 'Log activity',
     bloom: 'Log activity',
     note: editing ? 'Edit note' : 'Note',
@@ -200,7 +199,10 @@ export function LogSheet({
       open
       onClose={onClose}
       title={titles[mode]}
-      onBack={mode === 'actions' ? undefined : () => setMode(mode === 'date' ? returnTo : 'actions')}
+      // Only the date is a detour with somewhere to go back to. A new note or
+      // repot opens in place; an entry being edited has no actions view
+      // behind it, so a back arrow there would lead somewhere it never was.
+      onBack={mode === 'date' ? () => setMode(returnTo) : undefined}
     >
       <input
         ref={picker}
@@ -214,64 +216,77 @@ export function LogSheet({
 
       {mode === 'actions' ? (
         <>
-          <div className="mt-3 flex items-center justify-center gap-2">
+          {/* The date first, because it applies to everything under it —
+              the photograph included. */}
+          <div className="mt-3">
             <DateChip value={date} onClick={() => openDate('actions')} />
-            <PhotoChip
-              photo={photo}
-              onPick={() => picker.current?.click()}
-              onClear={() => setPhoto(null)}
-            />
           </div>
+          <PhotoTile
+            photo={photo}
+            onPick={() => picker.current?.click()}
+            onClear={() => setPhoto(null)}
+          />
           {photoError ? (
             <p role="status" className="mt-2 text-center text-[0.8125rem] text-ember">
               {photoError}
             </p>
           ) : null}
-          {GROUPS.map((group) => (
-            <div key={group.label} className="mt-5 mb-1 border-t border-line pt-4 first:border-t-0">
-              <GroupLabel>{group.label}</GroupLabel>
-              {/* Three columns whatever the group holds, so the circles line up
-                  down the sheet instead of re-centring on every row. */}
-              <div className="mt-3 grid grid-cols-3 gap-x-3 gap-y-5">
-                {group.actions.map((action) => (
-                  <button
-                    key={action.mode}
-                    type="button"
-                    onClick={() => {
-                      if (action.mode === 'water') void log({ type: 'water', plantCode: plant.code, fertilized: false })
-                      else if (action.mode === 'fertilise') void log({ type: 'water', plantCode: plant.code, fertilized: true })
-                      else if (action.mode === 'leaf') void log({ type: 'leaf', plantCode: plant.code })
-                      else if (action.mode === 'bloom') void log({ type: 'bloom', plantCode: plant.code })
-                      // A picture of nothing in particular. With one already
-                      // attached this logs it; without, it asks for one first.
-                      else if (action.mode === 'photo') {
-                        if (photo) void log({ type: 'photo', plantCode: plant.code })
-                        else picker.current?.click()
-                      } else setMode(action.mode)
-                    }}
-                    className="warm group mx-auto flex w-fit flex-col items-center gap-2.5 active:opacity-70 hover:text-ink"
-                  >
-                    <span
-                      className={cn(
-                        'inline-flex size-15 items-center justify-center rounded-full shadow-md',
-                        // `translate`, not `transform`: Tailwind v4 puts these
-                        // on the standalone property, which a transition list
-                        // naming only `transform` would never animate.
-                        'transition-[translate,box-shadow] duration-200 ease-grow',
-                        'group-hover:-translate-y-0.5 group-hover:shadow-lg',
-                        'group-active:translate-y-0',
-                        'motion-reduce:transition-none motion-reduce:group-hover:translate-y-0',
-                        FILL[action.tone],
-                      )}
-                    >
-                      <Icon name={action.icon} size={26} />
-                    </span>
-                    <span className="text-[0.8125rem] font-medium">{action.label}</span>
-                  </button>
-                ))}
-              </div>
+          {photo ? (
+            <p className="mt-3.5 text-center text-[0.875rem] text-ink-muted">Tap what it shows</p>
+          ) : null}
+          <div className="mt-5 mb-1 grid grid-cols-3 gap-x-3 gap-y-5">
+            {(photo ? [...ACTIONS, PHOTO_ONLY] : ACTIONS).map((action) => (
+              <button
+                key={action.mode}
+                type="button"
+                onClick={() => {
+                  if (action.mode === 'water') void log({ type: 'water', plantCode: plant.code, fertilized: true })
+                  else if (action.mode === 'leaf') void log({ type: 'leaf', plantCode: plant.code })
+                  else if (action.mode === 'bloom') void log({ type: 'bloom', plantCode: plant.code })
+                  // A picture of nothing in particular. Only offered once
+                  // there is a picture to log.
+                  else if (action.mode === 'photo') void log({ type: 'photo', plantCode: plant.code })
+                  else if (action.mode === 'note' || action.mode === 'repot') {
+                    setOpen((was) => (was === action.mode ? null : action.mode as 'note' | 'repot'))
+                  }
+                }}
+                aria-expanded={action.mode === 'note' || action.mode === 'repot' ? open === action.mode : undefined}
+                className={cn(
+                  'warm group mx-auto flex w-fit flex-col items-center gap-2.5 active:opacity-70 hover:text-ink',
+                  // The one that is open stays lit; the rest step back without
+                  // going away, so switching is still one tap.
+                  open && open !== action.mode ? 'opacity-40' : '',
+                  'transition-opacity duration-200 ease-grow',
+                )}
+              >
+                <span
+                  className={cn(
+                    'inline-flex size-15 items-center justify-center rounded-full shadow-md',
+                    // `translate`, not `transform`: Tailwind v4 puts these
+                    // on the standalone property, which a transition list
+                    // naming only `transform` would never animate.
+                    'transition-[translate,box-shadow] duration-200 ease-grow',
+                    'group-hover:-translate-y-0.5 group-hover:shadow-lg',
+                    'group-active:translate-y-0',
+                    'motion-reduce:transition-none motion-reduce:group-hover:translate-y-0',
+                    FILL[action.tone],
+                  )}
+                >
+                  <Icon name={action.icon} size={26} />
+                </span>
+                <span className="text-[0.8125rem] font-medium">{action.label}</span>
+              </button>
+            ))}
+          </div>
+          {open ? (
+            <div key={open} className="mt-6 border-t border-line pt-5">
+              {open === 'note' ? (
+                <NoteForm plant={plant} date={date} editing={null} pending={pending} onDone={logged} />
+              ) : (
+                <RepotForm plant={plant} date={date} editing={null} pending={pending} onDone={logged} />
+              )}
             </div>
-          ))}
+          ) : null}
         </>
       ) : mode === 'date' ? (
         <DatePicker value={date} onChange={setDate} onDone={() => setMode(returnTo)} />
@@ -301,7 +316,14 @@ export function LogSheet({
 /** The date's opposite number: what this entry is *of*, next to when it was.
  *  Once a photograph is attached it shows it, because a thumbnail is the only
  *  honest confirmation that the right picture was picked. */
-function PhotoChip({
+/**
+ * The camera, as the first thing under the date.
+ *
+ * Empty, it is a dashed place to tap; the file input it opens offers the
+ * camera on a phone and the library everywhere. Filled, the picture stands in
+ * the same box, so the grid below does not jump when it arrives.
+ */
+function PhotoTile({
   photo,
   onPick,
   onClear,
@@ -315,37 +337,39 @@ function PhotoChip({
       <button
         type="button"
         onClick={onPick}
-        className="lift inline-flex h-9 items-center gap-2 rounded-full border border-line bg-sunk px-4 text-[0.875rem] font-medium text-ink active:opacity-70 hover:border-line-strong"
+        className={cn(
+          'warm mt-4 flex h-44 w-full flex-col items-center justify-center gap-2 rounded-xl',
+          'border-[1.5px] border-dashed border-line-strong bg-sunk text-ink-muted',
+          'active:opacity-70 hover:border-ink-faint hover:text-ink',
+        )}
       >
-        <Icon name="image" size={16} className="text-ink-muted" />
-        Add a photo
+        <Icon name="camera" size={30} />
+        <span className="text-body font-medium text-ink">Take a photo</span>
+        <span className="text-[0.8125rem]">or tap below to log without one</span>
       </button>
     )
   }
 
   return (
-    <span className="inline-flex h-9 items-center gap-2 rounded-full border border-line bg-sunk py-0 pr-2 pl-1">
-      <button
-        type="button"
-        onClick={onPick}
-        className="group flex items-center gap-2 active:opacity-70"
-      >
-        <img
-          src={photo.previewUrl}
-          alt=""
-          className="size-7 rounded-full object-cover transition-transform duration-500 ease-grow group-hover:scale-110 motion-reduce:transition-none motion-reduce:group-hover:scale-100"
-        />
-        <span className="text-[0.875rem] font-medium text-ink">Photo</span>
-      </button>
+    <div className="relative mt-4 h-52 overflow-hidden rounded-xl bg-sunk">
+      <img src={photo.previewUrl} alt="" className="size-full object-cover" />
       <button
         type="button"
         onClick={onClear}
         aria-label="Remove this photo"
-        className="warm flex size-6 items-center justify-center rounded-full text-ink-muted active:opacity-70 hover:text-ember"
+        className="lift absolute top-3 right-3 flex size-10 items-center justify-center rounded-full bg-floating text-ink shadow-md active:opacity-70"
       >
-        <Icon name="close" size={15} />
+        <Icon name="close" size={19} />
       </button>
-    </span>
+      <button
+        type="button"
+        onClick={onPick}
+        className="lift absolute right-3 bottom-3 inline-flex h-9 items-center gap-1.5 rounded-md bg-floating px-3 text-[0.875rem] font-semibold text-ink shadow-md active:opacity-70"
+      >
+        <Icon name="camera" size={16} />
+        Retake
+      </button>
+    </div>
   )
 }
 
@@ -363,7 +387,9 @@ function NoteForm({
   date: string
   editing: NoteEvent | null
   pending: Pending | null
-  onPickDate: () => void
+  /** Only when the form stands alone. Opened under the grid, the date chip
+   *  at the top of the sheet already covers it. */
+  onPickDate?: () => void
   onDone: () => void
 }) {
   const [text, setText] = useState(editing?.text ?? '')
@@ -388,14 +414,14 @@ function NoteForm({
 
   return (
     <div className="pt-1">
-      <DateChip value={date} onClick={onPickDate} />
+      {onPickDate ? <DateChip value={date} onClick={onPickDate} /> : null}
       <TextAreaField
         aria-label="Note"
         value={text}
         autoFocus={!editing}
         onChange={(event) => setText(event.target.value)}
         placeholder="What happened?"
-        fieldClassName="mt-5"
+        fieldClassName={onPickDate ? 'mt-5' : ''}
       />
       <Button
         variant="solid"
@@ -424,7 +450,9 @@ function RepotForm({
   date: string
   editing: RepotEvent | null
   pending: Pending | null
-  onPickDate: () => void
+  /** Only when the form stands alone. Opened under the grid, the date chip
+   *  at the top of the sheet already covers it. */
+  onPickDate?: () => void
   onDone: () => void
 }) {
   const state = useStore()
@@ -436,6 +464,13 @@ function RepotForm({
   )
   const [medium, setMedium] = useState(currentMedium?.name ?? '')
   const [reason, setReason] = useState(editing?.reason ?? '')
+
+  // Opened under the grid, the form starts below the fold of a short phone.
+  // A note gets there by focusing its box; a repot has nothing to focus first.
+  const top = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!onPickDate) top.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  }, [onPickDate])
 
   const save = async () => {
     const mediumId = await ensureVocabItem('medium', medium)
@@ -460,8 +495,8 @@ function RepotForm({
   }
 
   return (
-    <div className="flex flex-col gap-4 pt-1">
-      <DateChip value={date} onClick={onPickDate} />
+    <div ref={top} className="flex flex-col gap-4 pt-1">
+      {onPickDate ? <DateChip value={date} onClick={onPickDate} /> : null}
 
       <p className="text-[0.875rem] text-ink-muted text-pretty">
         Repotting changes the plant itself, not just the log — the pot size and medium below become

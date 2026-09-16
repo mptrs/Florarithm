@@ -6,10 +6,11 @@
  * when did it last get anything. Care and History are the two tabs; the facts
  * that never change moved to the desktop, where managing happens.
  *
- * The drop is fixed to the bottom right on a phone and never scrolls away;
- * tapping it fans out watered, fertilised, and a way to everything else. A
- * desktop has no thumb to reach a floating corner with, so the same three
- * things sit on a split button on the title row instead.
+ * The drop is fixed to the bottom right on a phone and never scrolls away, and
+ * one tap of it waters: fertiliser always goes in with the water, so there is
+ * nothing left to choose between. Everything else is "Log activity": the tab
+ * bar's centre button, which says Log on this page. A desktop has no thumb to reach a floating corner with, so
+ * Water and Log activity sit on the title row as two plain buttons instead.
  */
 
 import { useEffect, useRef, useState, type ReactNode } from 'react'
@@ -25,25 +26,24 @@ import {
   eventsFor,
   findPlant,
   isThirsty,
-  lastFertilisedAt,
   lastRepot,
   lastWaterAt,
   vocabName,
 } from '~/data/selectors'
 import { describeEvent, logEvent, removeEvent, useStore, type State } from '~/data/store'
 import type { Plant, PlantEvent } from '~/data/types'
-import { daysSince, formatDate, formatDayMonth, formatMonthYear } from '~/lib/date'
+import { formatDate, formatDayMonth, formatMonthYear } from '~/lib/date'
 import { formatPotSize, formatPrice, formatSpecies, label, plural } from '~/lib/format'
 import { navigate, plantUrl, routes } from '~/lib/router'
 import { cn } from '~/lib/cn'
 import { Dozing } from '~/ui/Dozing'
 import { BackButton, Button, IconButton } from '~/ui/Button'
-import { ActionDial } from '~/ui/ActionDial'
-import { SplitButton } from '~/ui/SplitButton'
 import { Card, GroupLabel, IconChip, type ChipTone } from '~/ui/Card'
 import { Chip } from '~/ui/Chip'
 import { Icon, type IconName } from '~/ui/Icon'
 import { showToast } from '~/ui/toast'
+import { onLogRequest } from '~/ui/logRequest'
+import { WaterButton, WaterDrop } from '~/ui/Water'
 import { Plate } from '~/ui/Plate'
 import { EmptyState } from '~/ui/primitives'
 import { QrCodeBox } from '~/ui/QrCode'
@@ -57,8 +57,10 @@ export function PlantScreen({ code }: { code: string }) {
   const plant = findPlant(state, code)
   const [tab, setTab] = useState<Tab>('care')
   const [intent, setIntent] = useState<LogIntent | null>(null)
-  const [dialOpen, setDialOpen] = useState(false)
   const [showQr, setShowQr] = useState(false)
+
+  // The tab bar's Log asks for the sheet; this page is the one that has it.
+  useEffect(() => onLogRequest(() => setIntent({ kind: 'new' })), [])
 
   // A tombstoned plant reads exactly like a code that never existed — the
   // lookup itself stays unfiltered so an old event can still name it.
@@ -80,15 +82,17 @@ export function PlantScreen({ code }: { code: string }) {
     }
   }
 
-  /* The pour on the dial is the answer here, so there is no toast on top of
+  /* The pour on the drop is the answer here, so there is no toast on top of
      it — a pill sliding up to say what you just watched happen is the boring
      half of the same sentence. The exception is where the pour never plays:
      with motion suppressed the animation is the part that is missing, and the
      words become the whole of the feedback rather than a duplicate of it. */
-  const water = (fertilized: boolean) => {
-    void logEvent({ type: 'water', plantCode: plant.code, fertilized })
+  const water = () => {
+    // Always fed: the flag stays true in the record, so the history still says
+    // what went in should that ever stop being the habit.
+    void logEvent({ type: 'water', plantCode: plant.code, fertilized: true })
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      showToast(fertilized ? `${plant.name} watered with fertiliser` : `${plant.name} watered`)
+      showToast(`${plant.name} watered`)
     }
   }
 
@@ -147,25 +151,16 @@ export function PlantScreen({ code }: { code: string }) {
                 className="mt-0.5"
                 onClick={() => void copyLink()}
               />
-              {/* The fan does this on a phone. A desktop has no thumb to reach
-                  with, so the same three things sit here instead, on the row
-                  that already carries this plant's identity.
-
-                  Visibility lives on this wrapper rather than on a className
-                  handed to `SplitButton` itself: the button's own root is
-                  already `inline-flex` for its two segments, and `hidden` on
-                  the same element loses that fight regardless of breakpoint —
-                  two unconditional display utilities on one element resolve by
-                  their order in the generated stylesheet, not by which one is
-                  meant to win. `md:contents` un-boxes the wrapper from `md` up,
-                  so the button becomes a direct flex item of the row exactly
-                  as if this div were never here. */}
+              {/* A desktop spells both actions out here. A phone waters from
+                  the drop and logs from the tab bar's centre button, which
+                  turns into Log on this page — see `AppShell`. `md:contents`
+                  un-boxes the wrapper from `md` up, so the two buttons become
+                  direct flex items of the row. */}
               <div className="hidden md:contents">
-                <SplitButton
-                  onWater={() => water(false)}
-                  onFertilise={() => water(true)}
-                  onMore={() => setIntent({ kind: 'new' })}
-                />
+                <WaterButton onWater={water} />
+                <Button icon="plus" onClick={() => setIntent({ kind: 'new' })}>
+                  Log activity
+                </Button>
               </div>
             </div>
           )}
@@ -210,16 +205,17 @@ export function PlantScreen({ code }: { code: string }) {
       </div>
 
       {plant.wish ? null : (
-        <ActionDial
-          open={dialOpen}
-          onToggle={setDialOpen}
-          onWater={() => water(false)}
-          onFertilise={() => water(true)}
-          onMore={() => setIntent({ kind: 'new' })}
-        />
+        <WaterDrop onWater={water} />
       )}
 
-      <LogSheet plant={plant} intent={intent} onClose={() => setIntent(null)} />
+      {/* A new entry lands you where it is: the record. The drop's watering
+          stays put, because Care is where "today" answers it. */}
+      <LogSheet
+        plant={plant}
+        intent={intent}
+        onClose={() => setIntent(null)}
+        onLogged={() => setTab('history')}
+      />
     </div>
   )
 }
@@ -476,7 +472,6 @@ function Care({ plant }: { plant: Plant }) {
   const state = useStore()
   const days = daysSinceWater(state, plant.code)
   const water = lastWaterAt(state, plant.code)
-  const fertilised = lastFertilisedAt(state, plant.code)
   const repot = lastRepot(state, plant.code)
 
   return (
@@ -487,12 +482,6 @@ function Care({ plant }: { plant: Plant }) {
         label="Last watered"
         value={water === null ? 'never' : ago(days)}
         alert={isThirsty(days)}
-      />
-      <CareRow
-        icon="fertilizer"
-        tone="leaf"
-        label="Last fertilised"
-        value={fertilised === null ? 'never' : ago(daysSince(fertilised))}
       />
       <CareRow
         icon="pot"
@@ -822,7 +811,8 @@ function EntryPhoto({ event }: { event: PlantEvent }) {
 function detailOf(event: PlantEvent, state: ReturnType<typeof useStore>): ReactNode {
   switch (event.type) {
     case 'water':
-      return event.fertilized ? 'with fertiliser' : ''
+      // Fertiliser is in every watering, so saying so on every row says nothing.
+      return ''
     case 'repot': {
       const size = event.toSize ? `${event.fromSize ?? '?'} → ${event.toSize} cm` : ''
       const medium = event.mediumId ? vocabName(state, event.mediumId) : ''
