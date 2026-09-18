@@ -38,8 +38,16 @@ export function Banner({
         className,
       )}
     >
-      <Icon name={icon} size={16} className={style.icon} />
-      <span className="flex-1 text-[0.8125rem] text-ink">{children}</span>
+      {/* The icon belongs to the first line, not to the middle of the text:
+          it sits in a box one line tall, and the pair is centred in the
+          banner as one piece, so a one-line banner still reads level and a
+          four-line one does not float its icon halfway down. */}
+      <span className="flex flex-1 items-start gap-2">
+        <span className="flex h-6 shrink-0 items-center">
+          <Icon name={icon} size={16} className={style.icon} />
+        </span>
+        <span className="flex-1 text-[0.8125rem] leading-6 text-ink">{children}</span>
+      </span>
       {action}
     </div>
   )

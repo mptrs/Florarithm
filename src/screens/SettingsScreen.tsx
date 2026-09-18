@@ -271,7 +271,7 @@ function BackupSection() {
     <details className="group">
       <summary
         className={cn(
-          'warm group/summary mb-4 flex cursor-pointer list-none items-center justify-between gap-2',
+          'warm group/summary mb-2 flex cursor-pointer list-none items-center justify-between gap-2',
           'border-b border-line pb-2 hover:border-line-strong [&::-webkit-details-marker]:hidden',
         )}
       >
@@ -290,7 +290,7 @@ function BackupSection() {
         />
       </summary>
 
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-6">
         {syncStatus.kind === 'error' ? (
           <Banner tone="warning" icon="alert">
             Sync isn&rsquo;t reaching your repository right now, so it isn&rsquo;t a safety net at
