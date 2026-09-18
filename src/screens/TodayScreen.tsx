@@ -46,6 +46,7 @@ import { SortSwitch, type SortOption } from '~/ui/Chip'
 import { PlantThumb } from '~/ui/plantPicture'
 import { DaysSinceWater, EmptyState, Rows, ScreenHeader } from '~/ui/primitives'
 import { Cell, ColumnHeader, DrawerLabel, RowLink } from '~/ui/rows'
+import { SachetReminder } from '~/ui/Sachets'
 import { SyncStatusPill } from '~/ui/SyncStatusPill'
 
 /** After this long without an export, the reminder appears and stays. */
@@ -90,6 +91,11 @@ export function TodayScreen() {
         hasPlants={livePlants(state).length > 0}
         synced={syncStatus.kind !== 'unconfigured'}
       />
+
+      {/* Above the ledger, because it is about the room the plants stand in
+          rather than about any plant in it — and below the backup warning,
+          which is the only thing here about losing data. */}
+      <SachetReminder />
 
       {plants.length === 0 ? (
         <EmptyState

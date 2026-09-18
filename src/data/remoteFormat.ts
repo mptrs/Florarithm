@@ -15,6 +15,7 @@ import {
   READABLE_BACKUP_VERSIONS,
   type Plant,
   type PlantEvent,
+  type Sachets,
   type VocabItem,
 } from './types'
 
@@ -22,12 +23,20 @@ export type RemoteMeta = {
   format: typeof BACKUP_FORMAT
   version: typeof BACKUP_VERSION
   vocab: VocabItem[]
+  /** The sachets hanging, or `null` when none do — which is also what a
+   *  repository written before they existed says, by saying nothing. */
+  sachets: Sachets | null
 }
 
 export class RemoteParseError extends Error {}
 
-export function buildMetaFile(vocab: readonly VocabItem[]): string {
-  const meta: RemoteMeta = { format: BACKUP_FORMAT, version: BACKUP_VERSION, vocab: [...vocab] }
+export function buildMetaFile(vocab: readonly VocabItem[], sachets: Sachets | null): string {
+  const meta: RemoteMeta = {
+    format: BACKUP_FORMAT,
+    version: BACKUP_VERSION,
+    vocab: [...vocab],
+    sachets,
+  }
   return JSON.stringify(meta, null, 2)
 }
 
@@ -55,6 +64,28 @@ export function parseRemoteMeta(text: string): RemoteMeta {
     vocab: migrateVocab(
       candidate.vocab.map((item) => ({ ...item, updatedAt: item.updatedAt ?? item.createdAt })),
     ),
+    sachets: parseSachets(candidate.sachets),
+  }
+}
+
+/**
+ * A malformed record is read as no sachets rather than refused.
+ *
+ * Unlike a plant or an event, nothing is lost by dropping it: the worst case
+ * is that the reminder goes quiet and you fill the two fields in again. That
+ * is a far better failure than a whole sync round refusing to run because one
+ * week number arrived as a string.
+ */
+export function parseSachets(value: unknown): Sachets | null {
+  if (typeof value !== 'object' || value === null) return null
+  const candidate = value as Partial<Sachets>
+  if (typeof candidate.week !== 'number' || !Number.isFinite(candidate.week)) return null
+  if (candidate.week < 1 || candidate.week > 53) return null
+  if (typeof candidate.hungOn !== 'string' || Number.isNaN(Date.parse(candidate.hungOn))) return null
+  return {
+    week: Math.round(candidate.week),
+    hungOn: candidate.hungOn,
+    updatedAt: typeof candidate.updatedAt === 'string' ? candidate.updatedAt : candidate.hungOn,
   }
 }
 

@@ -233,6 +233,31 @@ export type PlantEvent =
   | NoteEvent
   | PhotoEvent
 
+/**
+ * The sachets of predatory mites hanging in the collection.
+ *
+ * Not an event, and not a list. Nothing about a sachet belongs to one plant —
+ * they hang through the whole collection at once — and nothing is ever asked
+ * of the ones that came down, so the record is a single pair that the next
+ * batch overwrites: the week printed on the packet, and the day it went up.
+ *
+ * `null` means none hang, which is also how the reminder is switched off.
+ * How long they last is `SACHET_DAYS` and not a field: it is what the packet
+ * claims, and it is the same claim on every packet.
+ */
+export type Sachets = {
+  /** ISO week, as printed. 1–53, and not derived from `hungOn` — a packet
+   *  that sat in a drawer says a week that has already passed. */
+  week: number
+  /** ISO timestamp of the day they went up. */
+  hungOn: string
+  /** Bumped on every write, so two devices can pick a winner. */
+  updatedAt: string
+}
+
+/** How long a sachet releases predatory mites. Four weeks, per Rootsum. */
+export const SACHET_DAYS = 28
+
 export type VocabKind = 'location' | 'medium'
 export const VOCAB_KINDS: readonly VocabKind[] = ['location', 'medium']
 
@@ -288,6 +313,11 @@ export type Backup = {
   plants: Plant[]
   events: PlantEvent[]
   vocab: VocabItem[]
+  /** Absent in every file written before the sachets existed, and absent
+   *  again once none hang — which is why it is optional rather than a
+   *  version bump: an old file read as a new one is simply a collection
+   *  with no sachets in it. */
+  sachets?: Sachets | null
 }
 
 export const BACKUP_FORMAT = 'florarithm' as const

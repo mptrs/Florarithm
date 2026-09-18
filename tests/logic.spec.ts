@@ -11,7 +11,7 @@ import { codePrefix, generatePlantCode, isPlantCode } from '../src/lib/plantCode
 import { nextInLine, splitLineage } from '../src/lib/nameGenerator'
 import { parseBackup, BackupParseError } from '../src/data/backup'
 import { migrateEvent, migratePlant, migrateVocab } from '../src/data/migrate'
-import { daysBetween, inputValueToISO, isoToInputValue } from '../src/lib/date'
+import { daysBetween, inputValueToISO, isoToInputValue, isoWeek } from '../src/lib/date'
 import { formatSpecies, normalizeCross, toRoman, fromRoman } from '../src/lib/format'
 import { parseRoute } from '../src/lib/router'
 import {
@@ -117,6 +117,16 @@ test.describe('backups', () => {
 
   test('a well-formed file is accepted', () => {
     expect(parseBackup(JSON.stringify(valid)).format).toBe('florarithm')
+  })
+
+  test('a file written before the sachets existed simply has none', () => {
+    expect(parseBackup(JSON.stringify(valid)).sachets).toBeNull()
+
+    const withSachets = {
+      ...valid,
+      sachets: { week: 34, hungOn: '2026-08-20T12:00:00.000Z', updatedAt: '2026-08-20T12:00:00.000Z' },
+    }
+    expect(parseBackup(JSON.stringify(withSachets)).sachets?.week).toBe(34)
   })
 
   test('anything else is refused, because importing replaces everything', () => {
@@ -289,6 +299,16 @@ test.describe('dates', () => {
     expect(iso).not.toBeNull()
     expect(isoToInputValue(iso as string)).toBe('2026-03-29')
   })
+
+  test('the week number is the one printed on a sachet, Thursday deciding the year', () => {
+    expect(isoWeek('2026-08-20T12:00:00')).toBe(34)
+    expect(isoWeek('2026-09-18T12:00:00')).toBe(38)
+    // 1 January 2026 is a Thursday, so it opens week 1 of its own year...
+    expect(isoWeek('2026-01-01T12:00:00')).toBe(1)
+    // ...while 1 January 2027 is a Friday, and belongs to 2026's week 53.
+    expect(isoWeek('2027-01-01T12:00:00')).toBe(53)
+    expect(isoWeek('2025-12-29T12:00:00')).toBe(1)
+  })
 })
 
 test.describe('routing', () => {
@@ -354,6 +374,7 @@ test.describe("the plant's picture", () => {
     plants: [one],
     events,
     vocab: [],
+    sachets: null,
     lastBackupAt: null,
   })
 
@@ -418,6 +439,7 @@ test.describe('the family', () => {
     plants,
     events: [],
     vocab: [],
+    sachets: null,
     lastBackupAt: null,
   })
 

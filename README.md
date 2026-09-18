@@ -36,6 +36,12 @@ step without either of those things.
   the newest one unless you pick another in the edit form; a plant without any
   keeps the drawn plate. The timeline is the history filtered to the entries
   that have one.
+- **The sachets.** Predatory mites hang through the whole collection against
+  thrips and stop releasing after four weeks, so the one thing in the app that
+  belongs to no plant is a single record — the week printed on the packet and
+  the day it went up. Today counts down (`5 days left`) and asks for new
+  ones once it is spent; hanging the next batch overwrites the record, because
+  nothing is ever asked of the batch that came down.
 - **Backup.** One JSON file with everything, through the iOS share sheet into
   Files and so into iCloud Drive.
 - **QR fallback.** Every plant page carries a QR code alongside its written
@@ -163,5 +169,7 @@ in Chrome on Android. Reading works everywhere, because the tag just holds a URL
 - **M4 — under way.** The family tree over several generations is done: the
   Family card on the plant page is a rail carrying the line above the plant and
   everything propagated off it, however deep, built from the `parent` edge that
-  was already there — no schema change. Still to come: pests with repeat
-  treatments, and achievements.
+  was already there — no schema change. The first piece of pest work is done
+  too, and deliberately the smallest one: a reminder for the predatory-mite
+  sachets, which is a single collection-wide record rather than a log. Still to
+  come: pests on a plant with repeat treatments, and achievements.
