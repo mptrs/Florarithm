@@ -573,6 +573,7 @@ test.describe('milestones', () => {
     events,
     vocab: [],
     lastBackupAt: null,
+    sachets: null,
   })
 
   test('the chronicle runs oldest first and carries the wait it was told', () => {
