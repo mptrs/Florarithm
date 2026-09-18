@@ -5,6 +5,7 @@ import { initSync } from '~/data/sync'
 import { useRoute } from '~/lib/router'
 import { AppShell } from '~/layout/AppShell'
 import { CollectionScreen } from '~/screens/CollectionScreen'
+import { MilestonesScreen } from '~/screens/MilestonesScreen'
 import { PlantFormScreen } from '~/screens/PlantFormScreen'
 import { PlantScreen } from '~/screens/PlantScreen'
 import { SettingsScreen } from '~/screens/SettingsScreen'
@@ -66,6 +67,8 @@ function Screen({ route }: { route: ReturnType<typeof useRoute> }) {
       )
     case 'edit':
       return <PlantFormScreen key={`edit:${route.code}`} code={route.code} promote={route.promote} />
+    case 'milestones':
+      return <MilestonesScreen />
     case 'settings':
       return <SettingsScreen />
   }

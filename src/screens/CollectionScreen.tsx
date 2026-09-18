@@ -26,7 +26,7 @@
 import { useState } from 'react'
 import {
   archivedMatching,
-  countOf,
+  collectionCounts,
   daysSinceWater,
   filterCollection,
   groupByPlace,
@@ -42,6 +42,7 @@ import { COLLECTION_FILTERS, navigate, routes, type CollectionFilter } from '~/l
 import { Button } from '~/ui/Button'
 import { Chip, ChipStrip, SortSwitch, type SortOption } from '~/ui/Chip'
 import { Dozing } from '~/ui/Dozing'
+import { Icon } from '~/ui/Icon'
 import { SearchField } from '~/ui/fields'
 import { PlantThumb, PlantTile } from '~/ui/plantPicture'
 import { EmptyState, ScreenHeader } from '~/ui/primitives'
@@ -71,6 +72,7 @@ const SORTS = [
 
 export function CollectionScreen({ filter }: { filter: CollectionFilter }) {
   const state = useStore()
+  const counts = collectionCounts(state)
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState<Sort>('place')
 
@@ -82,12 +84,28 @@ export function CollectionScreen({ filter }: { filter: CollectionFilter }) {
 
   return (
     <div className="flex flex-col gap-6">
+      {/* The counts are the way to the collection's milestones: always at
+          the top, however long the grid under them grows. */}
       <ScreenHeader
         title="Collection"
-        meta={
-          <>
-            <span className="font-mono">{countOf(state, 'all')}</span> plants
-          </>
+        action={
+          <a
+            href={routes.milestones()}
+            className="warm flex min-h-touch items-center gap-1 text-[0.8125rem] text-leaf hover:text-leaf-deep"
+          >
+            <span>
+              <span className="sr-only">Milestones: </span>
+              <span className="font-mono">{counts.plants}</span>{' '}
+              {counts.plants === 1 ? 'plant' : 'plants'}
+              {counts.grown > 0 ? (
+                <>
+                  {' · '}
+                  <span className="font-mono">{counts.grown}</span> grown here
+                </>
+              ) : null}
+            </span>
+            <Icon name="chevronRight" size={16} />
+          </a>
         }
       />
 

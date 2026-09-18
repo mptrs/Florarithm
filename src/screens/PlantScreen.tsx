@@ -49,6 +49,7 @@ import { Plate } from '~/ui/Plate'
 import { EmptyState } from '~/ui/primitives'
 import { QrCodeBox } from '~/ui/QrCode'
 import { RowActions, SwipeRow } from '~/ui/SwipeRow'
+import { MilestoneCard } from '~/ui/MilestoneCard'
 import { LogSheet, type LogIntent } from './LogSheet'
 
 type Tab = 'care' | 'history'
@@ -631,14 +632,7 @@ function Details({ plant }: { plant: Plant }) {
  * award, and nothing to mark as seen — a plant that has bloomed has always
  * bloomed, whether or not this card was ever looked at.
  *
- * The event leads, alone on the left edge, because it is the news; the date is
- * reference and sits in the line under it, in front of the one figure that
- * makes it mean something. That is how Family already writes a plant — a name,
- * then a line of facts joined by `·` — so the card brings no pattern of its own.
- *
- * No icons, deliberately. The title already names the thing, half the lines
- * (an arrival, an anniversary) have no glyph that is not invented, and a disc
- * per line is how a cabinet of badges looks — the one thing this card is not.
+ * How a line reads, and why there are no icons: see `MilestoneCard`.
  */
 function Milestones({ plant }: { plant: Plant }) {
   const state = useStore()
@@ -653,20 +647,7 @@ function Milestones({ plant }: { plant: Plant }) {
     <section className="mt-8">
       <GroupLabel>Milestones</GroupLabel>
 
-      <Card className="mt-2 px-4">
-        {dated.map((item, index) => (
-          <div
-            key={item.title}
-            className={cn('py-3', index === dated.length - 1 ? '' : 'border-b border-line')}
-          >
-            <div className="text-[0.9375rem] leading-5 font-medium">{item.title}</div>
-            <div className="text-[0.8125rem] leading-[1.125rem] text-ink-faint">
-              <span className="font-mono text-micro">{formatDate(item.date)}</span>
-              {item.detail ? ` · ${item.detail}` : null}
-            </div>
-          </div>
-        ))}
-      </Card>
+      <MilestoneCard items={dated} className="mt-2" />
     </section>
   )
 }

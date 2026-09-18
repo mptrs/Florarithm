@@ -61,6 +61,7 @@ export function activeNavKey(route: Route): NavKey | null {
       return 'today'
     case 'plant':
     case 'edit':
+    case 'milestones':
       return 'collection'
     case 'collection':
       return route.filter === 'wishlist' ? 'wishlist' : 'collection'

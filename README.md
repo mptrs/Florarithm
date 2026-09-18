@@ -173,5 +173,8 @@ in Chrome on Android. Reading works everywhere, because the tag just holds a URL
   everything propagated off it, however deep, built from the `parent` edge that
   was already there — no schema change. The first piece of pest work is done
   too, and deliberately the smallest one: a reminder for the predatory-mite
-  sachets, which is a single collection-wide record rather than a log. Still to
-  come: pests on a plant with repeat treatments, and achievements.
+  sachets, which is a single collection-wide record rather than a log.
+  Achievements landed as milestones rather than badges: a card on each plant
+  and a page behind Collection's counts, every line read out of the log, with
+  nothing to unlock and nothing stored. Still to come: pests on a plant with
+  repeat treatments.

@@ -19,11 +19,14 @@ import { parseRoute } from '../src/lib/router'
 import {
   ancestorsOf,
   childrenOf,
+  collectionMilestones,
   currentPhotoEvent,
   descendantCodes,
   descendantsOf,
+  lastMark,
   lineageOf,
   milestonesOf,
+  yearsInReview,
 } from '../src/data/selectors'
 import type { State } from '../src/data/store'
 import type { Plant, PlantEvent, Sachets } from '../src/data/types'
@@ -316,6 +319,10 @@ test.describe('dates', () => {
 })
 
 test.describe('routing', () => {
+  test('the collection\u2019s milestones live one level under Collection', () => {
+    expect(parseRoute('#collection/milestones')).toEqual({ name: 'milestones' })
+  })
+
   test('the sticker shape wins, in any case', () => {
     expect(parseRoute('#p=MON-8F3A')).toEqual({ name: 'plant', code: 'MON-8F3A' })
     expect(parseRoute('#p=mon-8f3a')).toEqual({ name: 'plant', code: 'MON-8F3A' })
@@ -705,6 +712,116 @@ test.describe('milestones', () => {
       'Arrived',
       'First new leaf',
       'Five years here',
+    ])
+  })
+})
+
+test.describe('the collection\u2019s milestones', () => {
+  const at = (day: number) => new Date(Date.UTC(2022, 0, 1 + day)).toISOString()
+
+  const plant = (code: string, day: number, extra: Partial<Plant> = {}): Plant =>
+    ({
+      code,
+      name: code,
+      genus: 'Anthurium',
+      species: '',
+      cross: '',
+      cultivar: '',
+      variegation: '',
+      locationId: null,
+      system: 'soil',
+      potSize: null,
+      mediumId: null,
+      origin: { type: 'shop', from: '', date: at(day), price: null },
+      parent: null,
+      status: 'active',
+      wish: false,
+      wishNote: '',
+      createdAt: at(day),
+      updatedAt: at(day),
+      ...extra,
+    }) as Plant
+
+  const stateOf = (plants: Plant[], events: PlantEvent[] = []): State => ({
+    status: 'ready',
+    plants,
+    events,
+    vocab: [],
+    lastBackupAt: null,
+    sachets: null,
+  })
+
+  const titles = (state: State) => collectionMilestones(state).map((item) => item.title)
+
+  test('a round number is the last mark passed, then every step past the marks', () => {
+    expect(lastMark(9, [10, 25, 50], 50)).toBeNull()
+    expect(lastMark(24, [10, 25, 50], 50)).toBe(10)
+    expect(lastMark(149, [10, 25, 50], 50)).toBe(100)
+    expect(lastMark(214, [50, 100], 100)).toBe(200)
+  })
+
+  test('the tenth plant is dated the day it arrived, and a dead one still counts', () => {
+    const plants = Array.from({ length: 10 }, (_, index) =>
+      plant(`P${index}`, index * 10, index === 3 ? { status: 'died' } : {}),
+    )
+    const tenth = collectionMilestones(stateOf(plants)).find((item) => item.title === 'The 10th plant')
+    expect(tenth?.date).toBe(at(90))
+    expect(tenth?.detail).toBe('P9')
+  })
+
+  test('a wish and a deleted record are not plants that came in', () => {
+    const plants = [
+      ...Array.from({ length: 9 }, (_, index) => plant(`P${index}`, index)),
+      plant('W', 20, { wish: true }),
+      plant('D', 21, { deleted: true }),
+    ]
+    expect(titles(stateOf(plants))).not.toContain('The 10th plant')
+  })
+
+  test('grown here, generations and the largest family read the parent edge', () => {
+    const plants = [
+      plant('ROOT', 0),
+      plant('A', 10, { parent: { code: 'ROOT', method: 'cutting' } }),
+      plant('B', 20, { parent: { code: 'A', method: 'cutting' } }),
+      plant('C', 30, { parent: { code: 'B', method: 'cutting' } }),
+      plant('D', 40, { parent: { code: 'ROOT', method: 'cutting' } }),
+    ]
+    const all = collectionMilestones(stateOf(plants))
+    expect(all.find((item) => item.title === 'A fourth generation')?.detail).toBe('C, from a line started in 2022')
+    expect(all.find((item) => item.title === 'ROOT\u2019s line reaches 5 plants')?.date).toBe(at(40))
+    expect(all.find((item) => item.title === 'The 5th plant grown here')).toBeUndefined()
+    expect(all.find((item) => item.title === 'First plant grown here')?.detail).toBe('A, a cutting of ROOT')
+  })
+
+  test('the largest genus is dated the day it took the lead for good', () => {
+    const plants = [
+      plant('H1', 0, { genus: 'Hoya' }),
+      plant('H2', 1, { genus: 'Hoya' }),
+      plant('A1', 2),
+      plant('A2', 3),
+      plant('A3', 4),
+    ]
+    const genus = collectionMilestones(stateOf(plants)).find((item) => item.title.endsWith('the largest genus'))
+    expect(genus?.title).toBe('Anthurium, the largest genus')
+    expect(genus?.date).toBe(at(4))
+    expect(genus?.detail).toBe('with its 3rd plant, A3')
+  })
+
+  test('the longest wait is the one named, and each year counts what it added', () => {
+    const plants = [plant('A', 0), plant('B', 400, { origin: { type: 'own-cutting', from: '', date: at(400), price: null } })]
+    const events = [
+      { id: 'n1', plantCode: 'A', type: 'note', date: at(0), text: '', fromWishlist: 30 },
+      { id: 'n2', plantCode: 'B', type: 'note', date: at(400), text: '', fromWishlist: 412 },
+      { id: 'l1', plantCode: 'A', type: 'leaf', date: at(5) },
+      { id: 'b1', plantCode: 'B', type: 'bloom', date: at(420) },
+    ] as PlantEvent[]
+    const state = stateOf(plants, events)
+    expect(collectionMilestones(state).find((item) => item.title === '412 days on the wishlist')?.detail).toBe(
+      'B, the longest wait yet',
+    )
+    expect(yearsInReview(state)).toEqual([
+      { year: 2023, leaves: 0, blooms: 1, added: 1, grown: 1 },
+      { year: 2022, leaves: 1, blooms: 0, added: 1, grown: 0 },
     ])
   })
 })

@@ -516,6 +516,11 @@ plants, and a switch that looked different on the two would read as two controls
 - **`IconChip`** — a round tinted or filled disc leading a row inside a card.
   One tone per meaning: `water` the action, `leaf` the plant, `ink` bookkeeping.
   Tinted in a list, filled for something you press.
+- **`MilestoneCard`** — a chronicle in a card, on the plant page and on the
+  collection's Milestones page. The event alone on the left edge; the date in
+  mono in the line under it, then `·` and the one figure that makes it mean
+  something — how Family already writes a plant. No icons: the title names the
+  thing, and a disc per line is a cabinet of badges.
 - **`EmptyState`** — `rounded-lg`, `surface`, `line`, `p-6`. Never a blank
   page: an empty collection is a state, not an error, and it says what to do next.
 - **`Sheet`** — rises from the bottom edge on a phone (`1.625rem` top corners,
