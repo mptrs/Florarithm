@@ -677,6 +677,24 @@ test.describe('milestones', () => {
     expect(watered[0]?.date).toBe(new Date(Date.UTC(2022, 0, 1 + 199 * 7)).toISOString())
   })
 
+  test('a leaf counts on the day it crossed the last round number', () => {
+    const leaves = (count: number) =>
+      Array.from({ length: count }, (_, index) =>
+        log(`l${index}`, { type: 'leaf', date: new Date(Date.UTC(2022, 0, 1 + index * 20)).toISOString() }),
+      )
+    const titles = (count: number) =>
+      milestonesOf(stateOf(grown(), leaves(count)), 'ANT-0001').map((item) => item.title)
+
+    expect(titles(9).filter((title) => title.endsWith('new leaf'))).toEqual(['First new leaf'])
+    expect(titles(10)).toContain('The 10th new leaf')
+    expect(titles(49)).toContain('The 25th new leaf')
+    expect(titles(49)).not.toContain('The 10th new leaf')
+
+    const at120 = milestonesOf(stateOf(grown(), leaves(120)), 'ANT-0001')
+    const mark = at120.find((item) => item.title === 'The 100th new leaf')
+    expect(mark?.date).toBe(new Date(Date.UTC(2022, 0, 1 + 99 * 20)).toISOString())
+  })
+
   test('a tombstoned entry is not a milestone', () => {
     const state = stateOf(grown(), [
       log('gone', { type: 'bloom', date: ago(4), deleted: true }),

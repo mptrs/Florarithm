@@ -631,10 +631,14 @@ function Details({ plant }: { plant: Plant }) {
  * award, and nothing to mark as seen — a plant that has bloomed has always
  * bloomed, whether or not this card was ever looked at.
  *
- * No icon chip on a row, deliberately. A tinted disc per line is what Care and
- * History wear, and four of them here would turn four facts into four badges.
- * The date leads instead, right-aligned so the days make a column: the card
- * reads as a chronicle rather than as a third run of label/value rows.
+ * The event leads, alone on the left edge, because it is the news; the date is
+ * reference and sits in the line under it, in front of the one figure that
+ * makes it mean something. That is how Family already writes a plant — a name,
+ * then a line of facts joined by `·` — so the card brings no pattern of its own.
+ *
+ * No icons, deliberately. The title already names the thing, half the lines
+ * (an arrival, an anniversary) have no glyph that is not invented, and a disc
+ * per line is how a cabinet of badges looks — the one thing this card is not.
  */
 function Milestones({ plant }: { plant: Plant }) {
   const state = useStore()
@@ -653,21 +657,12 @@ function Milestones({ plant }: { plant: Plant }) {
         {dated.map((item, index) => (
           <div
             key={item.title}
-            className={cn(
-              'flex items-baseline gap-3 py-3',
-              index === dated.length - 1 ? '' : 'border-b border-line',
-            )}
+            className={cn('py-3', index === dated.length - 1 ? '' : 'border-b border-line')}
           >
-            <span className="w-20 shrink-0 text-right font-mono text-micro text-ink-muted">
-              {formatDate(item.date)}
-            </span>
-            <div className="min-w-0 flex-1">
-              <div className="text-[0.9375rem] leading-5 font-medium">{item.title}</div>
-              {item.detail ? (
-                <div className="text-[0.8125rem] leading-[1.125rem] text-ink-faint">
-                  {item.detail}
-                </div>
-              ) : null}
+            <div className="text-[0.9375rem] leading-5 font-medium">{item.title}</div>
+            <div className="text-[0.8125rem] leading-[1.125rem] text-ink-faint">
+              <span className="font-mono text-micro">{formatDate(item.date)}</span>
+              {item.detail ? ` · ${item.detail}` : null}
             </div>
           </div>
         ))}

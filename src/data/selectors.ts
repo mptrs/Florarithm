@@ -210,6 +210,15 @@ export function milestonesOf(
   const leaf = earliest('leaf')
   if (leaf) dated.push({ date: leaf.date, title: 'First new leaf', detail: null })
 
+  // Leaves come slower than water — ten or so a year on a plant doing well —
+  // so the round numbers start lower and sit closer together.
+  const leaves = events.filter((event) => event.type === 'leaf').reverse()
+  const leafMark = roundLeaf(leaves.length)
+  const leafCrossed = leafMark ? leaves[leafMark - 1] : undefined
+  if (leafMark && leafCrossed) {
+    dated.push({ date: leafCrossed.date, title: `The ${leafMark}th new leaf`, detail: null })
+  }
+
   const bloom = earliest('bloom')
   if (bloom) {
     // The one detail line worth the room. A first leaf arrives weeks after a
@@ -242,6 +251,13 @@ export function milestonesOf(
   if (pot) dated.push(pot)
 
   return dated.sort((a, b) => a.date.localeCompare(b.date))
+}
+
+/** 10, 25, 50, then every fifty. All of them take `th` too. */
+function roundLeaf(count: number): number | null {
+  if (count >= 50) return Math.floor(count / 50) * 50
+  if (count >= 25) return 25
+  return count >= 10 ? 10 : null
 }
 
 /** 50, then every hundred: the first comes a year or so in at a weekly
