@@ -87,6 +87,25 @@ export function formatDayMonth(iso: string): string {
   return dayMonth.format(new Date(iso))
 }
 
+/** `Mon 14 Sep` — a day close enough that its weekday is the useful part:
+ *  the day to order by, the day something runs out. */
+const weekdayDayMonth = new Intl.DateTimeFormat(LOCALE, {
+  weekday: 'short',
+  day: 'numeric',
+  month: 'short',
+})
+
+export function formatWeekdayDayMonth(value: string | Date): string {
+  return weekdayDayMonth.format(new Date(value))
+}
+
+/** Local midnight `days` calendar days after `value` — calendar days, not
+ *  multiples of 24 hours, so a clock change in between cannot move it. */
+export function addDays(value: string | Date, days: number): Date {
+  const date = new Date(value)
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate() + days)
+}
+
 /** `2 Sep 2026` — for facts, where it is not. */
 export function formatDate(iso: string): string {
   return dayMonthYear.format(new Date(iso))
