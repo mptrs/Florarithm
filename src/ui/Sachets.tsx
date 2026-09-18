@@ -27,7 +27,7 @@ import { SACHET_DAYS, type Sachets } from '~/data/types'
 import { daysSince, formatDate, inputValueToISO, isoToInputValue, isoWeek, todayInputValue } from '~/lib/date'
 import { plural } from '~/lib/format'
 import { Banner } from './Banner'
-import { Button } from './Button'
+import { Button, IconButton } from './Button'
 import { DatePickerField } from './DatePicker'
 import { NumberField } from './fields'
 import { Icon } from './Icon'
@@ -63,9 +63,15 @@ export function SachetReminder() {
           tone="warning"
           icon="pest"
           action={
-            <Button size="sm" variant="danger" onClick={() => setOpen(true)}>
-              Hung
-            </Button>
+            // A glyph rather than a word: "Hung" and "Replaced" both read
+            // oddly on a line that has just said what to do. The label
+            // carries it for a screen reader and, as a title, under a pointer.
+            <IconButton
+              icon="replace"
+              label="New sachets hung"
+              variant="danger"
+              onClick={() => setOpen(true)}
+            />
           }
         >
           {`The sachets from week ${sachets.week} are ${plural(days, 'day')} old. Hang the next ones.`}

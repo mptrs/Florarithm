@@ -793,7 +793,7 @@ test('the sachets count up on Today, ask to be replaced, and reset in one sheet'
 
   // The reset opens on this week and today, not on what is hanging — the old
   // batch is the thing being replaced.
-  await page.getByRole('button', { name: 'Hung' }).click()
+  await page.getByRole('button', { name: 'New sachets hung' }).click()
   await expect(page.getByRole('dialog', { name: 'New sachets' })).toBeVisible()
   await expect(page.getByLabel('Week on the packet')).not.toHaveValue('34')
   await page.getByRole('button', { name: 'Hang them' }).click()
