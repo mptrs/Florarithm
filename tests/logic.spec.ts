@@ -26,7 +26,8 @@ import {
   milestonesOf,
 } from '../src/data/selectors'
 import type { State } from '../src/data/store'
-import type { Plant, PlantEvent } from '../src/data/types'
+import type { Plant, PlantEvent, Sachets } from '../src/data/types'
+import { sachetOrderBy, sachetPhase, sachetRunOut } from '../src/data/sachets'
 
 test.describe('plant codes', () => {
   test('the prefix comes from the species, stripped and padded', () => {
@@ -745,5 +746,39 @@ test.describe('spacing', () => {
     }
 
     expect(strays, 'off the spacing scale — see Spacing in DESIGN.md').toEqual([])
+  })
+})
+
+test.describe('sachets', () => {
+  const hung = (date: string): Sachets => ({
+    week: 34,
+    hungOn: new Date(`${date}T12:00:00`).toISOString(),
+    updatedAt: new Date(`${date}T12:00:00`).toISOString(),
+  })
+  const day = (date: Date) =>
+    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+  const at = (date: string) => new Date(`${date}T09:00:00`)
+
+  test('they run out four weeks after going up', () => {
+    // Hung Thursday 20 August, out Thursday 17 September.
+    expect(day(sachetRunOut(hung('2026-08-20')))).toBe('2026-09-17')
+  })
+
+  test('the order day is five working days back, stepping over the weekend', () => {
+    // Out on Thursday 17 September: order by Thursday 10th.
+    expect(day(sachetOrderBy(hung('2026-08-20')))).toBe('2026-09-10')
+    // Out on Monday 21st: the weekend does not count, so order by Monday 14th
+    // — five calendar days back would be Wednesday, with a weekend of no
+    // shipping and no Sunday post still inside the margin.
+    expect(day(sachetOrderBy(hung('2026-08-24')))).toBe('2026-09-14')
+  })
+
+  test('the line moves from hanging to order to spent on those days', () => {
+    const sachets = hung('2026-08-20')
+    expect(sachetPhase(sachets, at('2026-09-09'))).toBe('hanging')
+    expect(sachetPhase(sachets, at('2026-09-10'))).toBe('order')
+    expect(sachetPhase(sachets, at('2026-09-16'))).toBe('order')
+    expect(sachetPhase(sachets, at('2026-09-17'))).toBe('spent')
+    expect(sachetPhase(sachets, at('2026-09-20'))).toBe('spent')
   })
 })
