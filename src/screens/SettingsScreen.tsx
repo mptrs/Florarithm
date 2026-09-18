@@ -21,6 +21,7 @@ import {
   useStore,
 } from '~/data/store'
 import { configureSync, getSyncConfig, syncNow, useSyncStatus } from '~/data/sync'
+import { ORDER_WORKDAYS } from '~/data/sachets'
 import { SACHET_DAYS, VOCAB_KINDS, type VocabKind } from '~/data/types'
 import { cn } from '~/lib/cn'
 import { daysSince, formatDate } from '~/lib/date'
@@ -390,7 +391,8 @@ function SachetsSection() {
     <Section icon="pest" title="Sachets">
       <p className="max-w-prose text-[0.9375rem] leading-6 text-ink-muted text-pretty">
         Predatory mites against thrips, hung through the whole collection rather than in one plant.
-        They stop releasing after {SACHET_DAYS} days, which is when Today asks for new ones.
+        They stop releasing after {SACHET_DAYS} days. Today asks you to order the next ones{' '}
+        {ORDER_WORKDAYS} working days before that, so a weekend cannot make them late.
       </p>
 
       {sachets ? (

@@ -771,24 +771,33 @@ test('the sachets count down on Today, ask to be replaced, and reset in one shee
   await page.goto('#today')
   await expect(page.getByText(/Sachets from week \d+ · 28 days left/)).toBeVisible()
 
-  // Hung 31 days ago, in the week it was hung. Written straight to the record
-  // rather than through the calendar, so the assertion is about the counting
-  // and not about the date picker.
-  await page.evaluate(async () => {
-    const hungOn = new Date(Date.now() - 31 * 86_400_000).toISOString()
-    await new Promise<void>((resolve, reject) => {
-      const open = indexedDB.open('florarithm')
-      open.onsuccess = () => {
-        const transaction = open.result.transaction('meta', 'readwrite')
-        transaction.objectStore('meta').put({ week: 34, hungOn, updatedAt: hungOn }, 'sachets')
-        transaction.oncomplete = () => resolve()
-        transaction.onerror = () => reject(transaction.error)
-      }
-      open.onerror = () => reject(open.error)
-    })
-  })
-  await page.reload()
+  // Written straight to the record rather than through the calendar, so the
+  // assertions are about the counting and not about the date picker.
+  const hungDaysAgo = async (days: number) => {
+    await page.evaluate(async (days) => {
+      const hungOn = new Date(Date.now() - days * 86_400_000).toISOString()
+      await new Promise<void>((resolve, reject) => {
+        const open = indexedDB.open('florarithm')
+        open.onsuccess = () => {
+          const transaction = open.result.transaction('meta', 'readwrite')
+          transaction.objectStore('meta').put({ week: 34, hungOn, updatedAt: hungOn }, 'sachets')
+          transaction.oncomplete = () => resolve()
+          transaction.onerror = () => reject(transaction.error)
+        }
+        open.onerror = () => reject(open.error)
+      })
+    }, days)
+    await page.reload()
+  }
 
+  // A day before they run out is always inside the order window, whatever
+  // weekday the test happens to run on.
+  await hungDaysAgo(27)
+  await expect(
+    page.getByText('Order new sachets: the ones from week 34 run out tomorrow.'),
+  ).toBeVisible()
+
+  await hungDaysAgo(31)
   await expect(
     page.getByText('The sachets from week 34 ran out 3 days ago. Hang the next ones.'),
   ).toBeVisible()

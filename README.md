@@ -39,8 +39,10 @@ step without either of those things.
 - **The sachets.** Predatory mites hang through the whole collection against
   thrips and stop releasing after four weeks, so the one thing in the app that
   belongs to no plant is a single record — the week printed on the packet and
-  the day it went up. Today counts down (`5 days left`) and asks for new
-  ones once it is spent; hanging the next batch overwrites the record, because
+  the day it went up. Today counts down (`12 days left`), asks you to order
+  the next ones five working days before they run out — a week's notice, with
+  no shipping at the weekend and no post on Sunday — and turns to the alarm
+  colour once they have. Hanging the next batch overwrites the record, because
   nothing is ever asked of the batch that came down.
 - **Backup.** One JSON file with everything, through the iOS share sheet into
   Files and so into iCloud Drive.
