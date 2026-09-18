@@ -28,7 +28,7 @@ export function RowLink({
     <a
       href={href}
       className={cn(
-        'flex min-h-touch items-center gap-4 border-b border-line px-2.5 py-2.5',
+        'flex min-h-touch items-center gap-3 border-b border-line px-3 py-3',
         'warm active:bg-sunk hover:bg-sunk',
         className,
       )}
@@ -42,7 +42,7 @@ export function RowLink({
  *  action is a button inside it. */
 export function Row({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div className={cn('flex min-h-touch items-center gap-4 border-b border-line py-3.5', className)}>
+    <div className={cn('flex min-h-touch items-center gap-3 border-b border-line py-3', className)}>
       {children}
     </div>
   )
@@ -109,7 +109,7 @@ export function DrawerLabel({
   className?: string
 }) {
   return (
-    <div className={cn('mt-5 mb-2.5 flex items-center gap-2.5 lg:mt-6 lg:mb-1.5', className)}>
+    <div className={cn('mb-2 flex items-center gap-2', className)}>
       <span className="text-label text-ink-faint uppercase">{name}</span>
       <span className="h-px flex-1 bg-line" />
       <span className="font-mono text-micro text-ink-faint">{count}</span>

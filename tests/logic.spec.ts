@@ -6,6 +6,8 @@
  * discover wrong.
  */
 
+import { readdirSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { expect, test } from '@playwright/test'
 import { codePrefix, generatePlantCode, isPlantCode } from '../src/lib/plantCode'
 import { nextInLine, splitLineage } from '../src/lib/nameGenerator'
@@ -17,10 +19,14 @@ import { parseRoute } from '../src/lib/router'
 import {
   ancestorsOf,
   childrenOf,
+  collectionMilestones,
   currentPhotoEvent,
   descendantCodes,
   descendantsOf,
+  lastMark,
   lineageOf,
+  milestonesOf,
+  yearsInReview,
 } from '../src/data/selectors'
 import type { State } from '../src/data/store'
 import type { Plant, PlantEvent, Sachets } from '../src/data/types'
@@ -313,6 +319,10 @@ test.describe('dates', () => {
 })
 
 test.describe('routing', () => {
+  test('the collection\u2019s milestones live one level under Collection', () => {
+    expect(parseRoute('#collection/milestones')).toEqual({ name: 'milestones' })
+  })
+
   test('the sticker shape wins, in any case', () => {
     expect(parseRoute('#p=MON-8F3A')).toEqual({ name: 'plant', code: 'MON-8F3A' })
     expect(parseRoute('#p=mon-8f3a')).toEqual({ name: 'plant', code: 'MON-8F3A' })
@@ -522,6 +532,355 @@ test.describe('the family', () => {
     expect(ancestorsOf(self, 'AAA')).toEqual([])
     expect(descendantsOf(self, 'AAA')).toEqual([])
     expect(descendantCodes(self, 'AAA').size).toBe(0)
+  })
+})
+
+test.describe('milestones', () => {
+  /**
+   * Every line is read out of the log, so the only thing worth testing is the
+   * reading: the order, the one figure each line is allowed to carry, and the
+   * anniversary, which is the single value that changes without anything being
+   * logged at all.
+   */
+  const ago = (years: number, months = 0): string => {
+    const date = new Date()
+    date.setFullYear(date.getFullYear() - years)
+    date.setMonth(date.getMonth() - months)
+    return date.toISOString()
+  }
+
+  const grown = (extra: Partial<Plant> = {}): Plant =>
+    ({
+      code: 'ANT-0001',
+      name: 'Fluweel',
+      genus: 'Anthurium',
+      species: '',
+      cross: '',
+      cultivar: '',
+      variegation: '',
+      locationId: null,
+      system: 'semi-hydro',
+      potSize: 19,
+      mediumId: null,
+      origin: { type: 'nursery', from: '', date: ago(5, 1), price: null },
+      parent: null,
+      status: 'active',
+      wish: false,
+      wishNote: '',
+      createdAt: ago(5, 1),
+      updatedAt: ago(5, 1),
+      ...extra,
+    }) as Plant
+
+  const log = (id: string, extra: Partial<PlantEvent>): PlantEvent =>
+    ({ id, plantCode: 'ANT-0001', date: ago(4), ...extra }) as PlantEvent
+
+  const stateOf = (one: Plant, events: PlantEvent[]): State => ({
+    status: 'ready',
+    plants: [one],
+    events,
+    vocab: [],
+    lastBackupAt: null,
+    sachets: null,
+  })
+
+  test('the chronicle runs oldest first and carries the wait it was told', () => {
+    const state = stateOf(grown(), [
+      log('note', { type: 'note', date: ago(5, 1), text: 'Finally.', fromWishlist: 214 }),
+      log('leaf', { type: 'leaf', date: ago(5) }),
+    ])
+
+    const dated = milestonesOf(state, 'ANT-0001')
+    expect(dated.map((item) => item.title)).toEqual([
+      'Arrived',
+      'First new leaf',
+      'Five years here',
+    ])
+    expect(dated[0]?.detail).toBe('after 214 days on the wishlist')
+    // The wait is the only figure the arrival carries: nothing here counts
+    // something the log did not write down.
+    expect(dated[1]?.detail).toBeNull()
+  })
+
+  test('the anniversary is the last one that passed, never the next one', () => {
+    // Three years and eleven months in: the fourth year has not come round,
+    // so the card must not round up to it.
+    const justUnder = stateOf(grown({ origin: { type: null, from: '', date: ago(4, -1), price: null } }), [
+      log('leaf', { type: 'leaf', date: ago(3) }),
+    ])
+
+    expect(milestonesOf(justUnder, 'ANT-0001').map((item) => item.title)).toEqual([
+      'Arrived',
+      'First new leaf',
+      'Three years here',
+    ])
+  })
+
+  test('a plant in its first year has no anniversary at all', () => {
+    const fresh = stateOf(grown({ origin: { type: null, from: '', date: ago(0, 4), price: null } }), [])
+
+    expect(milestonesOf(fresh, 'ANT-0001').map((item) => item.title)).toEqual(['Arrived'])
+  })
+
+  test('a first bloom says how long it took, a plant with no arrival says nothing', () => {
+    const known = stateOf(grown(), [log('bloom', { type: 'bloom', date: ago(4, 1) })])
+    expect(milestonesOf(known, 'ANT-0001')[1]?.detail).toBe('365 days after it arrived')
+
+    const unknown = stateOf(grown({ origin: { type: null, from: '', date: null, price: null } }), [
+      log('bloom', { type: 'bloom', date: ago(4, 1) }),
+    ])
+    const dated = milestonesOf(unknown, 'ANT-0001')
+    expect(dated.map((item) => item.title)).toEqual(['First bloom'])
+    expect(dated[0]?.detail).toBeNull()
+  })
+
+  test('the earliest of a kind is the one named, not the latest', () => {
+    const first = ago(3)
+    const state = stateOf(grown(), [
+      log('late', { type: 'bloom', date: ago(1) }),
+      log('early', { type: 'bloom', date: first }),
+    ])
+
+    const bloom = milestonesOf(state, 'ANT-0001').find((item) => item.title === 'First bloom')
+    expect(bloom?.date).toBe(first)
+  })
+
+  test('a pot is a milestone from the second repot, with the sizes it climbed', () => {
+    const once = stateOf(grown(), [
+      log('a', { type: 'repot', date: ago(3), fromSize: 12, toSize: 15, mediumId: null, reason: '' }),
+    ])
+    // One repot is what Care's Last repot row already says.
+    expect(milestonesOf(once, 'ANT-0001').some((item) => item.title.endsWith('pot'))).toBe(false)
+
+    const last = ago(1)
+    const twice = stateOf(grown(), [
+      log('a', { type: 'repot', date: ago(3), fromSize: 12, toSize: 15, mediumId: null, reason: '' }),
+      log('b', { type: 'repot', date: last, fromSize: 15, toSize: 19, mediumId: null, reason: '' }),
+    ])
+    const pot = milestonesOf(twice, 'ANT-0001').find((item) => item.title === 'Into its third pot')
+    expect(pot?.date).toBe(last)
+    expect(pot?.detail).toBe('12 → 15 → 19 cm')
+  })
+
+  test('a watering counts on the day it crossed the last round number', () => {
+    const waterings = (count: number) =>
+      Array.from({ length: count }, (_, index) =>
+        log(`w${index}`, {
+          type: 'water',
+          date: new Date(Date.UTC(2022, 0, 1 + index * 7)).toISOString(),
+          fertilized: true,
+        }),
+      )
+    const titles = (count: number) =>
+      milestonesOf(stateOf(grown(), waterings(count)), 'ANT-0001').map((item) => item.title)
+
+    expect(titles(49)).not.toContain('Watered for the 50th time')
+    expect(titles(50)).toContain('Watered for the 50th time')
+
+    // 214 waterings: the 200th, dated the day it happened — and only that one.
+    const at214 = milestonesOf(stateOf(grown(), waterings(214)), 'ANT-0001')
+    const watered = at214.filter((item) => item.title.startsWith('Watered'))
+    expect(watered.map((item) => item.title)).toEqual(['Watered for the 200th time'])
+    expect(watered[0]?.date).toBe(new Date(Date.UTC(2022, 0, 1 + 199 * 7)).toISOString())
+  })
+
+  test('a leaf counts on the day it crossed the last round number', () => {
+    const leaves = (count: number) =>
+      Array.from({ length: count }, (_, index) =>
+        log(`l${index}`, { type: 'leaf', date: new Date(Date.UTC(2022, 0, 1 + index * 20)).toISOString() }),
+      )
+    const titles = (count: number) =>
+      milestonesOf(stateOf(grown(), leaves(count)), 'ANT-0001').map((item) => item.title)
+
+    expect(titles(9).filter((title) => title.endsWith('new leaf'))).toEqual(['First new leaf'])
+    expect(titles(10)).toContain('The 10th new leaf')
+    expect(titles(49)).toContain('The 25th new leaf')
+    expect(titles(49)).not.toContain('The 10th new leaf')
+
+    const at120 = milestonesOf(stateOf(grown(), leaves(120)), 'ANT-0001')
+    const mark = at120.find((item) => item.title === 'The 100th new leaf')
+    expect(mark?.date).toBe(new Date(Date.UTC(2022, 0, 1 + 99 * 20)).toISOString())
+  })
+
+  test('a tombstoned entry is not a milestone', () => {
+    const state = stateOf(grown(), [
+      log('gone', { type: 'bloom', date: ago(4), deleted: true }),
+      log('leaf', { type: 'leaf', date: ago(3) }),
+    ])
+
+    expect(milestonesOf(state, 'ANT-0001').map((item) => item.title)).toEqual([
+      'Arrived',
+      'First new leaf',
+      'Five years here',
+    ])
+  })
+})
+
+test.describe('the collection\u2019s milestones', () => {
+  const at = (day: number) => new Date(Date.UTC(2022, 0, 1 + day)).toISOString()
+
+  const plant = (code: string, day: number, extra: Partial<Plant> = {}): Plant =>
+    ({
+      code,
+      name: code,
+      genus: 'Anthurium',
+      species: '',
+      cross: '',
+      cultivar: '',
+      variegation: '',
+      locationId: null,
+      system: 'soil',
+      potSize: null,
+      mediumId: null,
+      origin: { type: 'shop', from: '', date: at(day), price: null },
+      parent: null,
+      status: 'active',
+      wish: false,
+      wishNote: '',
+      createdAt: at(day),
+      updatedAt: at(day),
+      ...extra,
+    }) as Plant
+
+  const stateOf = (plants: Plant[], events: PlantEvent[] = []): State => ({
+    status: 'ready',
+    plants,
+    events,
+    vocab: [],
+    lastBackupAt: null,
+    sachets: null,
+  })
+
+  const titles = (state: State) => collectionMilestones(state).map((item) => item.title)
+
+  test('a round number is the last mark passed, then every step past the marks', () => {
+    expect(lastMark(9, [10, 25, 50], 50)).toBeNull()
+    expect(lastMark(24, [10, 25, 50], 50)).toBe(10)
+    expect(lastMark(149, [10, 25, 50], 50)).toBe(100)
+    expect(lastMark(214, [50, 100], 100)).toBe(200)
+  })
+
+  test('the tenth plant is dated the day it arrived, and a dead one still counts', () => {
+    const plants = Array.from({ length: 10 }, (_, index) =>
+      plant(`P${index}`, index * 10, index === 3 ? { status: 'died' } : {}),
+    )
+    const tenth = collectionMilestones(stateOf(plants)).find((item) => item.title === 'The 10th plant')
+    expect(tenth?.date).toBe(at(90))
+    expect(tenth?.detail).toBe('P9')
+  })
+
+  test('a wish and a deleted record are not plants that came in', () => {
+    const plants = [
+      ...Array.from({ length: 9 }, (_, index) => plant(`P${index}`, index)),
+      plant('W', 20, { wish: true }),
+      plant('D', 21, { deleted: true }),
+    ]
+    expect(titles(stateOf(plants))).not.toContain('The 10th plant')
+  })
+
+  test('grown here, generations and the largest family read the parent edge', () => {
+    const plants = [
+      plant('ROOT', 0),
+      plant('A', 10, { parent: { code: 'ROOT', method: 'cutting' } }),
+      plant('B', 20, { parent: { code: 'A', method: 'cutting' } }),
+      plant('C', 30, { parent: { code: 'B', method: 'cutting' } }),
+      plant('D', 40, { parent: { code: 'ROOT', method: 'cutting' } }),
+    ]
+    const all = collectionMilestones(stateOf(plants))
+    expect(all.find((item) => item.title === 'A fourth generation')?.detail).toBe('C, from a line started in 2022')
+    expect(all.find((item) => item.title === 'ROOT\u2019s line reaches 5 plants')?.date).toBe(at(40))
+    expect(all.find((item) => item.title === 'The 5th plant grown here')).toBeUndefined()
+    expect(all.find((item) => item.title === 'First plant grown here')?.detail).toBe('A, a cutting of ROOT')
+  })
+
+  test('the largest genus is dated the day it took the lead for good', () => {
+    const plants = [
+      plant('H1', 0, { genus: 'Hoya' }),
+      plant('H2', 1, { genus: 'Hoya' }),
+      plant('A1', 2),
+      plant('A2', 3),
+      plant('A3', 4),
+    ]
+    const genus = collectionMilestones(stateOf(plants)).find((item) => item.title.endsWith('the largest genus'))
+    expect(genus?.title).toBe('Anthurium, the largest genus')
+    expect(genus?.date).toBe(at(4))
+    expect(genus?.detail).toBe('with its 3rd plant, A3')
+  })
+
+  test('the longest wait is the one named, and each year counts what it added', () => {
+    const plants = [plant('A', 0), plant('B', 400, { origin: { type: 'own-cutting', from: '', date: at(400), price: null } })]
+    const events = [
+      { id: 'n1', plantCode: 'A', type: 'note', date: at(0), text: '', fromWishlist: 30 },
+      { id: 'n2', plantCode: 'B', type: 'note', date: at(400), text: '', fromWishlist: 412 },
+      { id: 'l1', plantCode: 'A', type: 'leaf', date: at(5) },
+      { id: 'b1', plantCode: 'B', type: 'bloom', date: at(420) },
+    ] as PlantEvent[]
+    const state = stateOf(plants, events)
+    expect(collectionMilestones(state).find((item) => item.title === '412 days on the wishlist')?.detail).toBe(
+      'B, the longest wait yet',
+    )
+    expect(yearsInReview(state)).toEqual([
+      { year: 2023, leaves: 0, blooms: 1, added: 1, grown: 1 },
+      { year: 2022, leaves: 1, blooms: 0, added: 1, grown: 0 },
+    ])
+  })
+})
+
+test.describe('spacing', () => {
+  /**
+   * The scale in `styles.css`, enforced. Tailwind will happily build `px-3.5`
+   * or `mt-[13px]`, so the only way the eight steps stay the only eight is a
+   * test that reads every class the app writes and refuses the rest — the
+   * same reason the stock palette is cleared rather than merely avoided.
+   */
+  const STEPS = new Set(['0', 'px', '1', '2', '3', '4', '6', '8', '12', '16'])
+  // Longest first, so `inset-x-0` is read as inset-x at 0 and not as inset at
+  // something called `x-0`.
+  const PROPS =
+    '(?:space-x|space-y|inset-x|inset-y|gap-x|gap-y|inset|bottom|right|left|top|gap|px|py|pt|pb|pl|pr|mx|my|mt|mb|ml|mr|p|m)'
+  // Numbers and arbitrary values only: a word after the dash is either a named
+  // token or not a class at all (`right-aligned` in a comment).
+  const CLASS = new RegExp(`(?<![\\w-])-?${PROPS}-(\\d+(?:\\.\\d+)?|px|\\[[^\\]]+\\])(?![\\w.\\[-])`, 'g')
+
+  const sources = (dir: string): string[] =>
+    readdirSync(dir, { withFileTypes: true }).flatMap((entry) =>
+      entry.isDirectory()
+        ? sources(join(dir, entry.name))
+        : entry.name.endsWith('.tsx')
+          ? [join(dir, entry.name)]
+          : [],
+    )
+
+  /** An arbitrary value is allowed when every length in it comes from the
+   *  scale: `--spacing(n)` on a step, the safe area, a token, or a hairline. */
+  const derived = (value: string): boolean => {
+    const steps = [...value.matchAll(/--spacing\(([\d.]+)\)/g)].map((match) => match[1] ?? '')
+    if (steps.some((step) => !STEPS.has(step))) return false
+    const rest = value
+      .replace(/--spacing\([\d.]+\)/g, '')
+      .replace(/env\([^)]*\)/g, '')
+      .replace(/var\(--[\w-]+\)/g, '')
+    return [...rest.matchAll(/(\d*\.?\d+)(px|rem|em)/g)].every(
+      ([, number, unit]) => unit === 'px' && Number(number) <= 1,
+    )
+  }
+
+  test('every gap, padding, margin and offset is a step of the scale', () => {
+    const strays: string[] = []
+
+    for (const file of sources('src')) {
+      readFileSync(file, 'utf8')
+        .split('\n')
+        .forEach((line, index) => {
+          for (const match of line.matchAll(CLASS)) {
+            const value = match[1] ?? ''
+            const ok = value.startsWith('[') ? derived(value.slice(1, -1)) : STEPS.has(value)
+            if (!ok) strays.push(`${file}:${index + 1}  ${match[0]}`)
+          }
+        })
+    }
+
+    expect(strays, 'off the spacing scale — see Spacing in DESIGN.md').toEqual([])
   })
 })
 

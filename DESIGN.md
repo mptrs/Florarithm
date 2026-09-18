@@ -73,9 +73,20 @@ rounded:
   xl: "16px"
   full: "9999px"
 spacing:
+  "1": "0.25rem"
+  "2": "0.5rem"
+  "3": "0.75rem"
+  "4": "1rem"
+  "6": "1.5rem"
+  "8": "2rem"
+  "12": "3rem"
+  "16": "4rem"
   touch: "2.75rem"
   control: "3rem"
   primary: "4rem"
+  bar: "3.75rem"
+  over-bar: "calc(3.75rem + 1px + 1rem)"
+  under-bar: "calc(3.75rem + 1px + 3rem)"
 motion:
   ease-grow: "cubic-bezier(0.2, 0.8, 0.24, 1)"
   hover: "200ms"
@@ -121,7 +132,7 @@ components:
     textColor: "{colors.ink}"
     rounded: "{rounded.sm}"
     height: "{spacing.control}"
-    padding: "0 0.875rem"
+    padding: "0 1rem"
   card:
     backgroundColor: "{colors.surface}"
     rounded: "{rounded.xl}"
@@ -130,7 +141,7 @@ components:
     backgroundColor: "{colors.surface}"
     rounded: "{rounded.lg}"
     border: "{colors.line}"
-    padding: "1.75rem 1.25rem"
+    padding: "1.5rem"
   nav-item-sidebar:
     backgroundColor: "{colors.transparent}"
     textColor: "{colors.ink-muted}"
@@ -289,8 +300,9 @@ Phone and desktop share one markup; layout differs only by Tailwind breakpoint
 wrong layout, and the two cannot drift apart.
 
 - Navigation is a bottom tab bar below `md`, a `15.5rem` left sidebar from `md`.
-- Content sits in a `max-w-5xl` centred column: `px-4 pt-6 pb-32` on phone (the
-  bottom padding clears the fixed tab bar), `px-10 pt-8 pb-12` from `md`.
+- Content sits in a `max-w-5xl` centred column: `px-4 pt-6 pb-under-bar` on
+  phone (the foot clears the fixed tab bar, then leaves a screen-part step),
+  `px-12 pt-8 pb-12` from `md`.
 - Lists are hairline-divided row stacks on phone and gain real table columns
   (species, system, pot size, price) at `lg` — the same component, more columns.
 - The collection is a photo grid on a phone and a table with 40px thumbnails on
@@ -299,6 +311,77 @@ wrong layout, and the two cannot drift apart.
   by side above it, where the facts that never change also appear.
 - `safe-bottom` adds `env(safe-area-inset-bottom)` on top of resting padding
   rather than instead of it, so a phone with no home indicator still has margin.
+
+## Spacing
+
+Eight steps of Tailwind's own 4px unit, and each one has a job. A space in this
+app is never "whatever looked right": it is the step that belongs to the
+relationship between the two things it separates, so the same relationship is
+the same distance on every screen.
+
+| Step | px | What it separates |
+|---|---|---|
+| `1` | 4 | The parts of one thing: an icon and its word, a name and the mark after it, the cells of the calendar. |
+| `2` | 8 | A thing and what it belongs to: a label and its field, a heading and what it heads (section, sheet title, tabs and the panel they switch), a caption and what it captions, a list and the button that adds to it, chips in a row, the controls of one filter bar, a menu and its trigger. |
+| `3` | 12 | A row: its padding, the gap between its parts, and anything laid side by side as equals — two fields, two buttons, tiles in a grid. |
+| `4` | 16 | An inset: a card's or a tile's sides, a callout's sides, a sheet, the phone's page edge, a button's sides, one generation of the family rail, and anything laid over a photograph from that photograph's edge. |
+| `6` | 24 | Blocks: a screen's header and what follows it, banners, the groups of a list, the blocks of a sheet or a form, and the button that commits them. |
+| `8` | 32 | Sections, and columns side by side. |
+| `12` | 48 | The parts of a screen; the desktop page edge. |
+| `16` | 64 | The largest: the drop's own footprint at the foot of the plant page. |
+
+The same relationship is the same distance on every screen and at every
+width: a screen's header is 24 above its content on a phone and on a desktop,
+and a callout is 16 by 12 whether it is a `Banner` or a warning written inline
+in a form.
+
+**A gap belongs to the relationship, not to one of the two things.** Groups in
+a list are spaced by the group, so the first one adds nothing on top of the
+page's own gap; a heading's 8 is set by the section, so content does not add a
+margin of its own above it. When a component carries a margin, the first time
+it lands under something else that already spaced it, the two add up — which
+is how "No place" once sat 48 below the controls instead of 24.
+
+`0`, and `1px` — which is a hairline and never a nudge. Lines of one label
+stack on their own leading with nothing added between them, and an icon beside
+text sits in a box exactly one line of that text tall (`h-5` beside
+`leading-5`) rather than being pushed down by two pixels until it looks right.
+
+Sizes are not spacing. A 44px touch target, a 40px round button, an 11px bead
+or an 80px date column are measurements of a thing; the scale governs the
+distances between things.
+
+### Derived, not chosen
+
+Where a distance is the sum of two things, it is written as that sum, so it
+cannot drift from either:
+
+- **The phone's chrome.** `bar` is the tab bar under its hairline — 8, a 24px
+  icon, 4, a 16px label, 8 — and the label is pinned at `leading-4` so the
+  token stays true. `over-bar` (the bar, its hairline, one inset) is where the
+  drop and the toast sit; `under-bar` (the bar, its hairline, a screen-part
+  step) is the foot of every page.
+- **The place chip on a phone's photograph** sits at the sheet's 24px overlap
+  plus one inset: `bottom-[calc(--spacing(6)+--spacing(4))]`.
+- **A sheet's foot** is the safe area plus a block step:
+  `pb-[calc(env(safe-area-inset-bottom,0px)+--spacing(6))]`.
+- **A bead on the family rail** is centred on the line by construction — one
+  indent plus half a hairline back from the name, then half its own width —
+  so a bead of any size lands on the line without a number of its own.
+- **An outdent is the padding it cancels.** A code badge with `px-3` moves
+  `-ml-3`; a quiet button with `px-4` moves `-ml-4`. A round icon button has
+  no padding to cancel, so it moves one row step (`-ml-3`), which puts a 20px
+  glyph in a 44px button exactly on the edge.
+
+### Named Rules
+
+**The One Scale Rule.** A gap, padding, margin or offset is a step, a named
+token, or a sum of those. `tests/logic.spec.ts` reads every class the app
+writes and fails on anything else — `px-3.5`, `gap-5`, `mt-[13px]` — for the
+same reason the stock palette is cleared: a scale you can step around is a
+suggestion. The test can only say a value is on the scale, not that it is the
+right step for its role — `mb-4` under a heading is a valid step and the wrong
+one. The role is checked by reading, against the table above.
 
 ## Elevation & Depth
 
@@ -433,7 +516,12 @@ plants, and a switch that looked different on the two would read as two controls
 - **`IconChip`** — a round tinted or filled disc leading a row inside a card.
   One tone per meaning: `water` the action, `leaf` the plant, `ink` bookkeeping.
   Tinted in a list, filled for something you press.
-- **`EmptyState`** — `rounded-lg`, `surface`, `line`, `px-5 py-7`. Never a blank
+- **`MilestoneCard`** — a chronicle in a card, on the plant page and on the
+  collection's Milestones page. The event alone on the left edge; the date in
+  mono in the line under it, then `·` and the one figure that makes it mean
+  something — how Family already writes a plant. No icons: the title names the
+  thing, and a disc per line is a cabinet of badges.
+- **`EmptyState`** — `rounded-lg`, `surface`, `line`, `p-6`. Never a blank
   page: an empty collection is a state, not an error, and it says what to do next.
 - **`Sheet`** — rises from the bottom edge on a phone (`1.625rem` top corners,
   `line` top border) and becomes a centred `rounded-xl` panel from `md`. Grabber,

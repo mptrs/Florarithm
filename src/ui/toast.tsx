@@ -47,7 +47,7 @@ export function ToastHost() {
       className={cn(
         'pointer-events-none fixed inset-x-0 z-50 flex flex-col items-center gap-2 px-4',
         // Above the tab bar on a phone, above nothing in particular on a desktop.
-        'bottom-24 md:right-6 md:bottom-6 md:left-auto md:items-end md:px-0',
+        'bottom-over-bar md:right-6 md:bottom-6 md:left-auto md:items-end md:px-0',
       )}
     >
       {current.map((toast) => (
@@ -55,7 +55,7 @@ export function ToastHost() {
           key={toast.id}
           role="status"
           className={cn(
-            'flex items-center gap-2 rounded-full bg-ink px-4 py-2.5 text-[0.875rem] font-medium text-paper shadow-lg',
+            'flex items-center gap-2 rounded-full bg-ink px-4 py-3 text-[0.875rem] font-medium text-paper shadow-lg',
             'animate-toast-in',
           )}
         >

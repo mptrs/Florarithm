@@ -1,0 +1,46 @@
+{
+  "pages": [
+    { "id": "page", "name": "The card" }
+  ],
+  "artboards": [
+    { "file": "Main.dc.html",    "title": "Care, scrolled down", "page": "page", "x": 0,    "y": 0,    "w": 390,  "h": 844 },
+    { "file": "States.dc.html",  "title": "Three plants",        "page": "page", "x": 490,  "y": 0,    "w": 390,  "h": 811 },
+    { "file": "Dark.dc.html",    "title": "Dark",                "page": "page", "x": 980,  "y": 0,    "w": 390,  "h": 844 },
+    { "file": "Desktop.dc.html", "title": "Desktop",             "page": "page", "x": 0,    "y": 1010, "w": 1440, "h": 1160 }
+  ],
+  "annotations": [
+    {
+      "id": "main-note",
+      "page": "page",
+      "x": -350,
+      "y": 0,
+      "w": 290,
+      "text": "Milestones is the last card in the care column, under Family — which is also why lineage is not in it. The card directly above already draws the cuttings; saying \"2 cuttings taken\" here would be the same fact twice, four pixels apart.\n\nNo icon chip on a row. A 38px tinted disc per line is what Care and History use, and here it would turn four facts into four badges — the one thing this card exists to not be."
+    },
+    {
+      "id": "spine-note",
+      "page": "page",
+      "x": 490,
+      "y": -300,
+      "w": 380,
+      "text": "The date leads and is right-aligned, so the days form a column instead of a ragged edge. That is the whole structural idea: Care is a state readout (fact left, figure right), History is every entry, and this is the few dates that mattered, in order. A trailing date would have made it a third run of label/value rows.\n\nCounts became moments: not \"214 waterings\" but the day of the 200th, not a row of pot sizes but the day it went into its third pot. A running total is not a milestone; the day it crossed a round number is.\n\nThree plants, three lengths. Sneeuw has two rows and still earns the card. Mos has one dated fact, so nothing renders: a card of hollow rows waiting to be filled is the locked badge, and a locked badge turns the app into a to-do list of things to make a plant do."
+    },
+    {
+      "id": "dark-note",
+      "page": "page",
+      "x": 1420,
+      "y": 0,
+      "w": 290,
+      "text": "Nothing here branches on theme — every colour is one `light-dark()` token, so this artboard is the same markup under a different `:root`."
+    },
+    {
+      "id": "desktop-note",
+      "page": "page",
+      "x": -350,
+      "y": 1010,
+      "w": 290,
+      "text": "Same markup, 336px instead of 358. Both detail lines still set on one line at that width, which is what fixed the 80px date column: any wider and \"after 214 days on the wishlist\" wraps in the desktop column.\n\nDetails has lost its calendar row. It used to say \"In the collection since 2 Mar 2021\" — Milestones now says the same date as the first thing in the chronicle, and says what came of it."
+    }
+  ],
+  "launch": { "view": "canvas", "page": "page" }
+}

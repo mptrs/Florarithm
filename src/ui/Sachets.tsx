@@ -102,7 +102,7 @@ export function SachetReminder() {
           {`Order new sachets: the ones from week ${sachets.week} ${runOutPhrase(sachets)}.`}
         </Banner>
       ) : (
-        <p className="flex min-h-[1.875rem] items-center gap-2.5 text-[0.8125rem] text-ink-muted">
+        <p className="flex min-h-[1.875rem] items-center gap-2 text-[0.8125rem] text-ink-muted">
           <Icon name="pest" size={15} className="shrink-0 text-ink-faint" />
           <span>
             Sachets from week <span className="font-mono">{sachets.week}</span> ·{' '}
@@ -174,7 +174,7 @@ export function SachetSheet({
 
   return (
     <Sheet open={open} onClose={onClose} title={mode === 'correct' ? 'These sachets' : 'New sachets'}>
-      <div className="flex flex-col gap-5 pb-2">
+      <div className="flex flex-col gap-6">
         <NumberField
           label="Week on the packet"
           value={week}

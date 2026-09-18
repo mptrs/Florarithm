@@ -67,7 +67,7 @@ export function DatePicker({
     onChange(atMidday(date.getFullYear(), date.getMonth(), date.getDate()))
 
   return (
-    <div className="pt-1">
+    <div>
       {/* Today and Yesterday, which between them cover most back-dating.
           These were a local button drawn to the filter chip's exact
           measurements — the same thing twice, which is how one of them ends
@@ -84,12 +84,12 @@ export function DatePicker({
         </Chip>
       </div>
 
-      <div className="mt-5 flex items-center justify-between">
+      <div className="mt-6 flex items-center justify-between">
         <button
           type="button"
           aria-label="Previous month"
           onClick={() => setCursor(new Date(year, month - 1, 1))}
-          className="warm -ml-2 flex size-touch items-center justify-center rounded-full text-ink-muted active:opacity-70 hover:bg-sunk hover:text-ink"
+          className="warm -ml-3 flex size-touch items-center justify-center rounded-full text-ink-muted active:opacity-70 hover:bg-sunk hover:text-ink"
         >
           <Icon name="chevronLeft" size={21} />
         </button>
@@ -101,7 +101,7 @@ export function DatePicker({
           aria-label="Next month"
           disabled={atLatest}
           onClick={() => setCursor(new Date(year, month + 1, 1))}
-          className="warm -mr-2 flex size-touch items-center justify-center rounded-full text-ink-muted disabled:opacity-30 active:opacity-70 enabled:hover:bg-sunk enabled:hover:text-ink"
+          className="warm -mr-3 flex size-touch items-center justify-center rounded-full text-ink-muted disabled:opacity-30 active:opacity-70 enabled:hover:bg-sunk enabled:hover:text-ink"
         >
           <Icon name="chevronRight" size={21} />
         </button>
@@ -112,14 +112,14 @@ export function DatePicker({
           <div
             key={index}
             aria-hidden
-            className="py-1.5 text-center font-mono text-[0.6875rem] tracking-[0.06em] text-ink-faint"
+            className="py-2 text-center font-mono text-[0.6875rem] tracking-[0.06em] text-ink-faint"
           >
             {day}
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-0.5">
+      <div className="grid grid-cols-7 gap-1">
         {monthGrid(year, month).map((day, index) => {
           if (day === null) return <span key={index} />
 
@@ -150,7 +150,7 @@ export function DatePicker({
         })}
       </div>
 
-      <Button variant="solid" block onClick={onDone} className="mt-4">
+      <Button variant="solid" block onClick={onDone} className="mt-6">
         Use this date
       </Button>
     </div>
@@ -243,7 +243,7 @@ export function DatePickerField({
         }}
         className={cn(
           CONTROL,
-          'warm flex items-center gap-2.5 text-left font-mono active:opacity-70 hover:bg-sunk',
+          'warm flex items-center gap-2 text-left font-mono active:opacity-70 hover:bg-sunk',
         )}
       >
         <Icon name="calendar" size={17} className="shrink-0 text-ink-muted" />

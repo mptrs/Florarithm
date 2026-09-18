@@ -238,6 +238,26 @@
   --spacing-control: 3rem; /* 48px — the standard control */
   --spacing-primary: 4rem; /* 64px — the one action you came for */
 
+  /* Space. Every gap, padding, margin and offset is one of eight steps of
+     Tailwind's own 4px unit, each with one job — see Spacing in DESIGN.md:
+       1 ·  4px  the parts of one thing: an icon and its word, a name and its mark
+       2 ·  8px  a group: a label and its field, a heading and what it heads, chips in a row
+       3 · 12px  a row: its padding and the gap between its parts
+       4 · 16px  an inset: a card, a sheet, the phone's page edge, one indent
+       6 · 24px  between blocks inside a screen, a sheet or a form
+       8 · 32px  between sections, between columns
+      12 · 48px  between the parts of a screen; the desktop page edge
+      16 · 64px  the largest: clearing the drop
+     Plus 0 and 1px, which is a hairline and nothing else. A value that is not
+     one of these is a question the design has not answered yet —
+     `tests/logic.spec.ts` fails on it.
+
+     The phone's fixed chrome is measured once, here, and everything that has
+     to clear it is derived from it rather than guessed at. */
+  --spacing-bar: 3.75rem; /* 60px — the tab bar under its hairline: 8 + a 24px icon + 4 + a 16px label + 8 */
+  --spacing-over-bar: calc(var(--spacing-bar) + 1px + 1rem); /* the bar, its hairline, one inset: the drop and the toast */
+  --spacing-under-bar: calc(var(--spacing-bar) + 1px + 3rem); /* the page's foot: the bar, its hairline, a screen-part step */
+
   /* One curve for the whole app: quick off the mark, long settle. A plant
      does not bounce into place, and neither does anything here — no spring,
      no overshoot, nothing that draws attention to itself on the way. */

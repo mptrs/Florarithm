@@ -322,18 +322,18 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
   const title = existing ? (promote ? 'Add to the collection' : `Edit ${existing.name}`) : wish ? 'New wish' : 'New plant'
 
   return (
-    <div className="flex flex-col gap-7">
+    <div className="flex flex-col gap-8">
       {/* The way out before you have started. Cancel is still down by Save,
           where it belongs next to the decision it undoes. The code rides
           alongside the title on an existing plant: it is the one thing on this
           page that cannot be edited, because it is printed on the pot. */}
       <div className="flex items-start gap-2">
-        <BackButton variant="bare" className="-ml-2.5" />
+        <BackButton variant="bare" className="-ml-3" />
         <div className="min-w-0 flex-1">
           <h1 className="font-display text-[2rem] leading-9 font-medium tracking-[-0.015em] text-balance">
             {title}
           </h1>
-          {existing ? <CodeBadge code={existing.code} tone="quiet" className="-ml-2.5 mt-1" /> : null}
+          {existing ? <CodeBadge code={existing.code} tone="quiet" className="-ml-3 mt-1" /> : null}
         </div>
       </div>
 
@@ -356,12 +356,12 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
               ? 'A wish only records what it is and why you want it — no place or care yet.'
               : undefined
           }
-          className="border-y border-line py-1"
+          className="border-y border-line"
         />
       )}
 
-      <div className="flex flex-col gap-7 lg:flex-row lg:gap-12">
-        <div className="flex flex-col gap-7 lg:w-[32rem] lg:shrink-0">
+      <div className="flex flex-col gap-8 lg:flex-row">
+        <div className="flex flex-col gap-8 lg:w-[32rem] lg:shrink-0">
           <Section icon="tag" title="What it is">
             <div className="flex gap-3">
               <TextField
@@ -456,7 +456,7 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
                     : 'The dice asks a small AI, running in your browser, for something that fits the genus. It is an offer, not a decision.')
                 }
               >
-                <div className="flex gap-2.5">
+                <div className="flex gap-2">
                   <TextField
                     aria-label="Name"
                     value={name}
@@ -544,8 +544,10 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
                   {parentPlant ? <Lineage state={state} parent={parentPlant} /> : null}
 
                   {existing && childrenOf(state, existing.code).length > 0 ? (
-                    <div className="flex gap-3 rounded-lg bg-ember-tint px-4 py-3.5">
-                      <Icon name="alert" size={19} className="mt-0.5 text-ember" />
+                    <div className="flex gap-2 rounded-lg bg-ember-tint px-4 py-3">
+                      <span className="flex h-5 shrink-0 items-center">
+                        <Icon name="alert" size={19} className="text-ember" />
+                      </span>
                       <p className="text-[0.8125rem] leading-5 text-pretty">
                         {existing.name} has{' '}
                         {plural(descendantCodes(state, existing.code).size, 'plant')} of its own
@@ -578,14 +580,14 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
           {/* A wish has no Status section to hang this off — nothing about it
               has a status yet — so the one exit it does have sits here. */}
           {existing && wish ? (
-            <div className="border-t border-line pt-5">
+            <div className="border-t border-line pt-6">
               <DeleteRow onDelete={remove} wish />
             </div>
           ) : null}
         </div>
 
         {wish ? null : (
-          <div className="flex min-w-0 flex-1 flex-col gap-7">
+          <div className="flex min-w-0 flex-1 flex-col gap-8">
             <Section icon="receipt" title="Where it came from">
               <div className="flex flex-wrap gap-2">
                 {ORIGIN_TYPES.map((candidate) => (
@@ -658,7 +660,7 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
         )}
       </div>
 
-      <div className="flex flex-wrap items-center gap-3 border-t border-line pt-5">
+      <div className="flex flex-wrap items-center gap-3 border-t border-line pt-6">
         <Button
           variant="accent"
           icon={existing ? 'check' : 'plus'}
@@ -697,7 +699,7 @@ function DeleteRow({ onDelete, wish }: { onDelete: () => void; wish?: boolean })
           ? 'Deleting drops the wish and its note for good.'
           : 'A plant that died or moved on keeps its place here under its own status — the history is the point. Delete is for a record that should never have existed.'}
       </p>
-      <Button variant="danger-quiet" icon="trash" onClick={onDelete} className="-ml-3.5">
+      <Button variant="danger-quiet" icon="trash" onClick={onDelete} className="-ml-4">
         {wish ? 'Delete this wish' : 'Delete this plant for good'}
       </Button>
     </div>
@@ -724,7 +726,7 @@ function Lineage({ state, parent }: { state: State; parent: Plant }) {
   const line = [...ancestorsOf(state, parent.code), parent]
 
   return (
-    <div className="rounded-lg border border-line bg-surface px-4 py-3.5">
+    <div className="rounded-lg border border-line bg-surface px-4 py-3">
       <div className="flex items-baseline justify-between gap-3">
         <GroupLabel>The line so far</GroupLabel>
         <span className="text-[0.8125rem] text-ink-faint">
@@ -732,7 +734,7 @@ function Lineage({ state, parent }: { state: State; parent: Plant }) {
         </span>
       </div>
 
-      <div className="mt-2.5 flex flex-wrap items-center gap-2">
+      <div className="mt-2 flex flex-wrap items-center gap-2">
         {line.map((plant, index) => (
           <span key={plant.code} className="flex items-center gap-2">
             <span
@@ -748,7 +750,7 @@ function Lineage({ state, parent }: { state: State; parent: Plant }) {
             <Icon name="chevronRight" size={14} className="text-line-strong" />
           </span>
         ))}
-        <span className="inline-flex h-6.5 items-center rounded-full bg-leaf-tint px-2.5 text-[0.8125rem] font-semibold text-leaf">
+        <span className="inline-flex h-6.5 items-center rounded-full bg-leaf-tint px-3 text-[0.8125rem] font-semibold text-leaf">
           this one
         </span>
       </div>
@@ -769,7 +771,7 @@ function PhotoChoice({
 
   return (
     <Section icon="image" title="Photo">
-      <p className="-mt-2 text-[0.8125rem] leading-5 text-ink-muted text-pretty">
+      <p className="text-[0.8125rem] leading-5 text-ink-muted text-pretty">
         Which one stands for the plant. Every photograph stays in the history either way.
       </p>
 

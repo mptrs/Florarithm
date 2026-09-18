@@ -25,6 +25,7 @@ export type Route =
   | { name: 'today' }
   | { name: 'plant'; code: string }
   | { name: 'collection'; filter: CollectionFilter }
+  | { name: 'milestones' }
   | { name: 'new'; wish: boolean; parentCode: string | null }
   | { name: 'edit'; code: string; promote: boolean }
   | { name: 'settings' }
@@ -37,6 +38,8 @@ export const routes = {
   /** Its own screen, so its own hash. `#collection/wishlist` still parses to
    *  the same place: a link written down before the move must not rot. */
   wishlist: () => '#wishlist',
+  /** One level under Collection, reached from the counts in its header. */
+  milestones: () => '#collection/milestones',
   new: () => '#new',
   newWish: () => '#new/wish',
   newFrom: (parentCode: string) => `#new/from/${parentCode}`,
@@ -59,6 +62,7 @@ export function parseRoute(hash: string): Route {
 
   switch (head) {
     case 'collection': {
+      if (rest[0] === 'milestones') return { name: 'milestones' }
       const candidate = rest[0] as CollectionFilter | undefined
       const filter = candidate && COLLECTION_FILTERS.includes(candidate) ? candidate : 'all'
       return { name: 'collection', filter }

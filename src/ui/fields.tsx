@@ -30,7 +30,7 @@ import { Icon } from './Icon'
  * one was written last (see `lib/cn.ts`).
  */
 const CONTROL_FACE = cn(
-  'w-full rounded-sm border border-line-strong bg-surface px-3.5 text-body text-ink',
+  'w-full rounded-sm border border-line-strong bg-surface px-4 text-body text-ink',
   'placeholder:text-ink-faint',
   // Hover firms the border, focus turns it leaf. Both set `border-color`, and
   // focus wins because Tailwind emits it after hover — so a focused field
@@ -90,7 +90,7 @@ export function Field({
   children: ReactNode
 }) {
   return (
-    <div className={cn('flex flex-col gap-1.5', className)}>
+    <div className={cn('flex flex-col gap-2', className)}>
       {label ? <Label id={labelId} htmlFor={htmlFor}>{label}</Label> : null}
       {children}
       {hint ? <p className="text-[0.8125rem] leading-5 text-ink-muted">{hint}</p> : null}
@@ -165,7 +165,7 @@ export function NumberField({
           {...rest}
         />
         {unit ? (
-          <span className="pointer-events-none absolute inset-y-0 right-3.5 flex items-center text-[0.875rem] text-ink-faint">
+          <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-[0.875rem] text-ink-faint">
             {unit}
           </span>
         ) : null}
@@ -222,12 +222,12 @@ export function SelectField({
   return (
     <Field label={label} hint={hint} htmlFor={id} className={fieldClassName}>
       <div className="relative">
-        <select id={id} className={cn(CONTROL, 'appearance-none pr-11', className)} {...rest}>
+        <select id={id} className={cn(CONTROL, 'appearance-none pr-12', className)} {...rest}>
           {children}
         </select>
         <Icon
           name="chevronDown"
-          className="pointer-events-none absolute inset-y-0 right-3.5 my-auto text-ink-muted"
+          className="pointer-events-none absolute inset-y-0 right-4 my-auto text-ink-muted"
         />
       </div>
     </Field>
@@ -297,30 +297,30 @@ export function ToggleField({
   className?: string
 }) {
   return (
-    <div className={cn('flex flex-col gap-1.5', className)}>
+    <div className={cn('flex flex-col gap-2', className)}>
       <button
         type="button"
         role="switch"
         aria-checked={checked}
         onClick={() => onChange(!checked)}
-        className="group flex min-h-control items-center justify-between gap-4 text-left"
+        className="group flex min-h-control items-center justify-between gap-3 text-left"
       >
         <span className="text-body text-ink">{label}</span>
         <span
           className={cn(
-            'warm flex h-8 w-13 shrink-0 items-center rounded-full px-[3px]',
+            'warm flex h-8 w-13 shrink-0 items-center rounded-full px-1',
             checked
               ? 'bg-leaf group-hover:bg-leaf-deep'
               : 'bg-line-strong group-hover:bg-ink-faint',
           )}
         >
-          {/* 52px track, 3px of padding either side, a 26px knob: 20px of
+          {/* 52px track, 4px of padding all round, a 24px knob: 20px of
               travel. It used to swap `justify-start` for `justify-end`, which
               is not a property anything can animate, so the knob arrived
               before the colour did. */}
           <span
             className={cn(
-              'size-6.5 rounded-full bg-surface transition-transform duration-200 ease-grow',
+              'size-6 rounded-full bg-surface transition-transform duration-200 ease-grow',
               'motion-reduce:transition-none',
               checked ? 'translate-x-5' : 'translate-x-0',
             )}
@@ -373,9 +373,9 @@ export function SearchField({ className, ...rest }: InputHTMLAttributes<HTMLInpu
       <Icon
         name="search"
         size={17}
-        className="pointer-events-none absolute inset-y-0 left-3.5 my-auto text-ink-faint"
+        className="pointer-events-none absolute inset-y-0 left-4 my-auto text-ink-faint"
       />
-      <input type="search" className={cn(CONTROL, 'pl-11')} {...rest} />
+      <input type="search" className={cn(CONTROL, 'pl-12')} {...rest} />
     </div>
   )
 }

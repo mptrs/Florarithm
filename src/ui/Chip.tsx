@@ -43,7 +43,7 @@ export function Chip({
         // in the app.
         'lift active:opacity-70',
         'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-leaf',
-        isChoice ? 'h-touch px-4 text-[0.9375rem]' : 'h-9 px-3.5 text-[0.875rem]',
+        isChoice ? 'h-touch px-4 text-[0.9375rem]' : 'h-9 px-4 text-[0.875rem]',
         selected
           ? isChoice
             ? 'bg-water text-on-accent font-semibold hover:bg-water-deep'

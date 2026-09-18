@@ -46,7 +46,7 @@ export function WaterDrop({ onWater }: { onWater: () => void }) {
 
   return (
     // Phone only. The desktop waters from the title row instead.
-    <div className="safe-bottom pointer-events-none fixed right-4 bottom-[5.875rem] z-40 md:hidden">
+    <div className="safe-bottom pointer-events-none fixed right-4 bottom-over-bar z-40 flex md:hidden">
       <button
         type="button"
         aria-label="Water"

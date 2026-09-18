@@ -26,7 +26,7 @@
 import { useState } from 'react'
 import {
   archivedMatching,
-  countOf,
+  collectionCounts,
   daysSinceWater,
   filterCollection,
   groupByPlace,
@@ -42,6 +42,7 @@ import { COLLECTION_FILTERS, navigate, routes, type CollectionFilter } from '~/l
 import { Button } from '~/ui/Button'
 import { Chip, ChipStrip, SortSwitch, type SortOption } from '~/ui/Chip'
 import { Dozing } from '~/ui/Dozing'
+import { Icon } from '~/ui/Icon'
 import { SearchField } from '~/ui/fields'
 import { PlantThumb, PlantTile } from '~/ui/plantPicture'
 import { EmptyState, ScreenHeader } from '~/ui/primitives'
@@ -71,6 +72,7 @@ const SORTS = [
 
 export function CollectionScreen({ filter }: { filter: CollectionFilter }) {
   const state = useStore()
+  const counts = collectionCounts(state)
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState<Sort>('place')
 
@@ -81,17 +83,33 @@ export function CollectionScreen({ filter }: { filter: CollectionFilter }) {
   const nothing = plants.length === 0 && archived.length === 0
 
   return (
-    <div className="flex flex-col gap-4 lg:gap-8">
+    <div className="flex flex-col gap-6">
+      {/* The counts are the way to the collection's milestones: always at
+          the top, however long the grid under them grows. */}
       <ScreenHeader
         title="Collection"
-        meta={
-          <>
-            <span className="font-mono">{countOf(state, 'all')}</span> plants
-          </>
+        action={
+          <a
+            href={routes.milestones()}
+            className="warm flex min-h-touch items-center gap-1 text-[0.8125rem] text-leaf hover:text-leaf-deep"
+          >
+            <span>
+              <span className="sr-only">Milestones: </span>
+              <span className="font-mono">{counts.plants}</span>{' '}
+              {counts.plants === 1 ? 'plant' : 'plants'}
+              {counts.grown > 0 ? (
+                <>
+                  {' · '}
+                  <span className="font-mono">{counts.grown}</span> grown here
+                </>
+              ) : null}
+            </span>
+            <Icon name="chevronRight" size={16} />
+          </a>
         }
       />
 
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4">
+      <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
         <SearchField
           value={query}
           onChange={(event) => setQuery(event.target.value)}
@@ -159,7 +177,7 @@ function PlantRuns({
   return (
     <div>
       {/* The table header exists only where there are columns to head. */}
-      <div className="hidden items-center gap-4 border-b border-line-strong px-2.5 pb-2.5 lg:flex">
+      <div className="hidden items-center gap-3 border-b border-line-strong px-3 pb-2 lg:flex">
         <span className="w-10 shrink-0" />
         <ColumnHeader className="flex-1">Plant</ColumnHeader>
         <div className="flex items-center gap-8">
@@ -170,11 +188,15 @@ function PlantRuns({
         </div>
       </div>
 
-      {runs.map(([place, members]) => (
-        <section key={place || 'all'}>
+      {runs.map(([place, members], index) => (
+        // Groups are a block step apart. The first has nothing above it on a
+        // phone — the page's own gap already put it there — and on a desktop
+        // sits under the table header: a block step when a label opens it,
+        // flush when the rows answer the header directly.
+        <section key={place || 'all'} className={index > 0 ? 'mt-6' : place ? 'lg:mt-6' : undefined}>
           {place ? <DrawerLabel name={place} count={members.length} /> : null}
 
-          <div className={cn('grid grid-cols-2 gap-3 lg:hidden', place ? '' : 'mt-4')}>
+          <div className="grid grid-cols-2 gap-3 lg:hidden">
             {members.map((plant) => (
               <PlantTile key={plant.code} plant={plant} secondary={formatSpecies(plant)} />
             ))}
@@ -204,7 +226,7 @@ function PlantRow({ plant, showPlace }: { plant: Plant; showPlace: boolean }) {
       <PlantThumb plant={plant} />
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <span className="flex items-baseline gap-1.5">
+        <span className="flex items-baseline gap-1">
           <span className="truncate font-display text-[1.09375rem] leading-[1.375rem] font-medium">
             {plant.name}
           </span>
@@ -287,7 +309,7 @@ function Archive({ plants, query }: { plants: readonly Plant[]; query: string })
         ))}
       </div>
 
-      <p className="mt-3.5 px-0.5 text-[0.8125rem] leading-[1.125rem] text-ink-faint text-pretty">
+      <p className="mt-2 text-[0.8125rem] leading-[1.125rem] text-ink-faint text-pretty">
         {isArchiveQuery(query)
           ? 'Plants that died or were given away. A dormant plant is not here — it is still on the shelf, just asleep.'
           : 'Archived, so it is out of every list you water from.'}

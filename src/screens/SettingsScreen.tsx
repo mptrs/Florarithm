@@ -39,7 +39,7 @@ import { SyncStatusPill } from '~/ui/SyncStatusPill'
 
 export function SettingsScreen() {
   return (
-    <div className="flex flex-col gap-10">
+    <div className="flex flex-col gap-8">
       <ScreenHeader title="Settings" />
       <SyncSection />
       <SachetsSection />
@@ -151,7 +151,7 @@ function SyncSection() {
           label="Access token"
           hint="Reaches this one repository and nothing else. Lose the phone and you revoke it on github.com; every other device carries on."
         >
-          <div className="flex gap-2.5">
+          <div className="flex gap-2">
             <TextField
               type="password"
               autoComplete="off"
@@ -170,8 +170,8 @@ function SyncSection() {
         </Field>
       ) : (
         <Field label="Access token">
-          <div className="flex gap-2.5">
-            <div className="flex h-control w-full max-w-sm items-center rounded-sm border border-line-strong bg-surface px-3.5 font-mono text-body text-ink-muted">
+          <div className="flex gap-2">
+            <div className="flex h-control w-full max-w-sm items-center rounded-sm border border-line-strong bg-surface px-4 font-mono text-body text-ink-muted">
               {maskToken(config?.token ?? '')}
             </div>
             <Button variant="outline" icon="pencil" onClick={() => setReplacingToken(true)}>
@@ -272,11 +272,11 @@ function BackupSection() {
     <details className="group">
       <summary
         className={cn(
-          'warm group/summary mb-4 flex cursor-pointer list-none items-center justify-between gap-2.5',
-          'border-b border-line pb-2.5 hover:border-line-strong [&::-webkit-details-marker]:hidden',
+          'warm group/summary mb-2 flex cursor-pointer list-none items-center justify-between gap-2',
+          'border-b border-line pb-2 hover:border-line-strong [&::-webkit-details-marker]:hidden',
         )}
       >
-        <span className="flex items-center gap-2.5">
+        <span className="flex items-center gap-2">
           <Icon
             name="download"
             size={19}
@@ -291,7 +291,7 @@ function BackupSection() {
         />
       </summary>
 
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-6">
         {syncStatus.kind === 'error' ? (
           <Banner tone="warning" icon="alert">
             Sync isn&rsquo;t reaching your repository right now, so it isn&rsquo;t a safety net at
@@ -398,7 +398,7 @@ function SachetsSection() {
       {sachets ? (
         // Two buttons and two lines of text do not fit one row at 375px, so the
         // row becomes a stack there and is a row again from `sm`.
-        <Row className="flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-4">
+        <Row className="flex-col items-start gap-3 sm:flex-row sm:items-center">
           <div className="flex min-w-0 flex-1 flex-col">
             <span className="font-mono text-code">WEEK {sachets.week}</span>
             <span className="text-[0.8125rem] text-ink-muted">{sachetSummary(sachets)}</span>
@@ -465,7 +465,7 @@ function VocabList({ kind }: { kind: VocabKind }) {
     <div className="flex flex-col gap-2">
       <SectionHeading>{`${label(kind)}s`}</SectionHeading>
 
-      <div className="flex gap-2.5">
+      <div className="flex gap-2">
         <TextField
           aria-label={`New ${label(kind).toLowerCase()}`}
           placeholder={`Add a ${label(kind).toLowerCase()}`}
@@ -496,7 +496,7 @@ function VocabList({ kind }: { kind: VocabKind }) {
                   else event.target.value = item.name
                 }}
                 className={cn(
-                  'warm min-w-0 flex-1 rounded-sm border border-transparent bg-transparent px-2 py-2 text-body',
+                  'warm -ml-2 min-w-0 flex-1 rounded-sm border border-transparent bg-transparent px-2 py-2 text-body',
                   item.archived ? 'text-ink-faint line-through' : 'text-ink',
                   'hover:border-line-strong focus:border-leaf focus:outline-none',
                 )}
