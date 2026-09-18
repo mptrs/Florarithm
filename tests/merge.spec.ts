@@ -182,8 +182,19 @@ test.describe('remote file shapes', () => {
 
   test('meta.json round-trips through build and parse', () => {
     const items = [vocab('loc-1', '2026-01-01')]
-    const parsed = parseRemoteMeta(buildMetaFile(items))
+    const parsed = parseRemoteMeta(buildMetaFile(items, null))
     expect(parsed.vocab).toEqual(items)
+    expect(parsed.sachets).toBeNull()
+  })
+
+  test('meta.json carries the sachets, and a malformed record reads as none', () => {
+    const sachets = { week: 34, hungOn: '2026-08-20T12:00:00.000Z', updatedAt: '2026-08-20T12:00:00.000Z' }
+    expect(parseRemoteMeta(buildMetaFile([], sachets)).sachets).toEqual(sachets)
+
+    // A week that cannot be a week loses the reminder, not the sync round:
+    // the whole record is two fields anybody can type again.
+    const broken = { format: 'florarithm', version: BACKUP_VERSION, vocab: [], sachets: { week: '34' } }
+    expect(parseRemoteMeta(JSON.stringify(broken)).sachets).toBeNull()
   })
 
   test('meta.json from before updatedAt existed falls back to createdAt', () => {

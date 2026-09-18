@@ -37,7 +37,7 @@ Most plant-care apps push notifications and try to predict when a plant needs wa
 - A wrong entry is corrected in place: swipe a history row left to delete it, right to edit it (hover buttons instead, from `md` up). No undo bar — a tombstone survives a reload and merges correctly with another device, which a three-second bar does not.
 - Photographs are attached to log entries rather than kept as a gallery of their own, capped at a 1600px JPEG, stored in their own IndexedDB store and synced as one file per event.
 - Four runtime dependencies: React, ReactDOM, `idb` and `qrcode-generator`. `@mlc-ai/web-llm` is a fifth in `package.json` but is only ever reached through a dynamic `import()`, so a build that never opens the AI name suggester never fetches it.
-- Roadmap: M1 (done) single device; M2 (done) private-repo sync; M3 (done) photos + QR fallback for a dead sticker; M4 (under way) multi-generation family tree (done), pest tracking with repeat treatments and achievements (still to come).
+- Roadmap: M1 (done) single device; M2 (done) private-repo sync; M3 (done) photos + QR fallback for a dead sticker; M4 (under way) multi-generation family tree (done), a collection-wide reminder for the predatory-mite sachets (done), per-plant pest tracking with repeat treatments and achievements (still to come).
 
 ## Brand Commitments
 

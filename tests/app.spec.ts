@@ -752,3 +752,60 @@ test('the picture that stands for the plant can be chosen in the edit form', asy
   await expect(hero).toBeVisible()
   await expect.poll(heroWidth).toBe(1600)
 })
+
+/**
+ * The sachets: the one record in the app that belongs to no plant.
+ *
+ * Both readings of the single line on Today, and the reset that ends the
+ * second one. The spent state is reached by writing the record with a date a
+ * month back rather than by waiting four weeks, which is the only part of this
+ * a test cannot do honestly.
+ */
+test('the sachets count up on Today, ask to be replaced, and reset in one sheet', async ({
+  page,
+}) => {
+  await page.goto('#settings')
+  await page.getByRole('button', { name: 'Sachets are hanging' }).click()
+  await page.getByRole('button', { name: 'Hang them' }).click()
+
+  await page.goto('#today')
+  await expect(page.getByText(/Sachets from week \d+ · day 0 of 28/)).toBeVisible()
+
+  // Hung 31 days ago, in the week it was hung. Written straight to the record
+  // rather than through the calendar, so the assertion is about the counting
+  // and not about the date picker.
+  await page.evaluate(async () => {
+    const hungOn = new Date(Date.now() - 31 * 86_400_000).toISOString()
+    await new Promise<void>((resolve, reject) => {
+      const open = indexedDB.open('florarithm')
+      open.onsuccess = () => {
+        const transaction = open.result.transaction('meta', 'readwrite')
+        transaction.objectStore('meta').put({ week: 34, hungOn, updatedAt: hungOn }, 'sachets')
+        transaction.oncomplete = () => resolve()
+        transaction.onerror = () => reject(transaction.error)
+      }
+      open.onerror = () => reject(open.error)
+    })
+  })
+  await page.reload()
+
+  await expect(page.getByText('The sachets from week 34 are 31 days old. Hang the next ones.')).toBeVisible()
+
+  // The reset opens on this week and today, not on what is hanging — the old
+  // batch is the thing being replaced.
+  await page.getByRole('button', { name: 'Hung' }).click()
+  await expect(page.getByRole('dialog', { name: 'New sachets' })).toBeVisible()
+  await expect(page.getByLabel('Week on the packet')).not.toHaveValue('34')
+  await page.getByRole('button', { name: 'Hang them' }).click()
+
+  await expect(page.getByText(/day 0 of 28/)).toBeVisible()
+  await expect(page.getByText('Hang the next ones.')).toBeHidden()
+
+  // Taking them down is what switches the reminder off: there is no second
+  // state where a record exists and Today says nothing about it.
+  await page.goto('#settings')
+  await page.getByRole('button', { name: 'Take down' }).click()
+  await page.getByRole('button', { name: 'Take them down' }).click()
+  await page.goto('#today')
+  await expect(page.getByText(/day 0 of 28/)).toBeHidden()
+})

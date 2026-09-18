@@ -26,6 +26,7 @@ import type {
   Plant,
   PlantEvent,
   PlantStatus,
+  Sachets,
   System,
   VocabItem,
   VocabKind,
@@ -38,9 +39,12 @@ export type State = {
   events: readonly PlantEvent[]
   vocab: readonly VocabItem[]
   lastBackupAt: string | null
+  /** The sachets hanging right now, or `null` when none do. */
+  sachets: Sachets | null
 }
 
 const LAST_BACKUP_KEY = 'lastBackupAt'
+const SACHETS_KEY = 'sachets'
 
 let state: State = {
   status: 'loading',
@@ -48,6 +52,7 @@ let state: State = {
   events: [],
   vocab: [],
   lastBackupAt: null,
+  sachets: null,
 }
 
 const listeners = new Set<() => void>()
@@ -85,9 +90,10 @@ export async function load(): Promise<void> {
   loadStarted = true
 
   try {
-    const [snapshot, lastBackupAt] = await Promise.all([
+    const [snapshot, lastBackupAt, sachets] = await Promise.all([
       db.readAll(),
       db.readMeta<string>(LAST_BACKUP_KEY),
+      db.readMeta<Sachets>(SACHETS_KEY),
     ])
 
     const plants = snapshot.plants.map(migratePlant)
@@ -107,7 +113,15 @@ export async function load(): Promise<void> {
       ])
     }
 
-    commit({ ...snapshot, plants, events, vocab, lastBackupAt: lastBackupAt ?? null, status: 'ready' })
+    commit({
+      ...snapshot,
+      plants,
+      events,
+      vocab,
+      lastBackupAt: lastBackupAt ?? null,
+      sachets: sachets ?? null,
+      status: 'ready',
+    })
   } catch {
     commit({ status: 'error' })
   }
@@ -400,6 +414,29 @@ async function patchVocabItem(id: Id, patch: Partial<VocabItem>): Promise<void> 
 export async function replaceEverything(snapshot: db.Snapshot): Promise<void> {
   await db.replaceAll(snapshot)
   commit(snapshot)
+}
+
+// --- sachets ----------------------------------------------------------------
+
+/**
+ * Hang a new batch. There is one record, so this overwrites the old one rather
+ * than appending: the sachets that came down answer no question anybody asks.
+ *
+ * `null` takes them down entirely, which is also how the reminder is switched
+ * off — a written record and a silent screen would be two truths.
+ */
+export async function hangSachets(sachets: { week: number; hungOn: string } | null): Promise<void> {
+  const next = sachets === null ? null : { ...sachets, updatedAt: nowISO() }
+  await db.writeMeta(SACHETS_KEY, next)
+  commit({ sachets: next })
+}
+
+/** What arrived from the repository, already decided to be the newer of the
+ *  two. Separate from `hangSachets` because it must not restamp `updatedAt` —
+ *  that stamp is what the other device's copy is compared against. */
+export async function applySachetsFromRemote(sachets: Sachets | null): Promise<void> {
+  await db.writeMeta(SACHETS_KEY, sachets)
+  commit({ sachets })
 }
 
 export async function markBackedUp(): Promise<void> {

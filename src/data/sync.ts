@@ -27,9 +27,14 @@ import { useSyncExternalStore } from 'react'
 import { nowISO } from '~/lib/date'
 import * as db from './db'
 import type { Snapshot } from './db'
-import type { PlantEvent } from './types'
+import type { PlantEvent, Sachets } from './types'
 import { acceptDownloadedPhoto } from './photos'
-import { getState, replaceEverything, subscribe as subscribeStore } from './store'
+import {
+  applySachetsFromRemote,
+  getState,
+  replaceEverything,
+  subscribe as subscribeStore,
+} from './store'
 import { mergeSnapshots } from './merge'
 import {
   GitHubApiError,
@@ -332,6 +337,14 @@ function apiErrorMessage(error: GitHubApiError): string {
   return `GitHub refused the request (${error.status}).`
 }
 
+/** The later of two writes, and the local one when neither has a stamp to
+ *  compare — a device that has never hung any has nothing to lose. */
+function newerSachets(local: Sachets | null, remote: Sachets | null): Sachets | null {
+  if (!remote) return local
+  if (!local) return remote
+  return remote.updatedAt > local.updatedAt ? remote : local
+}
+
 async function syncOnce(active: SyncConfig): Promise<void> {
   // Resolved once per round and passed to every write: a `PUT contents` with
   // no explicit branch resolves against the repo's default ref, which does
@@ -341,7 +354,8 @@ async function syncOnce(active: SyncConfig): Promise<void> {
   const branch = await getDefaultBranch(active)
 
   const remoteMetaFile = await getFile(active, 'meta.json')
-  const remoteVocab = remoteMetaFile ? parseRemoteMeta(remoteMetaFile.content).vocab : []
+  const remoteMeta = remoteMetaFile ? parseRemoteMeta(remoteMetaFile.content) : null
+  const remoteVocab = remoteMeta?.vocab ?? []
 
   const remotePlantsFile = await getFile(active, 'plants.json')
   const remotePlants = remotePlantsFile ? parsePlantsFile(remotePlantsFile.content) : []
@@ -372,10 +386,17 @@ async function syncOnce(active: SyncConfig): Promise<void> {
 
   const { snapshot: merged, changed } = mergeSnapshots(localSnapshot, remoteSnapshot)
 
-  if (changed) {
+  // One record rather than a keyed list, so the whole merge is "whichever was
+  // written last", the same rule `mergeByKeyLWW` applies to a plant. Taking
+  // them down is a write like any other and wins by the same stamp, which is
+  // why the record it produces is `null` and not a missing field.
+  const sachets = newerSachets(local.sachets, remoteMeta?.sachets ?? null)
+
+  if (changed || sachets !== local.sachets) {
     applyingRemote = true
     try {
-      await replaceEverything(merged)
+      if (changed) await replaceEverything(merged)
+      if (sachets !== local.sachets) await applySachetsFromRemote(sachets)
     } finally {
       applyingRemote = false
     }
@@ -385,7 +406,7 @@ async function syncOnce(active: SyncConfig): Promise<void> {
   // commit lands the lot — see `commitFiles` for why that is the whole point.
   const writes: FileToCommit[] = []
 
-  addIfChanged(writes, 'meta.json', remoteMetaFile, buildMetaFile(merged.vocab))
+  addIfChanged(writes, 'meta.json', remoteMetaFile, buildMetaFile(merged.vocab, sachets))
   addIfChanged(writes, 'plants.json', remotePlantsFile, buildPlantsFile(merged.plants))
 
   const mergedMonths = groupEventsByMonth(merged.events)

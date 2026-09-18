@@ -53,6 +53,23 @@ export function daysSince(iso: string): number {
   return daysBetween(iso)
 }
 
+/**
+ * The ISO-8601 week number — the one printed on a sachet of predatory mites,
+ * and the one a Dutch shop means when it says "week 34".
+ *
+ * Thursday is what decides which year a week belongs to, so the date is moved
+ * to the Thursday of its own week before counting: that is the whole of the
+ * rule, and it is why 1 January is sometimes week 52 of the year before.
+ */
+export function isoWeek(value: string | Date = new Date()): number {
+  const date = new Date(value)
+  const thursday = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  // getDay() is 0 on Sunday; ISO counts Sunday as the 7th day of the week.
+  thursday.setDate(thursday.getDate() + 4 - (thursday.getDay() || 7))
+  const firstOfYear = new Date(thursday.getFullYear(), 0, 1)
+  return Math.ceil(((thursday.getTime() - firstOfYear.getTime()) / MS_PER_DAY + 1) / 7)
+}
+
 function startOfDay(value: string | Date): number {
   const date = new Date(value)
   return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
