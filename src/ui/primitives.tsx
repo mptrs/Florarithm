@@ -108,7 +108,7 @@ export function DaysSinceWater({
   }
 
   return (
-    <div className={cn('flex flex-col gap-px', align === 'end' ? 'items-end' : 'items-start')}>
+    <div className={cn('flex flex-col', align === 'end' ? 'items-end' : 'items-start')}>
       <span
         className={cn(
           'font-mono text-metric',
@@ -186,7 +186,7 @@ export function SectionHeading({
   action?: ReactNode
 }) {
   return (
-    <div className={cn('flex items-baseline justify-between gap-4', className)}>
+    <div className={cn('flex items-baseline justify-between gap-3', className)}>
       <h2 className="text-label uppercase text-ink-muted">{children}</h2>
       {action}
     </div>
@@ -215,7 +215,7 @@ export function ScreenHeader({
   return (
     <div
       className={cn(
-        'flex justify-between gap-4',
+        'flex justify-between gap-3',
         action ? 'items-center' : 'items-baseline',
         className,
       )}

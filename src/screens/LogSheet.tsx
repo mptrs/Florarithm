@@ -218,7 +218,7 @@ export function LogSheet({
         <>
           {/* The date first, because it applies to everything under it —
               the photograph included. */}
-          <div className="mt-3">
+          <div>
             <DateChip value={date} onClick={() => openDate('actions')} />
           </div>
           <PhotoTile
@@ -232,9 +232,9 @@ export function LogSheet({
             </p>
           ) : null}
           {photo ? (
-            <p className="mt-4 text-center text-[0.875rem] text-ink-muted">Tap what it shows</p>
+            <p className="mt-6 text-center text-[0.875rem] text-ink-muted">Tap what it shows</p>
           ) : null}
-          <div className="mt-6 mb-1 grid grid-cols-3 gap-x-3 gap-y-6">
+          <div className={cn('grid grid-cols-3 gap-x-3 gap-y-6', photo ? 'mt-2' : 'mt-6')}>
             {(photo ? [...ACTIONS, PHOTO_ONLY] : ACTIONS).map((action) => (
               <button
                 key={action.mode}
@@ -338,7 +338,7 @@ function PhotoTile({
         type="button"
         onClick={onPick}
         className={cn(
-          'warm mt-4 flex h-44 w-full flex-col items-center justify-center gap-2 rounded-xl',
+          'warm mt-6 flex h-44 w-full flex-col items-center justify-center gap-2 rounded-xl',
           'border-[1.5px] border-dashed border-line-strong bg-sunk text-ink-muted',
           'active:opacity-70 hover:border-ink-faint hover:text-ink',
         )}
@@ -351,20 +351,20 @@ function PhotoTile({
   }
 
   return (
-    <div className="relative mt-4 h-52 overflow-hidden rounded-xl bg-sunk">
+    <div className="relative mt-6 h-52 overflow-hidden rounded-xl bg-sunk">
       <img src={photo.previewUrl} alt="" className="size-full object-cover" />
       <button
         type="button"
         onClick={onClear}
         aria-label="Remove this photo"
-        className="lift absolute top-3 right-3 flex size-10 items-center justify-center rounded-full bg-floating text-ink shadow-md active:opacity-70"
+        className="lift absolute top-4 right-4 flex size-10 items-center justify-center rounded-full bg-floating text-ink shadow-md active:opacity-70"
       >
         <Icon name="close" size={19} />
       </button>
       <button
         type="button"
         onClick={onPick}
-        className="lift absolute right-3 bottom-3 inline-flex h-9 items-center gap-1 rounded-md bg-floating px-3 text-[0.875rem] font-semibold text-ink shadow-md active:opacity-70"
+        className="lift absolute right-4 bottom-4 inline-flex h-9 items-center gap-1 rounded-md bg-floating px-3 text-[0.875rem] font-semibold text-ink shadow-md active:opacity-70"
       >
         <Icon name="camera" size={16} />
         Retake
@@ -413,7 +413,7 @@ function NoteForm({
   }
 
   return (
-    <div className="pt-1">
+    <div>
       {onPickDate ? <DateChip value={date} onClick={onPickDate} /> : null}
       <TextAreaField
         aria-label="Note"
@@ -428,7 +428,7 @@ function NoteForm({
         block
         disabled={!text.trim()}
         onClick={() => void save()}
-        className="mt-4"
+        className="mt-6"
       >
         {editing ? 'Save changes' : 'Save note'}
       </Button>
@@ -495,7 +495,7 @@ function RepotForm({
   }
 
   return (
-    <div ref={top} className="flex flex-col gap-4 pt-1">
+    <div ref={top} className="flex flex-col gap-6">
       {onPickDate ? <DateChip value={date} onClick={onPickDate} /> : null}
 
       <p className="text-[0.875rem] text-ink-muted text-pretty">

@@ -322,13 +322,25 @@ the same distance on every screen.
 | Step | px | What it separates |
 |---|---|---|
 | `1` | 4 | The parts of one thing: an icon and its word, a name and the mark after it, the cells of the calendar. |
-| `2` | 8 | A group: a label and its field or card, a section heading and what it heads, chips in a row, a menu and the button that opened it. |
-| `3` | 12 | A row: its padding, and the gap between an icon chip and its text. |
-| `4` | 16 | An inset: a card's content, a sheet, the phone's page edge, a button's sides, one generation of the family rail. |
-| `6` | 24 | Blocks inside a screen, a sheet or a form. |
+| `2` | 8 | A thing and what it belongs to: a label and its field, a heading and what it heads (section, sheet title, tabs and the panel they switch), a caption and what it captions, a list and the button that adds to it, chips in a row, the controls of one filter bar, a menu and its trigger. |
+| `3` | 12 | A row: its padding, the gap between its parts, and anything laid side by side as equals — two fields, two buttons, tiles in a grid. |
+| `4` | 16 | An inset: a card's or a tile's sides, a callout's sides, a sheet, the phone's page edge, a button's sides, one generation of the family rail, and anything laid over a photograph from that photograph's edge. |
+| `6` | 24 | Blocks: a screen's header and what follows it, banners, the groups of a list, the blocks of a sheet or a form, and the button that commits them. |
 | `8` | 32 | Sections, and columns side by side. |
 | `12` | 48 | The parts of a screen; the desktop page edge. |
 | `16` | 64 | The largest: the drop's own footprint at the foot of the plant page. |
+
+The same relationship is the same distance on every screen and at every
+width: a screen's header is 24 above its content on a phone and on a desktop,
+and a callout is 16 by 12 whether it is a `Banner` or a warning written inline
+in a form.
+
+**A gap belongs to the relationship, not to one of the two things.** Groups in
+a list are spaced by the group, so the first one adds nothing on top of the
+page's own gap; a heading's 8 is set by the section, so content does not add a
+margin of its own above it. When a component carries a margin, the first time
+it lands under something else that already spaced it, the two add up — which
+is how "No place" once sat 48 below the controls instead of 24.
 
 `0`, and `1px` — which is a hairline and never a nudge. Lines of one label
 stack on their own leading with nothing added between them, and an icon beside
@@ -367,7 +379,9 @@ cannot drift from either:
 token, or a sum of those. `tests/logic.spec.ts` reads every class the app
 writes and fails on anything else — `px-3.5`, `gap-5`, `mt-[13px]` — for the
 same reason the stock palette is cleared: a scale you can step around is a
-suggestion.
+suggestion. The test can only say a value is on the scale, not that it is the
+right step for its role — `mb-4` under a heading is a valid step and the wrong
+one. The role is checked by reading, against the table above.
 
 ## Elevation & Depth
 

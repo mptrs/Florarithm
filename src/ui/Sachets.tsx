@@ -169,7 +169,7 @@ export function SachetSheet({
 
   return (
     <Sheet open={open} onClose={onClose} title={mode === 'correct' ? 'These sachets' : 'New sachets'}>
-      <div className="flex flex-col gap-6 pb-2">
+      <div className="flex flex-col gap-6">
         <NumberField
           label="Week on the packet"
           value={week}

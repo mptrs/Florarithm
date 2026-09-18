@@ -74,7 +74,7 @@ export function TodayScreen() {
     : [['', plants]]
 
   return (
-    <div className="flex flex-col gap-4 lg:gap-8">
+    <div className="flex flex-col gap-6">
       <SyncStatusPill status={syncStatus} className="md:hidden" />
 
       <ScreenHeader
@@ -111,7 +111,7 @@ export function TodayScreen() {
         <div>
           {/* The table header only exists once there are columns to head, and
               Place is a column only while nothing above the row is saying it. */}
-          <div className="hidden items-center gap-4 border-b border-line-strong px-3 pb-2 lg:flex">
+          <div className="hidden items-center gap-3 border-b border-line-strong px-3 pb-2 lg:flex">
             <span className="w-10 shrink-0" />
             <ColumnHeader className="flex-1">Plant</ColumnHeader>
             <div className="flex items-center gap-8">
@@ -121,13 +121,17 @@ export function TodayScreen() {
             </div>
           </div>
 
-          {runs.map(([place, members]) => (
-            <section key={place || 'all'}>
+          {runs.map(([place, members], index) => (
+            // Groups are a block step apart. The first has nothing above it on a
+            // phone — the page's own gap already put it there — and on a desktop
+            // sits under the table header: a block step when a label opens it,
+            // flush when the rows answer the header directly.
+            <section key={place || 'all'} className={index > 0 ? 'mt-6' : place ? 'lg:mt-6' : undefined}>
               {place ? <DrawerLabel name={place} count={members.length} /> : null}
 
               {/* Ungrouped there is no label to close the top of the list, so
                   the stack draws its own — except on a table, which has one. */}
-              <Rows className={place ? 'border-t-0' : 'mt-4 lg:mt-0 lg:border-t-0'}>
+              <Rows className={place ? 'border-t-0' : 'lg:border-t-0'}>
                 {members.map((plant) => (
                   <TodayRow key={plant.code} plant={plant} showPlace={!byPlace} />
                 ))}

@@ -77,7 +77,7 @@ export function Sheet({ open, onClose, title, onBack, children }: SheetProps) {
 
         {/* Back on the left, close on the right, title centred between them —
             so the title stays put as the sheet swaps its contents. */}
-        <div className="mt-3 mb-1 flex items-center justify-between gap-2">
+        <div className="mt-3 mb-2 flex items-center justify-between gap-2">
           {onBack ? (
             <button
               type="button"

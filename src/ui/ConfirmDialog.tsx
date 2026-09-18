@@ -37,7 +37,7 @@ export function useConfirm(): {
 
   const dialog = pending ? (
     <Sheet open onClose={() => settle(false)} title={pending.options.title}>
-      <p className="mt-1 text-[0.9375rem] leading-6 text-ink-muted whitespace-pre-line">
+      <p className="text-[0.9375rem] leading-6 text-ink-muted whitespace-pre-line">
         {pending.options.message}
       </p>
       <div className="mt-6 flex gap-3">

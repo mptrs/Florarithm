@@ -81,7 +81,7 @@ export function CollectionScreen({ filter }: { filter: CollectionFilter }) {
   const nothing = plants.length === 0 && archived.length === 0
 
   return (
-    <div className="flex flex-col gap-4 lg:gap-8">
+    <div className="flex flex-col gap-6">
       <ScreenHeader
         title="Collection"
         meta={
@@ -91,7 +91,7 @@ export function CollectionScreen({ filter }: { filter: CollectionFilter }) {
         }
       />
 
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4">
+      <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
         <SearchField
           value={query}
           onChange={(event) => setQuery(event.target.value)}
@@ -159,7 +159,7 @@ function PlantRuns({
   return (
     <div>
       {/* The table header exists only where there are columns to head. */}
-      <div className="hidden items-center gap-4 border-b border-line-strong px-3 pb-2 lg:flex">
+      <div className="hidden items-center gap-3 border-b border-line-strong px-3 pb-2 lg:flex">
         <span className="w-10 shrink-0" />
         <ColumnHeader className="flex-1">Plant</ColumnHeader>
         <div className="flex items-center gap-8">
@@ -170,11 +170,15 @@ function PlantRuns({
         </div>
       </div>
 
-      {runs.map(([place, members]) => (
-        <section key={place || 'all'}>
+      {runs.map(([place, members], index) => (
+        // Groups are a block step apart. The first has nothing above it on a
+        // phone — the page's own gap already put it there — and on a desktop
+        // sits under the table header: a block step when a label opens it,
+        // flush when the rows answer the header directly.
+        <section key={place || 'all'} className={index > 0 ? 'mt-6' : place ? 'lg:mt-6' : undefined}>
           {place ? <DrawerLabel name={place} count={members.length} /> : null}
 
-          <div className={cn('grid grid-cols-2 gap-3 lg:hidden', place ? '' : 'mt-4')}>
+          <div className="grid grid-cols-2 gap-3 lg:hidden">
             {members.map((plant) => (
               <PlantTile key={plant.code} plant={plant} secondary={formatSpecies(plant)} />
             ))}
@@ -287,7 +291,7 @@ function Archive({ plants, query }: { plants: readonly Plant[]; query: string })
         ))}
       </div>
 
-      <p className="mt-4 text-[0.8125rem] leading-[1.125rem] text-ink-faint text-pretty">
+      <p className="mt-2 text-[0.8125rem] leading-[1.125rem] text-ink-faint text-pretty">
         {isArchiveQuery(query)
           ? 'Plants that died or were given away. A dormant plant is not here — it is still on the shelf, just asleep.'
           : 'Archived, so it is out of every list you water from.'}

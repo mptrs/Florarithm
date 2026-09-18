@@ -396,7 +396,7 @@ function SachetsSection() {
       {sachets ? (
         // Two buttons and two lines of text do not fit one row at 375px, so the
         // row becomes a stack there and is a row again from `sm`.
-        <Row className="flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-4">
+        <Row className="flex-col items-start gap-3 sm:flex-row sm:items-center">
           <div className="flex min-w-0 flex-1 flex-col">
             <span className="font-mono text-code">WEEK {sachets.week}</span>
             <span className="text-[0.8125rem] text-ink-muted">{sachetSummary(sachets)}</span>
@@ -494,7 +494,7 @@ function VocabList({ kind }: { kind: VocabKind }) {
                   else event.target.value = item.name
                 }}
                 className={cn(
-                  'warm min-w-0 flex-1 rounded-sm border border-transparent bg-transparent px-2 py-2 text-body',
+                  'warm -ml-2 min-w-0 flex-1 rounded-sm border border-transparent bg-transparent px-2 py-2 text-body',
                   item.archived ? 'text-ink-faint line-through' : 'text-ink',
                   'hover:border-line-strong focus:border-leaf focus:outline-none',
                 )}

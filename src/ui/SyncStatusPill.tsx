@@ -28,7 +28,7 @@ export function SyncStatusPill({
     return (
       <div
         className={cn(
-          'flex flex-col gap-1 rounded-md border border-ember bg-ember-tint px-3 py-3',
+          'flex flex-col gap-1 rounded-md border border-ember bg-ember-tint px-4 py-3',
           className,
         )}
       >

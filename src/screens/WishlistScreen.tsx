@@ -39,7 +39,7 @@ export function WishlistScreen() {
   }
 
   return (
-    <div className="flex flex-col gap-4 lg:gap-8">
+    <div className="flex flex-col gap-6">
       <ScreenHeader
         title="Wishlist"
         meta={
@@ -99,7 +99,7 @@ function WishRow({ plant, onDelete }: { plant: Plant; onDelete: () => void }) {
   const [open, setOpen] = useState(false)
 
   return (
-    <div className="flex min-h-touch items-center gap-4 border-b border-line px-3 py-3 last:border-b-0">
+    <div className="flex min-h-touch items-center gap-3 border-b border-line px-3 py-3 last:border-b-0">
       <div className="flex min-w-0 flex-1 flex-col">
         <span className="truncate font-display text-[1.09375rem] leading-[1.375rem] font-medium">
           {formatSpecies(plant)}

@@ -67,7 +67,7 @@ export function DatePicker({
     onChange(atMidday(date.getFullYear(), date.getMonth(), date.getDate()))
 
   return (
-    <div className="pt-1">
+    <div>
       {/* Today and Yesterday, which between them cover most back-dating.
           These were a local button drawn to the filter chip's exact
           measurements — the same thing twice, which is how one of them ends
@@ -89,7 +89,7 @@ export function DatePicker({
           type="button"
           aria-label="Previous month"
           onClick={() => setCursor(new Date(year, month - 1, 1))}
-          className="warm -ml-2 flex size-touch items-center justify-center rounded-full text-ink-muted active:opacity-70 hover:bg-sunk hover:text-ink"
+          className="warm -ml-3 flex size-touch items-center justify-center rounded-full text-ink-muted active:opacity-70 hover:bg-sunk hover:text-ink"
         >
           <Icon name="chevronLeft" size={21} />
         </button>
@@ -101,7 +101,7 @@ export function DatePicker({
           aria-label="Next month"
           disabled={atLatest}
           onClick={() => setCursor(new Date(year, month + 1, 1))}
-          className="warm -mr-2 flex size-touch items-center justify-center rounded-full text-ink-muted disabled:opacity-30 active:opacity-70 enabled:hover:bg-sunk enabled:hover:text-ink"
+          className="warm -mr-3 flex size-touch items-center justify-center rounded-full text-ink-muted disabled:opacity-30 active:opacity-70 enabled:hover:bg-sunk enabled:hover:text-ink"
         >
           <Icon name="chevronRight" size={21} />
         </button>
@@ -150,7 +150,7 @@ export function DatePicker({
         })}
       </div>
 
-      <Button variant="solid" block onClick={onDone} className="mt-4">
+      <Button variant="solid" block onClick={onDone} className="mt-6">
         Use this date
       </Button>
     </div>

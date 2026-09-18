@@ -140,7 +140,7 @@ export function PlantScreen({ code }: { code: string }) {
               {plant.status === 'dormant' ? <Dozing className="ml-1 align-top text-[1.375rem]" /> : null}
             </h1>
             {formatSpecies(plant) ? (
-              <p className="-mt-1 text-[1.0625rem] leading-6 text-ink-muted">{formatSpecies(plant)}</p>
+              <p className="text-[1.0625rem] leading-6 text-ink-muted">{formatSpecies(plant)}</p>
             ) : null}
           </div>
           {plant.wish ? null : (
@@ -439,7 +439,7 @@ function Hero({
           type="button"
           aria-label="Hide the QR code"
           onClick={onHideQr}
-          className="pointer-events-auto absolute inset-0 flex flex-col items-center justify-center gap-3 bg-veil-strong"
+          className="pointer-events-auto absolute inset-0 flex flex-col items-center justify-center gap-2 bg-veil-strong"
         >
           <QrCodeBox value={plantUrl(plant.code)} size={112} />
           <span className="font-mono text-code tracking-[0.1em] text-ink-muted">{plant.code}</span>
@@ -485,7 +485,7 @@ function Care({ plant }: { plant: Plant }) {
   const repot = lastRepot(state, plant.code)
 
   return (
-    <Card className="mt-4 px-4">
+    <Card className="mt-2 px-4 lg:mt-6">
       <CareRow
         icon="droplet"
         tone="water"
@@ -716,7 +716,7 @@ function History({ plant, onEdit }: { plant: Plant; onEdit: (event: PlantEvent) 
 
   if (all.length === 0) {
     return (
-      <div className="mt-4">
+      <div className="mt-2 lg:mt-6">
         <EmptyState
           title="Nothing logged yet"
           description="Every watering, leaf, bloom, repot, note and photograph shows up here, newest first."
@@ -726,7 +726,7 @@ function History({ plant, onEdit }: { plant: Plant; onEdit: (event: PlantEvent) 
   }
 
   return (
-    <section className="mt-4">
+    <section className="mt-2 lg:mt-6">
       <div className="flex gap-2 overflow-x-auto -mt-1 pt-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <Chip selected={filter === 'all'} onClick={() => setFilter('all')} count={all.length}>
           Everything
@@ -770,7 +770,7 @@ function History({ plant, onEdit }: { plant: Plant; onEdit: (event: PlantEvent) 
         </div>
       ))}
 
-      <p className="mt-4 text-[0.8125rem] leading-[1.125rem] text-ink-faint text-pretty">
+      <p className="mt-2 text-[0.8125rem] leading-[1.125rem] text-ink-faint text-pretty">
         {plural(shown.length, 'entry', 'entries')} — drag one left to remove it, right to change it.
       </p>
     </section>
@@ -984,7 +984,7 @@ function Family({ plant }: { plant: Plant }) {
 
   return (
     <section className="mt-8">
-      <div className="flex items-baseline justify-between gap-4">
+      <div className="flex items-baseline justify-between gap-3">
         <GroupLabel>Family</GroupLabel>
         <span className="text-[0.8125rem] text-ink-faint">
           {plants + siblings.length > generations ? `${plants + siblings.length} plants · ` : ''}

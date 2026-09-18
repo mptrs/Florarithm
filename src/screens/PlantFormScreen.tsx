@@ -356,11 +356,11 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
               ? 'A wish only records what it is and why you want it — no place or care yet.'
               : undefined
           }
-          className="border-y border-line py-1"
+          className="border-y border-line"
         />
       )}
 
-      <div className="flex flex-col gap-8 lg:flex-row lg:gap-12">
+      <div className="flex flex-col gap-8 lg:flex-row">
         <div className="flex flex-col gap-8 lg:w-[32rem] lg:shrink-0">
           <Section icon="tag" title="What it is">
             <div className="flex gap-3">
@@ -544,7 +544,7 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
                   {parentPlant ? <Lineage state={state} parent={parentPlant} /> : null}
 
                   {existing && childrenOf(state, existing.code).length > 0 ? (
-                    <div className="flex gap-3 rounded-lg bg-ember-tint px-4 py-3">
+                    <div className="flex gap-2 rounded-lg bg-ember-tint px-4 py-3">
                       <span className="flex h-5 shrink-0 items-center">
                         <Icon name="alert" size={19} className="text-ember" />
                       </span>
@@ -771,7 +771,7 @@ function PhotoChoice({
 
   return (
     <Section icon="image" title="Photo">
-      <p className="-mt-2 text-[0.8125rem] leading-5 text-ink-muted text-pretty">
+      <p className="text-[0.8125rem] leading-5 text-ink-muted text-pretty">
         Which one stands for the plant. Every photograph stays in the history either way.
       </p>
 

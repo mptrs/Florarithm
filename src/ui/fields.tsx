@@ -303,7 +303,7 @@ export function ToggleField({
         role="switch"
         aria-checked={checked}
         onClick={() => onChange(!checked)}
-        className="group flex min-h-control items-center justify-between gap-4 text-left"
+        className="group flex min-h-control items-center justify-between gap-3 text-left"
       >
         <span className="text-body text-ink">{label}</span>
         <span
