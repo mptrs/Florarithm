@@ -761,7 +761,7 @@ test('the picture that stands for the plant can be chosen in the edit form', asy
  * month back rather than by waiting four weeks, which is the only part of this
  * a test cannot do honestly.
  */
-test('the sachets count up on Today, ask to be replaced, and reset in one sheet', async ({
+test('the sachets count down on Today, ask to be replaced, and reset in one sheet', async ({
   page,
 }) => {
   await page.goto('#settings')
@@ -769,7 +769,7 @@ test('the sachets count up on Today, ask to be replaced, and reset in one sheet'
   await page.getByRole('button', { name: 'Hang them' }).click()
 
   await page.goto('#today')
-  await expect(page.getByText(/Sachets from week \d+ · day 0 of 28/)).toBeVisible()
+  await expect(page.getByText(/Sachets from week \d+ · 28 days left/)).toBeVisible()
 
   // Hung 31 days ago, in the week it was hung. Written straight to the record
   // rather than through the calendar, so the assertion is about the counting
@@ -789,7 +789,9 @@ test('the sachets count up on Today, ask to be replaced, and reset in one sheet'
   })
   await page.reload()
 
-  await expect(page.getByText('The sachets from week 34 are 31 days old. Hang the next ones.')).toBeVisible()
+  await expect(
+    page.getByText('The sachets from week 34 ran out 3 days ago. Hang the next ones.'),
+  ).toBeVisible()
 
   // The reset opens on this week and today, not on what is hanging — the old
   // batch is the thing being replaced.
@@ -798,7 +800,7 @@ test('the sachets count up on Today, ask to be replaced, and reset in one sheet'
   await expect(page.getByLabel('Week on the packet')).not.toHaveValue('34')
   await page.getByRole('button', { name: 'Hang them' }).click()
 
-  await expect(page.getByText(/day 0 of 28/)).toBeVisible()
+  await expect(page.getByText(/28 days left/)).toBeVisible()
   await expect(page.getByText('Hang the next ones.')).toBeHidden()
 
   // Taking them down is what switches the reminder off: there is no second
@@ -807,5 +809,5 @@ test('the sachets count up on Today, ask to be replaced, and reset in one sheet'
   await page.getByRole('button', { name: 'Take down' }).click()
   await page.getByRole('button', { name: 'Take them down' }).click()
   await page.goto('#today')
-  await expect(page.getByText(/day 0 of 28/)).toBeHidden()
+  await expect(page.getByText(/28 days left/)).toBeHidden()
 })

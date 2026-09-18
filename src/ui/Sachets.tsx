@@ -11,7 +11,8 @@
  * subtraction rather than a stored flag:
  *
  * - **Inside the four weeks** it is a fact, in the voice the plant rows use —
- *   no colour, no button. It says which week is hanging and how far in it is.
+ *   no colour, no button. It says which week is hanging and how long it has
+ *   left.
  * - **Past them** it is the `Banner` this app already owns for something that
  *   has to be done and stays until it is: ember, not dismissible, with the one
  *   action that ends it.
@@ -39,8 +40,29 @@ export function sachetDays(sachets: Sachets): number {
   return daysSince(sachets.hungOn)
 }
 
+/** Days until they stop releasing: 0 on the day they run out, negative once
+ *  they have. Counted down rather than up, because "5 days left" is the
+ *  question you have in front of the plants and "day 23 of 28" makes you do
+ *  the subtraction. */
+export function sachetDaysLeft(sachets: Sachets): number {
+  return SACHET_DAYS - sachetDays(sachets)
+}
+
 export function sachetsAreSpent(sachets: Sachets): boolean {
-  return sachetDays(sachets) >= SACHET_DAYS
+  return sachetDaysLeft(sachets) <= 0
+}
+
+/** `5 days left`, `1 day left` — the quiet reading. */
+function daysLeftLabel(left: number): string {
+  return `${plural(left, 'day')} left`
+}
+
+/** What the banner says once they are spent: the day they run out, and then
+ *  how long ago that was — an overdue count, not an age. */
+function spentSentence(sachets: Sachets): string {
+  const over = -sachetDaysLeft(sachets)
+  const when = over === 0 ? 'run out today' : `ran out ${plural(over, 'day')} ago`
+  return `The sachets from week ${sachets.week} ${when}. Hang the next ones.`
 }
 
 /**
@@ -53,8 +75,6 @@ export function SachetReminder() {
   const [open, setOpen] = useState(false)
 
   if (!sachets) return null
-
-  const days = sachetDays(sachets)
 
   return (
     <>
@@ -74,14 +94,14 @@ export function SachetReminder() {
             />
           }
         >
-          {`The sachets from week ${sachets.week} are ${plural(days, 'day')} old. Hang the next ones.`}
+          {spentSentence(sachets)}
         </Banner>
       ) : (
         <p className="flex min-h-[1.875rem] items-center gap-2.5 text-[0.8125rem] text-ink-muted">
           <Icon name="pest" size={15} className="shrink-0 text-ink-faint" />
           <span>
-            Sachets from week <span className="font-mono">{sachets.week}</span> · day{' '}
-            <span className="font-mono">{days}</span> of {SACHET_DAYS}
+            Sachets from week <span className="font-mono">{sachets.week}</span> ·{' '}
+            {daysLeftLabel(sachetDaysLeft(sachets))}
           </span>
         </p>
       )}
@@ -170,8 +190,11 @@ export function SachetSheet({
   )
 }
 
-/** `Hung on 20 Aug 2026 · day 23 of 28` — what the row in Settings says under
+/** `Hung on 20 Aug 2026 · 5 days left` — what the row in Settings says under
  *  the week, which is already the line above it. */
 export function sachetSummary(sachets: Sachets): string {
-  return `Hung on ${formatDate(sachets.hungOn)} · day ${sachetDays(sachets)} of ${SACHET_DAYS}`
+  const left = sachetDaysLeft(sachets)
+  const status =
+    left > 0 ? daysLeftLabel(left) : left === 0 ? 'run out today' : `ran out ${plural(-left, 'day')} ago`
+  return `Hung on ${formatDate(sachets.hungOn)} · ${status}`
 }
