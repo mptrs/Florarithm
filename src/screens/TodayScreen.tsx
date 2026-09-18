@@ -105,7 +105,7 @@ export function TodayScreen() {
         <div>
           {/* The table header only exists once there are columns to head, and
               Place is a column only while nothing above the row is saying it. */}
-          <div className="hidden items-center gap-4 border-b border-line-strong px-2.5 pb-2.5 lg:flex">
+          <div className="hidden items-center gap-4 border-b border-line-strong px-3 pb-2 lg:flex">
             <span className="w-10 shrink-0" />
             <ColumnHeader className="flex-1">Plant</ColumnHeader>
             <div className="flex items-center gap-8">

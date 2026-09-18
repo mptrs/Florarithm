@@ -232,9 +232,9 @@ export function LogSheet({
             </p>
           ) : null}
           {photo ? (
-            <p className="mt-3.5 text-center text-[0.875rem] text-ink-muted">Tap what it shows</p>
+            <p className="mt-4 text-center text-[0.875rem] text-ink-muted">Tap what it shows</p>
           ) : null}
-          <div className="mt-5 mb-1 grid grid-cols-3 gap-x-3 gap-y-5">
+          <div className="mt-6 mb-1 grid grid-cols-3 gap-x-3 gap-y-6">
             {(photo ? [...ACTIONS, PHOTO_ONLY] : ACTIONS).map((action) => (
               <button
                 key={action.mode}
@@ -252,7 +252,7 @@ export function LogSheet({
                 }}
                 aria-expanded={action.mode === 'note' || action.mode === 'repot' ? open === action.mode : undefined}
                 className={cn(
-                  'warm group mx-auto flex w-fit flex-col items-center gap-2.5 active:opacity-70 hover:text-ink',
+                  'warm group mx-auto flex w-fit flex-col items-center gap-2 active:opacity-70 hover:text-ink',
                   // The one that is open stays lit; the rest step back without
                   // going away, so switching is still one tap.
                   open && open !== action.mode ? 'opacity-40' : '',
@@ -279,7 +279,7 @@ export function LogSheet({
             ))}
           </div>
           {open ? (
-            <div key={open} className="mt-6 border-t border-line pt-5">
+            <div key={open} className="mt-6 border-t border-line pt-6">
               {open === 'note' ? (
                 <NoteForm plant={plant} date={date} editing={null} pending={pending} onDone={logged} />
               ) : (
@@ -364,7 +364,7 @@ function PhotoTile({
       <button
         type="button"
         onClick={onPick}
-        className="lift absolute right-3 bottom-3 inline-flex h-9 items-center gap-1.5 rounded-md bg-floating px-3 text-[0.875rem] font-semibold text-ink shadow-md active:opacity-70"
+        className="lift absolute right-3 bottom-3 inline-flex h-9 items-center gap-1 rounded-md bg-floating px-3 text-[0.875rem] font-semibold text-ink shadow-md active:opacity-70"
       >
         <Icon name="camera" size={16} />
         Retake
@@ -421,7 +421,7 @@ function NoteForm({
         autoFocus={!editing}
         onChange={(event) => setText(event.target.value)}
         placeholder="What happened?"
-        fieldClassName={onPickDate ? 'mt-5' : ''}
+        fieldClassName={onPickDate ? 'mt-6' : ''}
       />
       <Button
         variant="solid"

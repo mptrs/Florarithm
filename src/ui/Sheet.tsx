@@ -69,8 +69,8 @@ export function Sheet({ open, onClose, title, onBack, children }: SheetProps) {
           // The device inset adds to the resting padding rather than replacing
           // it — `safe-bottom` alone would leave the last row flush with the
           // edge on a phone with no home-indicator inset to speak of.
-          'rounded-t-[1.625rem] border-t border-line px-5 pt-2.5 pb-[calc(env(safe-area-inset-bottom,0px)+1.75rem)]',
-          'md:max-w-lg md:rounded-xl md:border md:px-6 md:pb-[calc(env(safe-area-inset-bottom,0px)+1.5rem)]',
+          'rounded-t-[1.625rem] border-t border-line px-4 pt-2 pb-[calc(env(safe-area-inset-bottom,0px)+--spacing(6))]',
+          'md:max-w-lg md:rounded-xl md:border md:px-6 md:pb-[calc(env(safe-area-inset-bottom,0px)+--spacing(6))]',
         )}
       >
         <div className="mx-auto h-1 w-9 rounded-full bg-line-strong md:hidden" />
@@ -83,7 +83,7 @@ export function Sheet({ open, onClose, title, onBack, children }: SheetProps) {
               type="button"
               onClick={onBack}
               aria-label="Back"
-              className="-ml-2.5 warm flex size-touch items-center justify-center rounded-full text-ink-muted active:opacity-70 hover:bg-sunk hover:text-ink"
+              className="-ml-3 warm flex size-touch items-center justify-center rounded-full text-ink-muted active:opacity-70 hover:bg-sunk hover:text-ink"
             >
               <Icon name="chevronLeft" size={23} />
             </button>
@@ -95,7 +95,7 @@ export function Sheet({ open, onClose, title, onBack, children }: SheetProps) {
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="-mr-2.5 warm flex size-touch items-center justify-center rounded-full text-ink-muted active:opacity-70 hover:bg-sunk hover:text-ink"
+            className="-mr-3 warm flex size-touch items-center justify-center rounded-full text-ink-muted active:opacity-70 hover:bg-sunk hover:text-ink"
           >
             <Icon name="close" size={22} />
           </button>

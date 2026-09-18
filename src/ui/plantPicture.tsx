@@ -94,7 +94,7 @@ export function PlantTile({
           <PlantPicture plant={plant} />
         </div>
         {tag ? (
-          <span className="absolute bottom-2 left-2 rounded-full bg-floating px-2.5 py-1 text-[0.6875rem] leading-4 font-semibold text-ink-muted">
+          <span className="absolute bottom-2 left-2 rounded-full bg-floating px-3 py-1 text-[0.6875rem] leading-4 font-semibold text-ink-muted">
             {tag}
           </span>
         ) : null}
@@ -113,7 +113,7 @@ export function PlantTile({
           {plant.status === 'dormant' ? <Dozing className="shrink-0 text-[0.6875rem]" /> : null}
         </div>
         {secondary ? (
-          <div className="mt-0.5 truncate text-[0.8125rem] leading-4 text-ink-muted">
+          <div className="truncate text-[0.8125rem] leading-4 text-ink-muted">
             {secondary}
           </div>
         ) : null}

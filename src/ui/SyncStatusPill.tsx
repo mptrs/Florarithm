@@ -28,16 +28,18 @@ export function SyncStatusPill({
     return (
       <div
         className={cn(
-          'flex flex-col gap-1 rounded-md border border-ember bg-ember-tint px-3 py-2.5',
+          'flex flex-col gap-1 rounded-md border border-ember bg-ember-tint px-3 py-3',
           className,
         )}
       >
-        <div className="flex items-start gap-2.5">
-          <Icon name="alert" size={15} className="mt-0.5 shrink-0 text-ember" />
+        <div className="flex items-start gap-2">
+          <span className="flex h-5 shrink-0 items-center">
+            <Icon name="alert" size={15} className="text-ember" />
+          </span>
           <div className="flex-1">
             <span className="text-[0.8125rem] leading-5 text-ink">{status.message}</span>
             {status.pendingCount > 0 ? (
-              <p className="mt-0.5 text-[0.8125rem] leading-5 text-ink-muted">
+              <p className="text-[0.8125rem] leading-5 text-ink-muted">
                 {status.pendingCount} change{status.pendingCount === 1 ? '' : 's'} still waiting to
                 sync — nothing has been lost.
               </p>
@@ -51,7 +53,7 @@ export function SyncStatusPill({
           <a
             href={routes.settings()}
             className={cn(
-              'warm flex h-touch shrink-0 items-center self-end rounded-sm px-3.5',
+              'warm flex h-touch shrink-0 items-center self-end rounded-sm px-4',
               'text-[0.8125rem] font-semibold text-ember',
               'active:opacity-70 hover:bg-ember hover:text-on-accent',
             )}
@@ -68,7 +70,7 @@ export function SyncStatusPill({
   return (
     <div
       className={cn(
-        'flex items-center gap-2.5',
+        'flex items-center gap-2',
         variant === 'detailed' && 'h-10 rounded-md border border-line bg-surface px-3',
         className,
       )}

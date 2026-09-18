@@ -105,6 +105,9 @@ export function QrCode({
   )
 }
 
+/** The quiet zone around the code: `p-3`, one row step. */
+const QUIET = 12
+
 /** The bordered box every QR code sits in, whatever the size. */
 export function QrCodeBox({
   value,
@@ -117,8 +120,8 @@ export function QrCodeBox({
 }) {
   return (
     <div
-      className={cn('flex shrink-0 items-center justify-center rounded-md border border-line p-[13px]', className)}
-      style={{ width: size + 26, height: size + 26, background: '#fff' }}
+      className={cn('flex shrink-0 items-center justify-center rounded-md border border-line p-3', className)}
+      style={{ width: size + QUIET * 2, height: size + QUIET * 2, background: '#fff' }}
     >
       <QrCode value={value} style={{ width: size, height: size }} />
     </div>

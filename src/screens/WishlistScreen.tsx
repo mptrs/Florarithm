@@ -99,7 +99,7 @@ function WishRow({ plant, onDelete }: { plant: Plant; onDelete: () => void }) {
   const [open, setOpen] = useState(false)
 
   return (
-    <div className="flex min-h-touch items-center gap-4 border-b border-line px-2.5 py-2.5 last:border-b-0">
+    <div className="flex min-h-touch items-center gap-4 border-b border-line px-3 py-3 last:border-b-0">
       <div className="flex min-w-0 flex-1 flex-col">
         <span className="truncate font-display text-[1.09375rem] leading-[1.375rem] font-medium">
           {formatSpecies(plant)}
@@ -120,7 +120,7 @@ function WishRow({ plant, onDelete }: { plant: Plant; onDelete: () => void }) {
           <a
             href={routes.have(plant.code)}
             aria-label="Add to collection"
-            className="warm flex items-center gap-1.5 rounded-l-md px-3.5 text-[0.875rem] font-semibold text-leaf hover:bg-leaf-tint active:opacity-70"
+            className="warm flex items-center gap-1 rounded-l-md px-4 text-[0.875rem] font-semibold text-leaf hover:bg-leaf-tint active:opacity-70"
           >
             <Icon name="plus" size={16} />
             <span className="hidden md:inline" aria-hidden="true">
@@ -158,7 +158,7 @@ function WishRow({ plant, onDelete }: { plant: Plant; onDelete: () => void }) {
               role="menu"
               aria-label="More for this wish"
               className={cn(
-                'absolute top-full right-0 z-50 mt-1.5 w-44 overflow-hidden',
+                'absolute top-full right-0 z-50 mt-2 w-44 overflow-hidden',
                 'rounded-xl border border-line bg-surface shadow-xl',
                 'origin-top-right animate-panel-in motion-reduce:animate-none',
               )}

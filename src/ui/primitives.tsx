@@ -41,7 +41,7 @@ export function CodeBadge({
   } as const
 
   const shared = cn(
-    'inline-flex shrink-0 items-center rounded-sm px-2.5 py-1 font-mono text-code',
+    'inline-flex shrink-0 items-center rounded-sm px-3 py-1 font-mono text-code',
     tones[tone],
     className,
   )
@@ -142,7 +142,7 @@ export function DaysSinceWater({
  *  gap class, so it can't collide with the base `flex flex-col` the way a
  *  bare `className="gap-8"` would (`cn` joins rather than merges; see
  *  `lib/cn.ts`). */
-const SECTION_GAPS = { fields: 'gap-5', groups: 'gap-8' } as const
+const SECTION_GAPS = { fields: 'gap-6', groups: 'gap-8' } as const
 
 export function Section({
   icon,
@@ -154,18 +154,24 @@ export function Section({
   icon: IconName
   title: string
   children: ReactNode
-  /** `fields` (20px) for a run of fields; `groups` (32px) for a run of
-   *  sub-sections, each with its own heading. */
+  /** Between the section's own parts: `fields` (24px, a block step) for a
+   *  run of fields; `groups` (32px, a section step) for a run of sub-sections,
+   *  each with its own heading. */
   gap?: keyof typeof SECTION_GAPS
   className?: string
 }) {
+  // Two distances, not one. The heading belongs to what it heads, so it sits a
+  // group step (8px) above it — the same as a label above its field — and the
+  // parts below are spaced by `gap`. One gap for both put the heading as far
+  // from its own content as the content was from itself, which is 32px of
+  // nothing under "Lists".
   return (
-    <section className={cn('flex flex-col', SECTION_GAPS[gap], className)}>
-      <div className="flex items-center gap-2.5 border-b border-line pb-2.5">
+    <section className={cn('flex flex-col gap-2', className)}>
+      <div className="flex items-center gap-2 border-b border-line pb-2">
         <Icon name={icon} size={19} className="text-ink-faint" />
         <h2 className="font-display text-[1.3125rem] leading-7 font-medium">{title}</h2>
       </div>
-      {children}
+      <div className={cn('flex flex-col', SECTION_GAPS[gap])}>{children}</div>
     </section>
   )
 }
@@ -236,7 +242,7 @@ export function EmptyState({
   action?: ReactNode
 }) {
   return (
-    <div className="flex flex-col items-start gap-3 rounded-lg border border-line bg-surface px-5 py-7">
+    <div className="flex flex-col items-start gap-3 rounded-lg border border-line bg-surface p-6">
       <h2 className="font-display text-title">{title}</h2>
       <p className="max-w-prose text-[0.9375rem] leading-6 text-ink-muted text-pretty">
         {description}

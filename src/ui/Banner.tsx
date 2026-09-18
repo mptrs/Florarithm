@@ -33,7 +33,7 @@ export function Banner({
   return (
     <div
       className={cn(
-        'flex min-h-touch items-center gap-2.5 rounded-md border px-3 py-2',
+        'flex min-h-touch items-center gap-2 rounded-md border px-3 py-2',
         style.box,
         className,
       )}

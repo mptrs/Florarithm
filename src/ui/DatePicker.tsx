@@ -84,7 +84,7 @@ export function DatePicker({
         </Chip>
       </div>
 
-      <div className="mt-5 flex items-center justify-between">
+      <div className="mt-6 flex items-center justify-between">
         <button
           type="button"
           aria-label="Previous month"
@@ -112,14 +112,14 @@ export function DatePicker({
           <div
             key={index}
             aria-hidden
-            className="py-1.5 text-center font-mono text-[0.6875rem] tracking-[0.06em] text-ink-faint"
+            className="py-2 text-center font-mono text-[0.6875rem] tracking-[0.06em] text-ink-faint"
           >
             {day}
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-0.5">
+      <div className="grid grid-cols-7 gap-1">
         {monthGrid(year, month).map((day, index) => {
           if (day === null) return <span key={index} />
 
@@ -243,7 +243,7 @@ export function DatePickerField({
         }}
         className={cn(
           CONTROL,
-          'warm flex items-center gap-2.5 text-left font-mono active:opacity-70 hover:bg-sunk',
+          'warm flex items-center gap-2 text-left font-mono active:opacity-70 hover:bg-sunk',
         )}
       >
         <Icon name="calendar" size={17} className="shrink-0 text-ink-muted" />

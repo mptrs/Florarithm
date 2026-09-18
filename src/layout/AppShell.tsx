@@ -78,7 +78,7 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
     <div className="min-h-dvh md:flex">
       <Sidebar active={active} />
 
-      <main className="min-w-0 flex-1 px-4 pt-6 pb-32 md:px-10 md:pt-8 md:pb-12">
+      <main className="min-w-0 flex-1 px-4 pt-6 pb-under-bar md:px-12 md:pt-8 md:pb-12">
         <div className="mx-auto w-full max-w-5xl">{children}</div>
       </main>
 
@@ -98,12 +98,12 @@ function Sidebar({ active }: { active: NavKey | null }) {
   }
 
   return (
-    <aside className="hidden w-62 shrink-0 flex-col border-r border-line bg-surface px-3.5 py-6 md:flex">
-      <span className="px-2.5 pb-6 font-display text-[1.4375rem] font-medium tracking-[-0.01em]">
+    <aside className="hidden w-62 shrink-0 flex-col border-r border-line bg-surface px-4 py-6 md:flex">
+      <span className="px-3 pb-6 font-display text-[1.4375rem] font-medium tracking-[-0.01em]">
         Florarithm
       </span>
 
-      <nav className="flex flex-col gap-0.5">
+      <nav className="flex flex-col gap-1">
         {NAV_ITEMS.map((item) => {
           const isActive = item.key === active
           const count = counts[item.key]
@@ -114,7 +114,7 @@ function Sidebar({ active }: { active: NavKey | null }) {
               href={item.href}
               aria-current={isActive ? 'page' : undefined}
               className={cn(
-                'warm flex h-touch items-center gap-2.5 rounded-md px-2.5 text-[0.9375rem]',
+                'warm flex h-touch items-center gap-2 rounded-md px-3 text-[0.9375rem]',
                 isActive
                   ? 'bg-leaf-tint font-semibold text-leaf'
                   : 'font-medium text-ink-muted hover:bg-sunk hover:text-ink',
@@ -136,7 +136,7 @@ function Sidebar({ active }: { active: NavKey | null }) {
       {active === 'settings' || syncStatus.kind === 'unconfigured' ? null : (
         <>
           <div className="flex-1" />
-          <div className="border-t border-line px-2.5 pt-3.5">
+          <div className="border-t border-line px-3 pt-3">
             <SyncStatusPill status={syncStatus} />
           </div>
         </>
@@ -174,10 +174,10 @@ function BottomNav({ route, active }: { route: Route; active: NavKey | null }) {
   const centre = centreAction(route, state)
 
   return (
-    <nav className="safe-bottom fixed inset-x-0 bottom-0 z-30 flex border-t border-line bg-surface pt-2.5 md:hidden">
+    <nav className="safe-bottom fixed inset-x-0 bottom-0 z-30 flex border-t border-line bg-surface pt-2 md:hidden">
       {NAV_ITEMS.map((item) => {
         const isActive = item.key === active
-        const itemClass = 'flex flex-1 flex-col items-center gap-1 pb-2.5'
+        const itemClass = 'flex flex-1 flex-col items-center gap-1 pb-2'
 
         if (item.key === 'new') {
           // The one action on a bar of destinations: a filled disc that cuts
@@ -187,13 +187,13 @@ function BottomNav({ route, active }: { route: Route; active: NavKey | null }) {
             <>
               <span
                 className={cn(
-                  '-mt-4.5 flex size-12 items-center justify-center rounded-full',
+                  '-mt-6 flex size-12 items-center justify-center rounded-full',
                   centre.tone === 'ink' ? 'bg-ink text-paper' : 'bg-leaf text-on-accent',
                 )}
               >
                 <Icon name="plus" size={26} />
               </span>
-              <span className={cn('text-[0.6875rem]', isActive || centre.kind === 'log' ? 'font-semibold' : '')}>
+              <span className={cn('text-[0.6875rem] leading-4', isActive || centre.kind === 'log' ? 'font-semibold' : '')}>
                 {centre.label}
               </span>
             </>
@@ -228,8 +228,8 @@ function BottomNav({ route, active }: { route: Route; active: NavKey | null }) {
             aria-current={isActive ? 'page' : undefined}
             className={cn(itemClass, isActive ? 'text-leaf' : 'text-ink-faint')}
           >
-            <Icon name={item.icon} size={23} />
-            <span className={cn('text-[0.6875rem]', isActive ? 'font-semibold' : '')}>
+            <Icon name={item.icon} size={24} />
+            <span className={cn('text-[0.6875rem] leading-4', isActive ? 'font-semibold' : '')}>
               {item.shortLabel ?? item.label}
             </span>
           </a>

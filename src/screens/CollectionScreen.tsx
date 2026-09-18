@@ -159,7 +159,7 @@ function PlantRuns({
   return (
     <div>
       {/* The table header exists only where there are columns to head. */}
-      <div className="hidden items-center gap-4 border-b border-line-strong px-2.5 pb-2.5 lg:flex">
+      <div className="hidden items-center gap-4 border-b border-line-strong px-3 pb-2 lg:flex">
         <span className="w-10 shrink-0" />
         <ColumnHeader className="flex-1">Plant</ColumnHeader>
         <div className="flex items-center gap-8">
@@ -204,7 +204,7 @@ function PlantRow({ plant, showPlace }: { plant: Plant; showPlace: boolean }) {
       <PlantThumb plant={plant} />
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <span className="flex items-baseline gap-1.5">
+        <span className="flex items-baseline gap-1">
           <span className="truncate font-display text-[1.09375rem] leading-[1.375rem] font-medium">
             {plant.name}
           </span>
@@ -287,7 +287,7 @@ function Archive({ plants, query }: { plants: readonly Plant[]; query: string })
         ))}
       </div>
 
-      <p className="mt-3.5 px-0.5 text-[0.8125rem] leading-[1.125rem] text-ink-faint text-pretty">
+      <p className="mt-4 text-[0.8125rem] leading-[1.125rem] text-ink-faint text-pretty">
         {isArchiveQuery(query)
           ? 'Plants that died or were given away. A dormant plant is not here — it is still on the shelf, just asleep.'
           : 'Archived, so it is out of every list you water from.'}

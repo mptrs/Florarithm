@@ -62,7 +62,7 @@ const VARIANTS: Record<ButtonVariant, string> = {
 const SIZES: Record<ButtonSize, string> = {
   lg: 'h-primary text-[1.1875rem] font-semibold tracking-[0.12em] px-6',
   md: 'h-control text-body font-medium px-4',
-  sm: 'h-touch text-[0.875rem] font-semibold px-3.5',
+  sm: 'h-touch text-[0.875rem] font-semibold px-4',
 }
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {

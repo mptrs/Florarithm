@@ -120,7 +120,7 @@ export function PlantScreen({ code }: { code: string }) {
           rank of 10 here lost to them every time, so the overlay could never
           catch a click landing on Hero. 30 clears Hero's 20 and still loses
           cleanly to a real modal like Sheet or the toast, both `z-50`. */}
-      <div className="relative z-30 -mt-6 rounded-t-[1.75rem] bg-paper px-4 pt-5 pb-14 md:mt-6 md:rounded-none md:px-0 md:pt-0 md:pb-0">
+      <div className="relative z-30 -mt-6 rounded-t-[1.75rem] bg-paper px-4 pt-6 pb-16 md:mt-6 md:rounded-none md:px-0 md:pt-0 md:pb-0">
         {/* The link is the everyday half of the tag, so it rides the name's own
             line at the far edge of it. The QR is the other half and lives down
             on the photograph, next to the place. */}
@@ -137,7 +137,7 @@ export function PlantScreen({ code }: { code: string }) {
                   dormancy is the one status that changes how you read
                   everything else on this page, so it has to arrive with the
                   name and not four rows later. */}
-              {plant.status === 'dormant' ? <Dozing className="ml-1.5 align-top text-[1.375rem]" /> : null}
+              {plant.status === 'dormant' ? <Dozing className="ml-1 align-top text-[1.375rem]" /> : null}
             </h1>
             {formatSpecies(plant) ? (
               <p className="-mt-1 text-[1.0625rem] leading-6 text-ink-muted">{formatSpecies(plant)}</p>
@@ -149,7 +149,6 @@ export function PlantScreen({ code }: { code: string }) {
                 icon="link"
                 label="Copy the tag link"
                 variant="quiet"
-                className="mt-0.5"
                 onClick={() => void copyLink()}
               />
               {/* A desktop spells both actions out here. A phone waters from
@@ -372,7 +371,7 @@ function Hero({
           <button
             type="button"
             onClick={onAddPhoto}
-            className="lift pointer-events-auto flex items-center gap-2 rounded-full bg-floating px-4 py-2.5 text-[0.875rem] font-semibold text-ink shadow-md active:opacity-70 hover:bg-surface hover:shadow-lg"
+            className="lift pointer-events-auto flex items-center gap-2 rounded-full bg-floating px-4 py-3 text-[0.875rem] font-semibold text-ink shadow-md active:opacity-70 hover:bg-surface hover:shadow-lg"
           >
             <Icon name="image" size={17} />
             {/* Not "Add a photo" — that name already belongs to the button
@@ -408,12 +407,12 @@ function Hero({
 
           The two offsets are the same line in two different layouts. On a
           phone the sheet of content rides 24px up over the photograph, so
-          anything sitting lower than that is behind paper — `bottom-9` clears
+          anything sitting lower than that is behind paper — the chip sits one
           the overlap and leaves the chip a margin. From `md` the sheet starts
           below the hero instead of over it, there is nothing to clear, and the
           chip can sit where it reads best: near the frame's own edge. */}
       {plant.wish ? null : (
-        <div className="pointer-events-auto absolute inset-x-4 bottom-9 flex items-center gap-2 md:bottom-4">
+        <div className="pointer-events-auto absolute inset-x-4 bottom-[calc(--spacing(6)+--spacing(4))] flex items-center gap-2 md:bottom-4">
           {/* The other half of the tag, kept next to the place because both are
               about the pot this plant is standing in. With no place recorded it
               is simply the first thing on the line, in the corner on its own. */}
@@ -427,7 +426,7 @@ function Hero({
           </button>
 
           {place && place !== '—' ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-floating px-3.5 py-2 text-[0.875rem] font-semibold text-ink shadow-md">
+            <span className="inline-flex items-center gap-1 rounded-full bg-floating px-4 py-2 text-[0.875rem] font-semibold text-ink shadow-md">
               <Icon name="place" size={16} className="text-leaf" />
               {place}
             </span>
@@ -455,7 +454,7 @@ function Hero({
 
 function Tabs({ tab, onChange }: { tab: Tab; onChange: (tab: Tab) => void }) {
   return (
-    <div role="tablist" className="mt-5 flex border-b border-line lg:hidden">
+    <div role="tablist" className="mt-6 flex border-b border-line lg:hidden">
       {(['care', 'history'] as const).map((key) => (
         <button
           key={key}
@@ -486,7 +485,7 @@ function Care({ plant }: { plant: Plant }) {
   const repot = lastRepot(state, plant.code)
 
   return (
-    <Card className="mt-3.5 px-4.5">
+    <Card className="mt-4 px-4">
       <CareRow
         icon="droplet"
         tone="water"
@@ -533,12 +532,12 @@ function CareRow({
 }) {
   return (
     <div
-      className={cn('flex items-center gap-3.5 py-3.5', last ? '' : 'border-b border-line')}
+      className={cn('flex items-center gap-3 py-3', last ? '' : 'border-b border-line')}
     >
       <IconChip icon={icon} tone={tone} size={38} />
       <div className="min-w-0 flex-1">
         <div className="text-[0.9375rem] font-medium">{label}</div>
-        {detail ? <div className="mt-px text-[0.8125rem] text-ink-faint">{detail}</div> : null}
+        {detail ? <div className="text-[0.8125rem] text-ink-faint">{detail}</div> : null}
       </div>
       <div
         className={cn(
@@ -601,14 +600,14 @@ function Details({ plant }: { plant: Plant }) {
   if (rows.length === 0) return null
 
   return (
-    <section className="mt-7 hidden md:block">
+    <section className="mt-8 hidden md:block">
       <GroupLabel>Details</GroupLabel>
-      <Card className="mt-2 px-4.5">
+      <Card className="mt-2 px-4">
         {rows.map((row, index) => (
           <div
             key={row.icon}
             className={cn(
-              'flex items-center gap-3.5 py-3',
+              'flex items-center gap-3 py-3',
               index === rows.length - 1 ? '' : 'border-b border-line',
             )}
           >
@@ -757,7 +756,7 @@ function History({ plant, onEdit }: { plant: Plant; onEdit: (event: PlantEvent) 
 
       {eventsByMonth(shown).map(([key, events]) => (
         <div key={key}>
-          <GroupLabel className="mt-5">{formatMonthYear(events[0]!.date)}</GroupLabel>
+          <GroupLabel className="mt-6">{formatMonthYear(events[0]!.date)}</GroupLabel>
           <Card className="mt-2 overflow-hidden">
             {events.map((event, index) => (
               <EntryRow
@@ -771,7 +770,7 @@ function History({ plant, onEdit }: { plant: Plant; onEdit: (event: PlantEvent) 
         </div>
       ))}
 
-      <p className="mt-4 px-0.5 text-[0.8125rem] leading-[1.125rem] text-ink-faint text-pretty">
+      <p className="mt-4 text-[0.8125rem] leading-[1.125rem] text-ink-faint text-pretty">
         {plural(shown.length, 'entry', 'entries')} — drag one left to remove it, right to change it.
       </p>
     </section>
@@ -809,7 +808,7 @@ function EntryRow({
       deleteLabel={deleteLabel}
       className={cn('group', last ? '' : 'border-b border-line')}
     >
-      <div className="flex items-center gap-3.5 px-4.5 py-3">
+      <div className="flex items-center gap-3 px-4 py-3">
         {event.photo ? (
           <EntryPhoto event={event} />
         ) : (
@@ -818,7 +817,7 @@ function EntryRow({
         <div className="min-w-0 flex-1">
           <div className="truncate text-[0.9375rem] font-medium">{title}</div>
           {detail ? (
-            <div className="mt-px truncate text-[0.8125rem] leading-[1.125rem] text-ink-muted">
+            <div className="truncate text-[0.8125rem] leading-[1.125rem] text-ink-muted">
               {detail}
             </div>
           ) : null}
@@ -894,7 +893,7 @@ function detailOf(event: PlantEvent, state: ReturnType<typeof useStore>): ReactN
       // an icon look a pixel wrong at one size and right at another.
       return (
         <>
-          <Icon name="waited" size={14} className="mr-1.5 inline align-[-0.155em] text-ink-faint" />
+          <Icon name="waited" size={14} className="mr-1 inline align-[-0.155em] text-ink-faint" />
           {event.fromWishlist === 0 ? 'same day' : plural(event.fromWishlist, 'day')}
           {event.text ? ` · ${event.text}` : ''}
         </>
@@ -945,16 +944,16 @@ function Family({ plant }: { plant: Plant }) {
         <SiblingRow key={sibling.code} plant={sibling} />
       ))}
 
-      <div className="my-0.5 -ml-7 min-h-touch rounded-lg bg-leaf-tint py-2 pr-2 pl-7">
-        <div className="relative flex items-baseline justify-between gap-2.5">
+      <div className="my-1 -ml-8 min-h-touch rounded-lg bg-leaf-tint py-2 pr-4 pl-8">
+        <div className="relative flex items-baseline justify-between gap-2">
           <Bead kind="self" />
-          <span className="flex min-w-0 items-baseline gap-1.5 font-display text-[1.1875rem] leading-6 font-semibold">
+          <span className="flex min-w-0 items-baseline gap-1 font-display text-[1.1875rem] leading-6 font-semibold">
             <span className="truncate">{plant.name}</span>
             <StatusMark status={plant.status} />
           </span>
           <span className="shrink-0 text-label uppercase text-leaf">This one</span>
         </div>
-        <span className="mt-px block truncate font-mono text-micro tracking-[0.08em] text-ink-muted">
+        <span className="block truncate font-mono text-micro tracking-[0.08em] text-ink-muted">
           {[plant.code, describeParent(state, plant)].filter(Boolean).join(' · ')}
         </span>
       </div>
@@ -984,7 +983,7 @@ function Family({ plant }: { plant: Plant }) {
   }
 
   return (
-    <section className="mt-7">
+    <section className="mt-8">
       <div className="flex items-baseline justify-between gap-4">
         <GroupLabel>Family</GroupLabel>
         <span className="text-[0.8125rem] text-ink-faint">
@@ -993,8 +992,8 @@ function Family({ plant }: { plant: Plant }) {
         </span>
       </div>
 
-      <Card className="mt-2 px-4.5 pt-3.5 pb-4">
-        <Rail className="ml-2">{rail}</Rail>
+      <Card className="mt-2 p-4">
+        <Rail className="ml-4">{rail}</Rail>
       </Card>
     </section>
   )
@@ -1003,7 +1002,7 @@ function Family({ plant }: { plant: Plant }) {
 /** One generation's worth of indent, and the hairline it hangs off. */
 function Rail({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div className={cn('relative border-l border-line pl-5', className)}>{children}</div>
+    <div className={cn('relative border-l border-line pl-4', className)}>{children}</div>
   )
 }
 
@@ -1015,20 +1014,23 @@ function Rail({ children, className }: { children: ReactNode; className?: string
  * somewhere different in each of them — which is exactly how it read. So it
  * hangs off the name's own line box and stays put whatever is under it.
  *
- * The left offsets are `pl-5` plus half the bead: the rail is 20px to the left
- * of the name, and the bead has to sit on the line, not beside it.
+ * Centred on the line whatever its size: the line is the rail's own border,
+ * one indent (`pl-4`) plus half a hairline to the left of the name, and the
+ * bead is pulled back by half its own width from there. The sizes are the
+ * marks themselves; only the position is spacing, and it has no number of its
+ * own.
  */
 function Bead({ kind }: { kind: 'kin' | 'own' | 'self' | 'sibling' | 'more' }) {
   return (
     <span
       aria-hidden
       className={cn(
-        'absolute top-1/2 -translate-y-1/2 rounded-full',
+        'absolute top-1/2 -left-[calc(--spacing(4)+0.5px)] -translate-x-1/2 -translate-y-1/2 rounded-full',
         kind === 'self'
-          ? '-left-[1.59375rem] size-[0.6875rem] bg-leaf'
+          ? 'size-[0.6875rem] bg-leaf'
           : kind === 'sibling'
-            ? '-left-[1.46875rem] size-[0.4375rem] bg-line-strong'
-            : 'size-[0.5625rem] -left-[1.53125rem] border-[1.5px] bg-surface',
+            ? 'size-[0.4375rem] bg-line-strong'
+            : 'size-[0.5625rem] border-[1.5px] bg-surface',
         kind === 'own' ? 'border-leaf' : '',
         kind === 'kin' ? 'border-line-strong' : '',
         kind === 'more' ? 'border border-dashed border-line-strong' : '',
@@ -1054,7 +1056,7 @@ function Branch({ node }: { node: Descendant }) {
             <button
               type="button"
               onClick={() => setOpen(true)}
-              className="warm relative flex min-h-touch items-center gap-2 py-1.5 text-left text-[0.9375rem] text-ink-muted hover:text-ink"
+              className="warm relative flex min-h-touch items-center gap-2 py-2 text-left text-[0.9375rem] text-ink-muted hover:text-ink"
             >
               <Bead kind="more" />
               {below} more off {node.plant.name}
@@ -1074,14 +1076,14 @@ function KinRow({ plant, note, own = false }: { plant: Plant; note: string; own?
       href={routes.plant(plant.code)}
       className="warm block min-h-touch py-2 hover:opacity-80"
     >
-      <span className="relative flex items-baseline justify-between gap-2.5">
+      <span className="relative flex items-baseline justify-between gap-2">
         <Bead kind={own ? 'own' : 'kin'} />
-        <span className="flex min-w-0 items-baseline gap-1.5 font-display text-[1.125rem] leading-6 font-medium text-leaf">
+        <span className="flex min-w-0 items-baseline gap-1 font-display text-[1.125rem] leading-6 font-medium text-leaf">
           <span className="truncate">{plant.name}</span>
           <StatusMark status={plant.status} />
         </span>
       </span>
-      <span className="mt-px block truncate font-mono text-micro tracking-[0.08em] text-ink-faint">
+      <span className="block truncate font-mono text-micro tracking-[0.08em] text-ink-faint">
         {[plant.code, note].filter(Boolean).join(' · ')}
       </span>
     </a>
@@ -1098,7 +1100,7 @@ function SiblingRow({ plant }: { plant: Plant }) {
   return (
     <a
       href={routes.plant(plant.code)}
-      className="warm relative flex min-h-touch items-center gap-2 py-1.5 hover:opacity-80"
+      className="warm relative flex min-h-touch items-center gap-2 py-2 hover:opacity-80"
     >
       <Bead kind="sibling" />
       <span className="min-w-0 truncate font-display text-[1rem] leading-[1.375rem] text-ink-muted">
@@ -1169,7 +1171,7 @@ function describeCutting(plant: Plant): string {
 
 function WishActions({ plant }: { plant: Plant }) {
   return (
-    <Card className="mt-5 flex flex-col gap-3 p-4">
+    <Card className="mt-6 flex flex-col gap-3 p-4">
       <GroupLabel>On the wishlist</GroupLabel>
       {plant.wishNote ? <p className="text-[0.9375rem] text-ink">{plant.wishNote}</p> : null}
       <Button variant="accent" onClick={() => navigate(routes.have(plant.code))}>
@@ -1187,7 +1189,7 @@ function UnknownPlant({ code, ready }: { code: string; ready: boolean }) {
   if (!ready) return null
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-6">
       <p className="font-mono text-[1.625rem] tracking-[0.1em]">{code}</p>
       <EmptyState
         title="No plant with this code"

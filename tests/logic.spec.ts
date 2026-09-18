@@ -6,6 +6,8 @@
  * discover wrong.
  */
 
+import { readdirSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { expect, test } from '@playwright/test'
 import { codePrefix, generatePlantCode, isPlantCode } from '../src/lib/plantCode'
 import { nextInLine, splitLineage } from '../src/lib/nameGenerator'
@@ -662,5 +664,63 @@ test.describe('milestones', () => {
       'First new leaf',
       'Five years here',
     ])
+  })
+})
+
+test.describe('spacing', () => {
+  /**
+   * The scale in `styles.css`, enforced. Tailwind will happily build `px-3.5`
+   * or `mt-[13px]`, so the only way the eight steps stay the only eight is a
+   * test that reads every class the app writes and refuses the rest — the
+   * same reason the stock palette is cleared rather than merely avoided.
+   */
+  const STEPS = new Set(['0', 'px', '1', '2', '3', '4', '6', '8', '12', '16'])
+  // Longest first, so `inset-x-0` is read as inset-x at 0 and not as inset at
+  // something called `x-0`.
+  const PROPS =
+    '(?:space-x|space-y|inset-x|inset-y|gap-x|gap-y|inset|bottom|right|left|top|gap|px|py|pt|pb|pl|pr|mx|my|mt|mb|ml|mr|p|m)'
+  // Numbers and arbitrary values only: a word after the dash is either a named
+  // token or not a class at all (`right-aligned` in a comment).
+  const CLASS = new RegExp(`(?<![\\w-])-?${PROPS}-(\\d+(?:\\.\\d+)?|px|\\[[^\\]]+\\])(?![\\w.\\[-])`, 'g')
+
+  const sources = (dir: string): string[] =>
+    readdirSync(dir, { withFileTypes: true }).flatMap((entry) =>
+      entry.isDirectory()
+        ? sources(join(dir, entry.name))
+        : entry.name.endsWith('.tsx')
+          ? [join(dir, entry.name)]
+          : [],
+    )
+
+  /** An arbitrary value is allowed when every length in it comes from the
+   *  scale: `--spacing(n)` on a step, the safe area, a token, or a hairline. */
+  const derived = (value: string): boolean => {
+    const steps = [...value.matchAll(/--spacing\(([\d.]+)\)/g)].map((match) => match[1] ?? '')
+    if (steps.some((step) => !STEPS.has(step))) return false
+    const rest = value
+      .replace(/--spacing\([\d.]+\)/g, '')
+      .replace(/env\([^)]*\)/g, '')
+      .replace(/var\(--[\w-]+\)/g, '')
+    return [...rest.matchAll(/(\d*\.?\d+)(px|rem|em)/g)].every(
+      ([, number, unit]) => unit === 'px' && Number(number) <= 1,
+    )
+  }
+
+  test('every gap, padding, margin and offset is a step of the scale', () => {
+    const strays: string[] = []
+
+    for (const file of sources('src')) {
+      readFileSync(file, 'utf8')
+        .split('\n')
+        .forEach((line, index) => {
+          for (const match of line.matchAll(CLASS)) {
+            const value = match[1] ?? ''
+            const ok = value.startsWith('[') ? derived(value.slice(1, -1)) : STEPS.has(value)
+            if (!ok) strays.push(`${file}:${index + 1}  ${match[0]}`)
+          }
+        })
+    }
+
+    expect(strays, 'off the spacing scale — see Spacing in DESIGN.md').toEqual([])
   })
 })

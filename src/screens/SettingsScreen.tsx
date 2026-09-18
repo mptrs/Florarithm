@@ -36,7 +36,7 @@ import { SyncStatusPill } from '~/ui/SyncStatusPill'
 
 export function SettingsScreen() {
   return (
-    <div className="flex flex-col gap-10">
+    <div className="flex flex-col gap-8">
       <ScreenHeader title="Settings" />
       <SyncSection />
       <ListsSection />
@@ -147,7 +147,7 @@ function SyncSection() {
           label="Access token"
           hint="Reaches this one repository and nothing else. Lose the phone and you revoke it on github.com; every other device carries on."
         >
-          <div className="flex gap-2.5">
+          <div className="flex gap-2">
             <TextField
               type="password"
               autoComplete="off"
@@ -166,8 +166,8 @@ function SyncSection() {
         </Field>
       ) : (
         <Field label="Access token">
-          <div className="flex gap-2.5">
-            <div className="flex h-control w-full max-w-sm items-center rounded-sm border border-line-strong bg-surface px-3.5 font-mono text-body text-ink-muted">
+          <div className="flex gap-2">
+            <div className="flex h-control w-full max-w-sm items-center rounded-sm border border-line-strong bg-surface px-4 font-mono text-body text-ink-muted">
               {maskToken(config?.token ?? '')}
             </div>
             <Button variant="outline" icon="pencil" onClick={() => setReplacingToken(true)}>
@@ -262,11 +262,11 @@ function BackupSection() {
     <details className="group">
       <summary
         className={cn(
-          'warm group/summary mb-4 flex cursor-pointer list-none items-center justify-between gap-2.5',
-          'border-b border-line pb-2.5 hover:border-line-strong [&::-webkit-details-marker]:hidden',
+          'warm group/summary mb-4 flex cursor-pointer list-none items-center justify-between gap-2',
+          'border-b border-line pb-2 hover:border-line-strong [&::-webkit-details-marker]:hidden',
         )}
       >
-        <span className="flex items-center gap-2.5">
+        <span className="flex items-center gap-2">
           <Icon
             name="download"
             size={19}
@@ -386,7 +386,7 @@ function VocabList({ kind }: { kind: VocabKind }) {
     <div className="flex flex-col gap-2">
       <SectionHeading>{`${label(kind)}s`}</SectionHeading>
 
-      <div className="flex gap-2.5">
+      <div className="flex gap-2">
         <TextField
           aria-label={`New ${label(kind).toLowerCase()}`}
           placeholder={`Add a ${label(kind).toLowerCase()}`}
