@@ -28,6 +28,7 @@ import {
   isThirsty,
   lastRepot,
   lastWaterAt,
+  milestonesOf,
   vocabName,
 } from '~/data/selectors'
 import { describeEvent, logEvent, removeEvent, useStore, type State } from '~/data/store'
@@ -190,6 +191,7 @@ export function PlantScreen({ code }: { code: string }) {
                 <Care plant={plant} />
                 <Details plant={plant} />
                 <Family plant={plant} />
+                <Milestones plant={plant} />
               </div>
               <div
                 className={cn(
@@ -584,9 +586,8 @@ function Details({ plant }: { plant: Plant }) {
         .join(' · '),
     })
   }
-  if (plant.origin.date) {
-    rows.push({ icon: 'calendar', value: `In the collection since ${formatDate(plant.origin.date)}` })
-  }
+  // The arrival date used to sit here. It is the first line of Milestones now,
+  // where it is the start of something rather than a fact on its own.
 
   if (rows.length === 0) return null
 
@@ -604,6 +605,62 @@ function Details({ plant }: { plant: Plant }) {
           >
             <Icon name={row.icon} size={19} className="text-ink-faint" />
             <span className="text-[0.9375rem] leading-5">{row.value}</span>
+          </div>
+        ))}
+      </Card>
+    </section>
+  )
+}
+
+// --- milestones -------------------------------------------------------------
+
+/**
+ * The few dates that mattered, oldest first.
+ *
+ * Care answers what the plant needs now and History holds every entry; this is
+ * the handful of days in between that are worth having a name. Every line is
+ * read out of the log at render time, so there is nothing to unlock, nothing to
+ * award, and nothing to mark as seen — a plant that has bloomed has always
+ * bloomed, whether or not this card was ever looked at.
+ *
+ * No icon chip on a row, deliberately. A tinted disc per line is what Care and
+ * History wear, and four of them here would turn four facts into four badges.
+ * The date leads instead, right-aligned so the days make a column: the card
+ * reads as a chronicle rather than as a third run of label/value rows.
+ */
+function Milestones({ plant }: { plant: Plant }) {
+  const state = useStore()
+  const dated = milestonesOf(state, plant.code)
+
+  // One dated fact is not a chronicle. Nothing is drawn rather than a card of
+  // hollow rows waiting to be filled: that is a locked badge, and a locked
+  // badge makes the app a list of things to make a plant do.
+  if (dated.length < 2) return null
+
+  return (
+    <section className="mt-8">
+      <GroupLabel>Milestones</GroupLabel>
+
+      <Card className="mt-2 px-4">
+        {dated.map((item, index) => (
+          <div
+            key={item.title}
+            className={cn(
+              'flex items-baseline gap-3 py-3',
+              index === dated.length - 1 ? '' : 'border-b border-line',
+            )}
+          >
+            <span className="w-20 shrink-0 text-right font-mono text-micro text-ink-muted">
+              {formatDate(item.date)}
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="text-[0.9375rem] leading-5 font-medium">{item.title}</div>
+              {item.detail ? (
+                <div className="text-[0.8125rem] leading-[1.125rem] text-ink-faint">
+                  {item.detail}
+                </div>
+              ) : null}
+            </div>
           </div>
         ))}
       </Card>

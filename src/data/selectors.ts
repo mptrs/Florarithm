@@ -10,8 +10,8 @@
  * five selectors builds them once.
  */
 
-import { daysSince, yearOf } from '~/lib/date'
-import { formatSpecies, normalizeCross } from '~/lib/format'
+import { daysBetween, daysSince, yearOf } from '~/lib/date'
+import { formatSpecies, normalizeCross, plural } from '~/lib/format'
 import type { CollectionFilter } from '~/lib/router'
 import type { State } from './store'
 import type { EventType, Id, Plant, PlantEvent, VocabItem, VocabKind } from './types'
@@ -160,6 +160,163 @@ export function lastRepot(state: State, code: string) {
   const event = lastEventOf(state, code, 'repot')
   return event?.type === 'repot' ? event : null
 }
+
+// --- milestones -------------------------------------------------------------
+
+/** One dated line in the chronicle: what happened, and where it is worth
+ *  saying, the one figure that makes it mean something. */
+export type Milestone = {
+  /** ISO date. */
+  date: string
+  title: string
+  detail: string | null
+}
+
+/**
+ * The few dates that mattered, oldest first.
+ *
+ * Every line is a reading of the log, true whenever it is asked and stored
+ * nowhere — so nothing here is ever unlocked, awarded, or marked as seen. A
+ * plant that has had one thing happen to it gets no card at all: that rule
+ * lives at the screen, next to the markup it decides.
+ */
+export function milestonesOf(
+  state: State,
+  code: string,
+): Milestone[] {
+  const plant = findPlant(state, code)
+  // Newest first, which is why the earliest of a kind is the last match.
+  const events = eventsFor(state, code)
+  const earliest = (type: EventType) => events.filter((event) => event.type === type).at(-1) ?? null
+
+  const arrival = plant?.origin.date ?? null
+  const dated: Milestone[] = []
+
+  if (arrival) {
+    // The wait was written down once, when the wish became a plant. Nothing
+    // else here knows a number the log did not record.
+    const wait = events.find(
+      (event) => event.type === 'note' && event.fromWishlist !== undefined,
+    )
+    const days = wait?.type === 'note' ? wait.fromWishlist : undefined
+
+    dated.push({
+      date: arrival,
+      title: 'Arrived',
+      detail: days === undefined ? null : `after ${plural(days, 'day')} on the wishlist`,
+    })
+  }
+
+  const leaf = earliest('leaf')
+  if (leaf) dated.push({ date: leaf.date, title: 'First new leaf', detail: null })
+
+  const bloom = earliest('bloom')
+  if (bloom) {
+    // The one detail line worth the room. A first leaf arrives weeks after a
+    // plant does and surprises nobody; a first bloom is the fact you would
+    // have to work out by hand, so it is the fact that gets counted for you.
+    const waited = arrival ? daysBetween(arrival, bloom.date) : 0
+    dated.push({
+      date: bloom.date,
+      title: 'First bloom',
+      detail: waited > 0 ? `${plural(waited, 'day')} after it arrived` : null,
+    })
+  }
+
+  const years = arrival ? anniversary(arrival) : null
+  if (years) {
+    const word = years.count === 1 ? 'year' : 'years'
+    dated.push({ date: years.date, title: `${inWords(years.count)} ${word} here`, detail: null })
+  }
+
+  // A running total is not a moment, but the day it crossed a round number
+  // is. The latest one only, for the same reason there is one anniversary.
+  const waterings = events.filter((event) => event.type === 'water').reverse()
+  const round = roundWatering(waterings.length)
+  const crossed = round ? waterings[round - 1] : undefined
+  if (round && crossed) {
+    dated.push({ date: crossed.date, title: `Watered for the ${round}th time`, detail: null })
+  }
+
+  const pot = latestPot(events)
+  if (pot) dated.push(pot)
+
+  return dated.sort((a, b) => a.date.localeCompare(b.date))
+}
+
+/** 50, then every hundred: the first comes a year or so in at a weekly
+ *  rhythm, and after that one every couple of years — rare enough to stay
+ *  worth a line. All of them take `th`, which is why the title can. */
+function roundWatering(count: number): number | null {
+  if (count >= 100) return Math.floor(count / 100) * 100
+  return count >= 50 ? 50 : null
+}
+
+/** The most recent whole year that has passed since a date, and the day it
+ *  passed on. One line, never one per year — eight rows saying the same thing
+ *  in a louder voice is not a chronicle. */
+function anniversary(arrival: string): { date: string; count: number } | null {
+  const from = new Date(arrival)
+  const now = new Date()
+  let count = now.getFullYear() - from.getFullYear()
+
+  const mark = new Date(from)
+  mark.setFullYear(from.getFullYear() + count)
+  if (mark.getTime() > now.getTime()) {
+    count -= 1
+    mark.setFullYear(from.getFullYear() + count)
+  }
+
+  return count < 1 ? null : { date: mark.toISOString(), count }
+}
+
+/**
+ * `Into its third pot`, on the day of the latest repot, with the sizes it
+ * climbed through as the detail: `12 → 15 → 19 cm`.
+ *
+ * From the second repot on. A first one is exactly what Care's Last repot row
+ * already says, date and sizes both, and the same fact twice on one screen is
+ * not a milestone.
+ */
+function latestPot(events: readonly PlantEvent[]): Milestone | null {
+  const repots = events.filter((event) => event.type === 'repot').reverse()
+  const last = repots.at(-1)
+  if (repots.length < 2 || !last) return null
+
+  const sizes: number[] = []
+
+  for (const repot of repots) {
+    if (repot.type !== 'repot') continue
+    for (const size of [repot.fromSize, repot.toSize]) {
+      if (size === null) continue
+      if (sizes.at(-1) === size) continue
+      sizes.push(size)
+    }
+  }
+
+  return {
+    date: last.date,
+    title: `Into its ${ORDINALS[repots.length] ?? `${repots.length + 1}th`} pot`,
+    detail: sizes.length < 2 ? null : `${sizes.join(' → ')} cm`,
+  }
+}
+
+/** Small numbers as words, so the one prose line in the card reads as prose
+ *  and not as a second figure beside the date. */
+const WORDS = [
+  'One', 'Two', 'Three', 'Four', 'Five', 'Six',
+  'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve',
+]
+
+function inWords(count: number): string {
+  return WORDS[count - 1] ?? String(count)
+}
+
+/** Indexed by repots so far, so the pot after the second repot is `third`. */
+const ORDINALS = [
+  'first', 'second', 'third', 'fourth', 'fifth', 'sixth',
+  'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth',
+]
 
 // --- family -----------------------------------------------------------------
 

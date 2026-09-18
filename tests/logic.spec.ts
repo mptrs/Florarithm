@@ -21,6 +21,7 @@ import {
   descendantCodes,
   descendantsOf,
   lineageOf,
+  milestonesOf,
 } from '../src/data/selectors'
 import type { State } from '../src/data/store'
 import type { Plant, PlantEvent } from '../src/data/types'
@@ -499,5 +500,167 @@ test.describe('the family', () => {
     expect(ancestorsOf(self, 'AAA')).toEqual([])
     expect(descendantsOf(self, 'AAA')).toEqual([])
     expect(descendantCodes(self, 'AAA').size).toBe(0)
+  })
+})
+
+test.describe('milestones', () => {
+  /**
+   * Every line is read out of the log, so the only thing worth testing is the
+   * reading: the order, the one figure each line is allowed to carry, and the
+   * anniversary, which is the single value that changes without anything being
+   * logged at all.
+   */
+  const ago = (years: number, months = 0): string => {
+    const date = new Date()
+    date.setFullYear(date.getFullYear() - years)
+    date.setMonth(date.getMonth() - months)
+    return date.toISOString()
+  }
+
+  const grown = (extra: Partial<Plant> = {}): Plant =>
+    ({
+      code: 'ANT-0001',
+      name: 'Fluweel',
+      genus: 'Anthurium',
+      species: '',
+      cross: '',
+      cultivar: '',
+      variegation: '',
+      locationId: null,
+      system: 'semi-hydro',
+      potSize: 19,
+      mediumId: null,
+      origin: { type: 'nursery', from: '', date: ago(5, 1), price: null },
+      parent: null,
+      status: 'active',
+      wish: false,
+      wishNote: '',
+      createdAt: ago(5, 1),
+      updatedAt: ago(5, 1),
+      ...extra,
+    }) as Plant
+
+  const log = (id: string, extra: Partial<PlantEvent>): PlantEvent =>
+    ({ id, plantCode: 'ANT-0001', date: ago(4), ...extra }) as PlantEvent
+
+  const stateOf = (one: Plant, events: PlantEvent[]): State => ({
+    status: 'ready',
+    plants: [one],
+    events,
+    vocab: [],
+    lastBackupAt: null,
+  })
+
+  test('the chronicle runs oldest first and carries the wait it was told', () => {
+    const state = stateOf(grown(), [
+      log('note', { type: 'note', date: ago(5, 1), text: 'Finally.', fromWishlist: 214 }),
+      log('leaf', { type: 'leaf', date: ago(5) }),
+    ])
+
+    const dated = milestonesOf(state, 'ANT-0001')
+    expect(dated.map((item) => item.title)).toEqual([
+      'Arrived',
+      'First new leaf',
+      'Five years here',
+    ])
+    expect(dated[0]?.detail).toBe('after 214 days on the wishlist')
+    // The wait is the only figure the arrival carries: nothing here counts
+    // something the log did not write down.
+    expect(dated[1]?.detail).toBeNull()
+  })
+
+  test('the anniversary is the last one that passed, never the next one', () => {
+    // Three years and eleven months in: the fourth year has not come round,
+    // so the card must not round up to it.
+    const justUnder = stateOf(grown({ origin: { type: null, from: '', date: ago(4, -1), price: null } }), [
+      log('leaf', { type: 'leaf', date: ago(3) }),
+    ])
+
+    expect(milestonesOf(justUnder, 'ANT-0001').map((item) => item.title)).toEqual([
+      'Arrived',
+      'First new leaf',
+      'Three years here',
+    ])
+  })
+
+  test('a plant in its first year has no anniversary at all', () => {
+    const fresh = stateOf(grown({ origin: { type: null, from: '', date: ago(0, 4), price: null } }), [])
+
+    expect(milestonesOf(fresh, 'ANT-0001').map((item) => item.title)).toEqual(['Arrived'])
+  })
+
+  test('a first bloom says how long it took, a plant with no arrival says nothing', () => {
+    const known = stateOf(grown(), [log('bloom', { type: 'bloom', date: ago(4, 1) })])
+    expect(milestonesOf(known, 'ANT-0001')[1]?.detail).toBe('365 days after it arrived')
+
+    const unknown = stateOf(grown({ origin: { type: null, from: '', date: null, price: null } }), [
+      log('bloom', { type: 'bloom', date: ago(4, 1) }),
+    ])
+    const dated = milestonesOf(unknown, 'ANT-0001')
+    expect(dated.map((item) => item.title)).toEqual(['First bloom'])
+    expect(dated[0]?.detail).toBeNull()
+  })
+
+  test('the earliest of a kind is the one named, not the latest', () => {
+    const first = ago(3)
+    const state = stateOf(grown(), [
+      log('late', { type: 'bloom', date: ago(1) }),
+      log('early', { type: 'bloom', date: first }),
+    ])
+
+    const bloom = milestonesOf(state, 'ANT-0001').find((item) => item.title === 'First bloom')
+    expect(bloom?.date).toBe(first)
+  })
+
+  test('a pot is a milestone from the second repot, with the sizes it climbed', () => {
+    const once = stateOf(grown(), [
+      log('a', { type: 'repot', date: ago(3), fromSize: 12, toSize: 15, mediumId: null, reason: '' }),
+    ])
+    // One repot is what Care's Last repot row already says.
+    expect(milestonesOf(once, 'ANT-0001').some((item) => item.title.endsWith('pot'))).toBe(false)
+
+    const last = ago(1)
+    const twice = stateOf(grown(), [
+      log('a', { type: 'repot', date: ago(3), fromSize: 12, toSize: 15, mediumId: null, reason: '' }),
+      log('b', { type: 'repot', date: last, fromSize: 15, toSize: 19, mediumId: null, reason: '' }),
+    ])
+    const pot = milestonesOf(twice, 'ANT-0001').find((item) => item.title === 'Into its third pot')
+    expect(pot?.date).toBe(last)
+    expect(pot?.detail).toBe('12 → 15 → 19 cm')
+  })
+
+  test('a watering counts on the day it crossed the last round number', () => {
+    const waterings = (count: number) =>
+      Array.from({ length: count }, (_, index) =>
+        log(`w${index}`, {
+          type: 'water',
+          date: new Date(Date.UTC(2022, 0, 1 + index * 7)).toISOString(),
+          fertilized: true,
+        }),
+      )
+    const titles = (count: number) =>
+      milestonesOf(stateOf(grown(), waterings(count)), 'ANT-0001').map((item) => item.title)
+
+    expect(titles(49)).not.toContain('Watered for the 50th time')
+    expect(titles(50)).toContain('Watered for the 50th time')
+
+    // 214 waterings: the 200th, dated the day it happened — and only that one.
+    const at214 = milestonesOf(stateOf(grown(), waterings(214)), 'ANT-0001')
+    const watered = at214.filter((item) => item.title.startsWith('Watered'))
+    expect(watered.map((item) => item.title)).toEqual(['Watered for the 200th time'])
+    expect(watered[0]?.date).toBe(new Date(Date.UTC(2022, 0, 1 + 199 * 7)).toISOString())
+  })
+
+  test('a tombstoned entry is not a milestone', () => {
+    const state = stateOf(grown(), [
+      log('gone', { type: 'bloom', date: ago(4), deleted: true }),
+      log('leaf', { type: 'leaf', date: ago(3) }),
+    ])
+
+    expect(milestonesOf(state, 'ANT-0001').map((item) => item.title)).toEqual([
+      'Arrived',
+      'First new leaf',
+      'Five years here',
+    ])
   })
 })
