@@ -224,9 +224,10 @@ export function PlantScreen({ code }: { code: string }) {
 
 // --- the hero ---------------------------------------------------------------
 
-/** How much of the picture's height is slack for it to drift through, and how
- *  fast it drifts. The two are the same number on purpose: the photograph runs
- *  out of slack at exactly the point the sheet has covered it. */
+/** How much of the picture's height is slack for it to drift through. It
+ *  starts centred in that slack and drifts through the lower half at half this
+ *  rate, so the photograph runs out of slack at exactly the point the sheet
+ *  has covered it. */
 const DRIFT = 0.3
 
 /**
@@ -329,8 +330,16 @@ function Hero({
   // lifts off the frame and shows the paper behind it. Zero from `md`, where
   // the frame is static rather than sticky and the picture has no slack to
   // drift through in the first place.
+  //
+  // At rest the picture sits centred, half its slack above the frame and half
+  // below, so a portrait is cropped evenly instead of losing its whole foot.
+  // That leaves it only the lower half to drift through, so it drifts at half
+  // the speed: it still runs out at the moment the sheet has covered it. The
+  // resting offset is the `translate` class on the image — 0.15 of 1.3 of its
+  // own height — and not part of this sum: a breakpoint class is right on the
+  // very first frame, where `isDesktop` has not been read yet.
   const slack = (frame.current?.offsetHeight ?? 0) * DRIFT
-  const drift = isDesktop ? 0 : Math.min(scrolled * DRIFT, slack)
+  const drift = isDesktop ? 0 : Math.min((scrolled * DRIFT) / 2, slack / 2)
 
   return (
     <>
@@ -351,7 +360,7 @@ function Hero({
             src={shownPhoto}
             alt={`${plant.name}, photographed ${formatDate(photoEvent!.date)}`}
             style={{ transform: `translate3d(0, ${-drift}px, 0)` }}
-            className="h-[130%] w-full object-cover will-change-transform md:h-full"
+            className="h-[130%] w-full -translate-y-[11.5385%] object-cover will-change-transform md:h-full md:translate-y-0"
           />
         ) : (
           <Plate />
