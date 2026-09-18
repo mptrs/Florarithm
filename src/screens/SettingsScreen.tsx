@@ -13,6 +13,7 @@ import { buildBackup, BackupParseError, readBackupFile, shareBackup } from '~/da
 import { allVocabOf } from '~/data/selectors'
 import {
   ensureVocabItem,
+  hangSachets,
   markBackedUp,
   renameVocabItem,
   replaceEverything,
@@ -20,7 +21,7 @@ import {
   useStore,
 } from '~/data/store'
 import { configureSync, getSyncConfig, syncNow, useSyncStatus } from '~/data/sync'
-import { VOCAB_KINDS, type VocabKind } from '~/data/types'
+import { SACHET_DAYS, VOCAB_KINDS, type VocabKind } from '~/data/types'
 import { cn } from '~/lib/cn'
 import { daysSince, formatDate } from '~/lib/date'
 import { label, plural } from '~/lib/format'
@@ -32,6 +33,7 @@ import { showToast } from '~/ui/toast'
 import { Icon } from '~/ui/Icon'
 import { Rows, ScreenHeader, Section, SectionHeading } from '~/ui/primitives'
 import { Row } from '~/ui/rows'
+import { SachetSheet, sachetSummary } from '~/ui/Sachets'
 import { SyncStatusPill } from '~/ui/SyncStatusPill'
 
 export function SettingsScreen() {
@@ -39,6 +41,7 @@ export function SettingsScreen() {
     <div className="flex flex-col gap-8">
       <ScreenHeader title="Settings" />
       <SyncSection />
+      <SachetsSection />
       <ListsSection />
       <BackupSection />
     </div>
@@ -244,6 +247,12 @@ function BackupSection() {
         events: backup.events,
         vocab: backup.vocab,
       })
+      // The sachets ride in the same file. Written as a local change rather
+      // than restored quietly, so the other device's copy is compared against
+      // the moment of the import and not against a stamp from the export.
+      await hangSachets(
+        backup.sachets ? { week: backup.sachets.week, hungOn: backup.sachets.hungOn } : null,
+      )
       showToast('Replaced')
     } catch (cause) {
       setError(cause instanceof BackupParseError ? cause.message : 'That file could not be read.')
@@ -351,6 +360,74 @@ function BackupSection() {
 
       {confirmDialog}
     </details>
+  )
+}
+
+// --- sachets ----------------------------------------------------------------
+
+/**
+ * The two fields that make up the whole of this: which week is hanging, and
+ * since when. There is no switch — an empty record is off and a filled one is
+ * on, because a reminder that is configured but silent is two states saying
+ * one thing.
+ */
+function SachetsSection() {
+  const { sachets } = useStore()
+  const [open, setOpen] = useState(false)
+  const { confirm, dialog: confirmDialog } = useConfirm()
+
+  const takeDown = async () => {
+    const confirmed = await confirm({
+      title: 'No sachets hanging?',
+      message: 'Today stops mentioning them until you hang new ones.',
+      confirmLabel: 'Take them down',
+      danger: true,
+    })
+    if (confirmed) await hangSachets(null)
+  }
+
+  return (
+    <Section icon="pest" title="Sachets">
+      <p className="max-w-prose text-[0.9375rem] leading-6 text-ink-muted text-pretty">
+        Predatory mites against thrips, hung through the whole collection rather than in one plant.
+        They stop releasing after {SACHET_DAYS} days, which is when Today asks for new ones.
+      </p>
+
+      {sachets ? (
+        // Two buttons and two lines of text do not fit one row at 375px, so the
+        // row becomes a stack there and is a row again from `sm`.
+        <Row className="flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-4">
+          <div className="flex min-w-0 flex-1 flex-col">
+            <span className="font-mono text-code">WEEK {sachets.week}</span>
+            <span className="text-[0.8125rem] text-ink-muted">{sachetSummary(sachets)}</span>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <Button size="sm" onClick={() => setOpen(true)}>
+              Change
+            </Button>
+            <Button size="sm" variant="quiet" onClick={takeDown}>
+              Take down
+            </Button>
+          </div>
+        </Row>
+      ) : (
+        <div>
+          <Button variant="accent" icon="plus" onClick={() => setOpen(true)}>
+            Sachets are hanging
+          </Button>
+        </div>
+      )}
+
+      {/* Correcting what is written down, not hanging a batch — so the fields
+          open on the record rather than on today. */}
+      <SachetSheet
+        mode={sachets ? 'correct' : 'hang'}
+        open={open}
+        sachets={sachets}
+        onClose={() => setOpen(false)}
+      />
+      {confirmDialog}
+    </Section>
   )
 }
 

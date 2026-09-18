@@ -11,6 +11,7 @@
 
 import { nowISO } from '~/lib/date'
 import { migrateEvents, migratePlant, migrateVocab } from './migrate'
+import { parseSachets } from './remoteFormat'
 import {
   BACKUP_FORMAT,
   BACKUP_VERSION,
@@ -28,6 +29,7 @@ export function buildBackup(state: State): Backup {
     plants: [...state.plants],
     events: [...state.events],
     vocab: [...state.vocab],
+    sachets: state.sachets,
   }
 }
 
@@ -122,6 +124,9 @@ export function parseBackup(text: string): Backup {
     // comes in as a plain yes/no, and the list it pointed at is dropped.
     events: migrateEvents(candidate.events),
     vocab: migrateVocab(candidate.vocab.map(withVocabUpdatedAt)),
+    // Older files have none, and a malformed record reads as none — see
+    // `parseSachets`, which is the same leniency the repository gets.
+    sachets: parseSachets(candidate.sachets),
   }
 }
 
