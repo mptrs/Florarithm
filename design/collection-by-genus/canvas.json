@@ -1,0 +1,147 @@
+{
+  "pages": [
+    {
+      "id": "sort",
+      "name": "The sort"
+    },
+    {
+      "id": "ledger",
+      "name": "The ledger"
+    }
+  ],
+  "artboards": [
+    {
+      "file": "Serif.dc.html",
+      "title": "By genus — the name",
+      "page": "sort",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "Label.dc.html",
+      "title": "By genus — the drawer",
+      "page": "sort",
+      "x": 490,
+      "y": 0,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "Dark.dc.html",
+      "title": "Dark",
+      "page": "sort",
+      "x": 980,
+      "y": 0,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "Tail.dc.html",
+      "title": "The tail, strictly",
+      "page": "sort",
+      "x": 1470,
+      "y": 0,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "Rest.dc.html",
+      "title": "The tail, collected",
+      "page": "sort",
+      "x": 1960,
+      "y": 0,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "DesktopSerif.dc.html",
+      "title": "Desktop — the name",
+      "page": "ledger",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 1290
+    },
+    {
+      "file": "DesktopLabel.dc.html",
+      "title": "Desktop — the drawer",
+      "page": "ledger",
+      "x": 1540,
+      "y": 0,
+      "w": 1440,
+      "h": 1290
+    }
+  ],
+  "annotations": [
+    {
+      "id": "why-genus",
+      "page": "sort",
+      "x": -350,
+      "y": 0,
+      "w": 290,
+      "text": "Genus, not species. The model keeps `species` and `cross` apart because most of what a collector owns is a cross with no epithet at all — group on species and half the Anthuriums fall into one nameless pile. Genus is the cut you actually own, and the app already counts in it: `collectionCounts.genera`, and the milestone that names the largest genus.\n\nThe rule the screen already runs on does the rest. Whatever the list is grouped by never repeats itself inside a row, so under Anthurium the second line drops the genus and reads the way the label on the bench reads: `papillilaminum × crystallinum`."
+    },
+    {
+      "id": "heads",
+      "page": "sort",
+      "x": 490,
+      "y": -360,
+      "w": 380,
+      "text": "Two heads for the same run, and the question under them is what a genus is.\n\nA place is a drawer in a cabinet and takes the cabinet's uppercase label. A genus is not a drawer — it is a name, and this app sets names in Newsreader: a plant's own name, a screen's title, a section heading. ANTHURIUM reads as a category the app invented; Anthurium reads as the plant.\n\nAgainst the serif: one grouping mechanism, one rendering, nothing to keep in step. That argument is strongest on the desktop, where the head lands directly under PLANT / PLACE / SYSTEM and a serif line in that row is the one thing there that is not a column heading.\n\nNot italic either way. Botanical writing italicises the binomial; this app never has, in any row on any screen, and starting in the heading alone would only make the rows underneath look wrong.\n\nChosen: the cabinet label. A group head does not change shape with what it happens to be naming — one grouping mechanism, one rendering, and the serif stays where it already is."
+    },
+    {
+      "id": "order",
+      "page": "sort",
+      "x": 0,
+      "y": 900,
+      "w": 380,
+      "text": "Sorted by epithet inside the run, not by the names you gave them. The second line is the column you came here to scan; a run ordered by name leaves the botany in no order at all.\n\nThe punctuation that is not part of a name is stripped before sorting, so `(papillilaminum × crystallinum) 'Dark Mama'` files under P — directly under the cross it was selected out of. Two plants that are one story end up next to each other without anything being drawn between them.\n\nA plant identified no further than its genus has nothing to sort on, goes last on its name, and shows an empty second line. The name alone, no filler."
+    },
+    {
+      "id": "dark",
+      "page": "sort",
+      "x": 980,
+      "y": 900,
+      "w": 290,
+      "text": "Nothing branches on theme — every colour is one `light-dark()` token, so this is the same markup under a different `:root`.\n\nIt earns an artboard because the two heads differ in more than a typeface: the serif head is `ink`, the cabinet label is `ink-faint`. In dark that is the difference between a name and a whisper."
+    },
+    {
+      "id": "tail",
+      "page": "sort",
+      "x": 1470,
+      "y": -360,
+      "w": 380,
+      "text": "What a real collection does to this sort: a few runs, then a long tail of one.\n\nEleven genera holding one plant each become eleven drawer heads over eleven half-empty grid rows — a screenful of labels to say Ficus once. Sorting the genera by size instead of alphabetically only moves the tail; it does not stop it being a tail."
+    },
+    {
+      "id": "rest",
+      "page": "sort",
+      "x": 1960,
+      "y": 900,
+      "w": 380,
+      "text": "One trailing drawer instead, and the screen's own rule writes the rest of it: the label above these tiles is not a genus, so the genus goes back into the line — `Asplenium nidus`, not `nidus`. The same thing that already happens when you sort A–Z and the place moves back into its column.\n\nIt keeps the cabinet label even in the serif variant, because One of each is a category and not a name.\n\nOne number to pick: a genus with one plant goes in, a genus with two stays a run. Two is already a run — it is the moment you own more than one of something, which is what this sort exists to show you."
+    },
+    {
+      "id": "desktop",
+      "page": "ledger",
+      "x": -350,
+      "y": 0,
+      "w": 290,
+      "text": "The Place column comes back. Grouped by place it is gone, because the drawer head above the run is already saying it; grouped by genus nothing above the row says where the plant is, so the column returns. One rule, read the other way round.\n\nThe header count is left alone — `25 plants · 4 grown here`, in every sort. The list below counts the genera run by run, and a third figure on that line only makes it longer."
+    },
+    {
+      "id": "scope",
+      "page": "ledger",
+      "x": 0,
+      "y": 1350,
+      "w": 520,
+      "text": "Untouched: the search, the system filters, the milestones link, the tile, the row, and both breakpoints' layout. The archive keeps its own drawer at the foot and stays flat, whatever the sort above it is doing — it is a state, not a genus.\n\nWhat the build is: a third option in the `SortSwitch`, a `groupByGenus` beside `groupByPlace` in `selectors.ts`, `showPlace` becoming `sort !== 'place'`, and one `formatEpithet` beside `formatSpecies` in `format.ts` — so the name and the name-minus-its-genus can never be joined two different ways on two different screens."
+    }
+  ],
+  "launch": {
+    "view": "canvas",
+    "page": "sort"
+  }
+}
