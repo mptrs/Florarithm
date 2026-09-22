@@ -34,7 +34,8 @@ step without either of those things.
   prompted it — the new leaf, the note, the day it was repotted — so it is a
   field on an event rather than a gallery of its own. The plant's picture is
   the newest one unless you pick another in the edit form; a plant without any
-  keeps the drawn plate. The timeline is the history filtered to the entries
+  gets a small drawn portrait of its genus instead — eight are drawn, and every
+  other genus gets a plant in a pot and no claim about which. The timeline is the history filtered to the entries
   that have one.
 - **The sachets.** Predatory mites hang through the whole collection against
   thrips and stop releasing after four weeks, so the one thing in the app that

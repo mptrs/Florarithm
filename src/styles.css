@@ -182,6 +182,31 @@
   --color-floating: light-dark(oklch(0.995 0.003 85 / 0.9), oklch(0.238 0.009 80 / 0.9));
   --color-veil-strong: light-dark(oklch(0.968 0.008 85 / 0.95), oklch(0.19 0.008 80 / 0.95));
 
+  /* The drawn plate's own palette, and the only colours in the app that are
+     not carrying a meaning — they are carrying a picture. A plant with no
+     photograph gets a small portrait of its genus instead of a grey box, and
+     a portrait needs green that is a leaf rather than green that means
+     "growth", and terracotta that is a pot rather than a warning.
+
+     They live here anyway, under `--color-*`, for the reason every other
+     colour does: so there is one place they are written and one declaration
+     per theme. Nothing outside `ui/Plate.tsx` may use them — a leaf colour
+     spent on a control would be a fourth accent nobody assigned a meaning to.
+
+     Dark is not the light values dimmed. A photograph in a dark room is still
+     a photograph, so the wall drops to just above the card it sits in and the
+     greens step towards the light rather than away from it, exactly as the
+     accents do. */
+  --color-plate-ground: light-dark(oklch(0.928 0.016 88), oklch(0.272 0.014 86));
+  --color-plate-shelf: light-dark(oklch(0.878 0.02 84), oklch(0.222 0.012 82));
+  --color-plate-leaf-deep: light-dark(oklch(0.352 0.058 154), oklch(0.44 0.072 154));
+  --color-plate-leaf: light-dark(oklch(0.452 0.072 150), oklch(0.545 0.085 150));
+  --color-plate-leaf-light: light-dark(oklch(0.56 0.086 146), oklch(0.645 0.092 146));
+  --color-plate-stem: light-dark(oklch(0.478 0.054 146), oklch(0.53 0.058 146));
+  --color-plate-pot: light-dark(oklch(0.7 0.07 47), oklch(0.5 0.058 47));
+  --color-plate-pot-rim: light-dark(oklch(0.762 0.06 47), oklch(0.565 0.05 47));
+  --color-plate-bark: light-dark(oklch(0.56 0.04 66), oklch(0.44 0.032 66));
+
   /* Two webfonts. The interface chrome runs on system-ui, which is SF on both
      devices this app will ever see, so it feels native and costs nothing. */
   --font-display: 'Newsreader', Georgia, 'Times New Roman', serif;
