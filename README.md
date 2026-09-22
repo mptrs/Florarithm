@@ -25,6 +25,15 @@ step without either of those things.
 - **A wrong entry is dragged away.** Pull a row left to delete it, right to
   edit it. There is no undo bar: the record is right there, so a correction
   happens where you can see it.
+- **Three ways to read the collection.** By place, by genus, or A–Z. Whatever
+  the list is grouped by never repeats itself inside a row: grouped by place
+  the table drops its Place column, grouped by genus the second line drops the
+  genus and reads `papillilaminum × crystallinum` the way the bench label does.
+  Inside a genus the epithet leads rather than the name you gave the plant, so
+  a cross and the cultivar selected out of it land next to each other. Two of a
+  genus is a run; everything you own one of goes into a single drawer at the
+  foot, where the genus goes back into the line because the label above it is
+  no longer saying it.
 - **Wishlist.** Plants you want, in the same table as plants you have. "I have
   this now" flips one flag and keeps the code, the name and the date.
 - **Family.** Cuttings and corms point at their parent, and the name generator
@@ -34,7 +43,8 @@ step without either of those things.
   prompted it — the new leaf, the note, the day it was repotted — so it is a
   field on an event rather than a gallery of its own. The plant's picture is
   the newest one unless you pick another in the edit form; a plant without any
-  keeps the drawn plate. The timeline is the history filtered to the entries
+  gets a small drawn portrait of its genus instead — eight are drawn, and every
+  other genus gets a plant in a pot and no claim about which. The timeline is the history filtered to the entries
   that have one.
 - **The sachets.** Predatory mites hang through the whole collection against
   thrips and stop releasing after four weeks, so the one thing in the app that

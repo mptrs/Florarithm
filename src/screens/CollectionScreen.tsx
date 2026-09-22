@@ -9,7 +9,13 @@
  * One rule runs through both: whatever the list is grouped by never repeats
  * itself inside a row. Grouped by place, the drawer label says the room, so the
  * table drops its Place column; sorted A–Z there is no label, so the place
- * moves back into the column.
+ * moves back into the column. Grouped by genus the same rule runs the other
+ * way — the label says the genus, so the second line drops it and reads as the
+ * bench label does, `papillilaminum × crystallinum`, while the Place column
+ * comes back because nothing above the row is saying where the plant stands.
+ *
+ * Which is also the whole of the trailing "One of each" drawer: it is not a
+ * genus, so the rows under it put their genus back without being told to.
  *
  * On a phone there is no column for it to move into, and it does not move at
  * all: the tile says the name and the species, and the room is whatever the
@@ -29,6 +35,7 @@ import {
   collectionCounts,
   daysSinceWater,
   filterCollection,
+  groupByGenus,
   groupByPlace,
   isArchiveQuery,
   isThirsty,
@@ -37,7 +44,7 @@ import {
 import { useStore } from '~/data/store'
 import type { Plant } from '~/data/types'
 import { cn } from '~/lib/cn'
-import { formatSpecies, label } from '~/lib/format'
+import { formatEpithet, formatSpecies, label } from '~/lib/format'
 import { COLLECTION_FILTERS, navigate, routes, type CollectionFilter } from '~/lib/router'
 import { Button } from '~/ui/Button'
 import { Chip, ChipStrip, SortSwitch, type SortOption } from '~/ui/Chip'
@@ -63,12 +70,27 @@ const FILTER_LABELS: Record<CollectionFilter, string> = {
   archive: 'Archive',
 }
 
-type Sort = 'place' | 'name'
+type Sort = 'place' | 'genus' | 'name'
 
+/** By place is where a plant is, by genus is what it is, and A–Z is the list
+ *  with nothing done to it — which is why it goes last. */
 const SORTS = [
   { value: 'place', label: 'By place' },
+  { value: 'genus', label: 'By genus' },
   { value: 'name', label: 'A–Z' },
 ] as const satisfies readonly SortOption<Sort>[]
+
+/**
+ * What a row says under the name.
+ *
+ * The species, unless the label over the run is already saying this plant's
+ * genus — then the genus comes off and the epithet is left standing. One
+ * predicate rather than a flag per sort: a row drops whatever the drawer above
+ * it has already said, and there is nowhere for the two to disagree.
+ */
+function secondaryOf(plant: Plant, drawer: string): string {
+  return drawer && drawer === plant.genus.trim() ? formatEpithet(plant) : formatSpecies(plant)
+}
 
 export function CollectionScreen({ filter }: { filter: CollectionFilter }) {
   const state = useStore()
@@ -150,8 +172,16 @@ export function CollectionScreen({ filter }: { filter: CollectionFilter }) {
         />
       ) : plants.length > 0 ? (
         <PlantRuns
-          runs={sort === 'place' ? groupByPlace(state, plants) : [['', plants]]}
-          showPlace={sort === 'name'}
+          runs={
+            sort === 'place'
+              ? groupByPlace(state, plants)
+              : sort === 'genus'
+                ? groupByGenus(plants)
+                : [['', plants]]
+          }
+          // The column is there whenever the drawer label is not saying the
+          // place for it, which is both of the other two sorts.
+          showPlace={sort !== 'place'}
         />
       ) : null}
 
@@ -198,13 +228,18 @@ function PlantRuns({
 
           <div className="grid grid-cols-2 gap-3 lg:hidden">
             {members.map((plant) => (
-              <PlantTile key={plant.code} plant={plant} secondary={formatSpecies(plant)} />
+              <PlantTile key={plant.code} plant={plant} secondary={secondaryOf(plant, place)} />
             ))}
           </div>
 
           <div className="hidden lg:block">
             {members.map((plant) => (
-              <PlantRow key={plant.code} plant={plant} showPlace={showPlace} />
+              <PlantRow
+                key={plant.code}
+                plant={plant}
+                secondary={secondaryOf(plant, place)}
+                showPlace={showPlace}
+              />
             ))}
           </div>
         </section>
@@ -215,10 +250,17 @@ function PlantRuns({
 
 /** The tile unrolled. Name over species, because the two are one fact — you
  *  never scan a column of species looking for one. */
-function PlantRow({ plant, showPlace }: { plant: Plant; showPlace: boolean }) {
+function PlantRow({
+  plant,
+  secondary,
+  showPlace,
+}: {
+  plant: Plant
+  secondary: string
+  showPlace: boolean
+}) {
   const state = useStore()
   const days = daysSinceWater(state, plant.code)
-  const species = formatSpecies(plant)
   const dormant = plant.status === 'dormant'
 
   return (
@@ -232,9 +274,9 @@ function PlantRow({ plant, showPlace }: { plant: Plant; showPlace: boolean }) {
           </span>
           {dormant ? <Dozing className="shrink-0 self-center" /> : null}
         </span>
-        {species ? (
+        {secondary ? (
           <span className="truncate text-[0.8125rem] leading-[1.0625rem] text-ink-muted">
-            {species}
+            {secondary}
           </span>
         ) : null}
       </div>

@@ -409,6 +409,41 @@ test('the collection groups by place, or drops the grouping for A\u2013Z', async
   expect(names[0]).toContain('Gruy\u00e8re')
 })
 
+test('the collection cuts itself into genera, and sweeps up the tail', async ({ page }) => {
+  await addPlant(page, 'Anthurium papillilaminum \u00d7 crystallinum', 'Inkt', 'Study')
+  await addPlant(page, 'Anthurium clarinervium', 'Fluweel', 'Living room')
+  await addPlant(page, 'Monstera deliciosa', 'Gruy\u00e8re', 'Living room')
+
+  await page.goto('#collection')
+  await page.getByRole('button', { name: 'By genus' }).click()
+
+  // Two of a genus is a run, and the drawer label says it once for the whole
+  // run \u2014 so the row underneath drops the genus and shows the epithet alone.
+  await expect(main(page).getByText('Anthurium', { exact: true })).toBeVisible()
+  const fluweel = main(page).getByRole('link', { name: /Fluweel/ })
+  await expect(fluweel).toContainText('clarinervium')
+  await expect(fluweel).not.toContainText('Anthurium clarinervium')
+
+  // Inside the run the epithet leads, not the name: clarinervium before
+  // papillilaminum, though Inkt was added first and sorts first by name.
+  const run = await main(page)
+    .getByRole('link')
+    .filter({ hasText: /Fluweel|Inkt/ })
+    .allInnerTexts()
+  expect(run[0]).toContain('Fluweel')
+
+  // The one Monstera is not a run. It goes to the drawer at the foot, which is
+  // not a genus \u2014 so its row puts the genus back.
+  await expect(main(page).getByText('One of each', { exact: true })).toBeVisible()
+  await expect(main(page).getByRole('link', { name: /Gruy\u00e8re/ })).toContainText(
+    'Monstera deliciosa',
+  )
+
+  // Nothing above a row is saying where the plant stands, so the Place column
+  // is back, exactly as it is under A\u2013Z.
+  await expectPlaceShown(page, /Fluweel/, 'Living room')
+})
+
 test('Today sorts by thirst, or cuts the same list into rooms', async ({ page }) => {
   await addPlant(page, 'Monstera deliciosa', 'Gruy\u00e8re', 'Living room')
   await addPlant(page, 'Alocasia zebrina', 'Zebra', 'Bedroom')

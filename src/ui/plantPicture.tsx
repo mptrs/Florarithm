@@ -29,7 +29,7 @@ export function PlantPicture({ plant }: { plant: Plant }) {
   // Decorative on purpose: every caller wraps this in a link that already
   // carries the plant's name, and a second copy of it only makes the link
   // read twice as long to a screen reader.
-  return photo ? <img src={photo} alt="" className="size-full object-cover" /> : <Plate />
+  return photo ? <img src={photo} alt="" className="size-full object-cover" /> : <Plate genus={plant.genus} />
 }
 
 /**

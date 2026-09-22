@@ -363,7 +363,7 @@ function Hero({
             className="h-[130%] w-full -translate-y-[11.5385%] object-cover will-change-transform md:h-full md:translate-y-0"
           />
         ) : (
-          <Plate />
+          <Plate genus={plant.genus} />
         )}
       </div>
 

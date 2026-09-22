@@ -227,6 +227,16 @@ three saturated hues each own exactly one meaning, and nothing else may use them
   the one hover on an ember surface fills with flat `ember` instead.
 - **`on-accent`** — what text sits in on a filled accent, in either theme.
 
+### The one palette that carries a picture instead of a meaning
+`plate-ground`, `plate-shelf`, three greens, `plate-stem`, `plate-pot`,
+`plate-pot-rim` and `plate-bark` are the drawn plate's own colours, and the
+only ones in the app that do not mean anything. A portrait needs a green that
+is a leaf rather than a green that means "growth", and a terracotta that is a
+pot rather than a warning. They are tokens anyway, for the reason every other
+colour is: one place, one declaration per theme. Nothing outside `ui/Plate.tsx`
+may reach for them — a leaf colour spent on a control would be a fourth accent
+with no meaning assigned to it.
+
 ### Colours that carry their own transparency
 `scrim` (behind a sheet, the fan and the overflow menu), `floating` (a chip or
 button laid over a photograph) and `veil-strong` (the QR overlay on the plant
@@ -606,8 +616,24 @@ overlap.
   survives a reload in a way a three-second bar does not.
 
 ### Plant imagery (`ui/Plate.tsx`, `ui/plantPicture.tsx`)
-A plant with no photograph gets `Plate`, a drawn leaf in `line-strong` that fills
-any box at any size — one grey rectangle is a gap, a dozen is a broken screen.
+A plant with no photograph gets `Plate`, a small drawn portrait of its genus —
+a wall, a shelf, a terracotta pot and the plant — that fills any box at any
+size. One grey rectangle is a gap, a dozen is a broken screen, and a line
+drawing of a leaf never quite claimed to be the photograph it was standing in
+for. Eight genera are drawn (Anthurium, Alocasia, Monstera, Philodendron,
+Epipremnum, Scindapsus, Rhaphidophora, Hoya); every other genus gets a plant in
+a pot and no claim about which. What separates them is the habit rather than
+the leaf — upright in a pot, hung from above, spilling over a shelf edge,
+climbing a pole — because that is what still reads at 40px in a desktop row.
+
+A genus is the most a drawing can honestly claim: nothing here knows a
+`crystallinum` from a `clarinervium`. Colour comes from the `plate-*` tokens
+and nothing branches on theme. The wall and the shelf are full-bleed; the plant
+is drawn inside the band that every crop shares (`KEEP` in `Plate.tsx`), so the
+tile sees it whole, the 40px thumbnail keeps the middle square, and the plant
+page's hero — twice as wide as it is tall — still gets a whole plant instead of
+four leaf tops.
+
 `PlantPicture` resolves the chosen photograph, else the newest, else the plate,
 so a plant can never look like one thing in the grid and another in the table.
 `PlantTile` is the phone grid card: `rounded-xl`, a 4:3 frame that clips its own

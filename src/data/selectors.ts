@@ -11,7 +11,7 @@
  */
 
 import { daysBetween, daysSince, yearOf } from '~/lib/date'
-import { formatSpecies, normalizeCross, plural } from '~/lib/format'
+import { formatEpithet, formatSpecies, normalizeCross, plural } from '~/lib/format'
 import type { CollectionFilter } from '~/lib/router'
 import type { State } from './store'
 import type { EventType, Id, Plant, PlantEvent, VocabItem, VocabKind } from './types'
@@ -840,3 +840,70 @@ export function groupByPlace(state: State, plants: readonly Plant[]): [string, P
     return a.localeCompare(b)
   })
 }
+
+/**
+ * The same list cut into genera, and then the tail of it swept up.
+ *
+ * A collection is a few runs and a long tail of one: eleven genera holding one
+ * plant each would be eleven labels over eleven half-empty rows, which is a
+ * screenful of headings to say Ficus once. So two plants is a run and one is
+ * not, and everything that is not a run goes into a single drawer at the foot.
+ *
+ * That drawer is not a genus, which the rows under it answer for themselves —
+ * a row drops the genus exactly when the label above it is already saying it,
+ * so these put it back. The same rule that takes the Place column away when
+ * you group by place and hands it back when you do not.
+ *
+ * A plant with no genus at all can never be a run — it is not a genus with one
+ * member, it is a plant nobody has identified — so it falls into the same
+ * drawer, and reads there exactly as it does in every other sort.
+ *
+ * When nothing is a run the drawer has nothing to distinguish itself from and
+ * goes unlabelled: a collection of one of everything sorted by genus is the
+ * A–Z list, and a heading over the whole page would only be a lie about it
+ * being a group.
+ */
+export const ONE_OF_EACH = 'One of each'
+
+export function groupByGenus(plants: readonly Plant[]): [string, Plant[]][] {
+  const groups = new Map<string, Plant[]>()
+
+  for (const plant of plants) {
+    const key = plant.genus.trim()
+    if (!key) continue
+    const bucket = groups.get(key)
+    if (bucket) bucket.push(plant)
+    else groups.set(key, [plant])
+  }
+
+  const runs = [...groups.entries()]
+    .filter(([, members]) => members.length > 1)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([genus, members]) => [genus, [...members].sort(byEpithet)] as [string, Plant[]])
+
+  const inRuns = new Set(runs.flatMap(([, members]) => members.map((plant) => plant.code)))
+  const rest = plants.filter((plant) => !inRuns.has(plant.code)).sort(byName)
+
+  if (rest.length === 0) return runs
+  return runs.length === 0 ? [['', rest]] : [...runs, [ONE_OF_EACH, rest]]
+}
+
+/**
+ * Inside a run, the epithet leads.
+ *
+ * The second line is the column you came to this sort to read, and a run in
+ * the order of the names you gave them leaves the botany in no order at all.
+ *
+ * The punctuation that is not part of a name comes off first, so
+ * `(papillilaminum × crystallinum) 'Dark Mama'` files under P — directly under
+ * the cross it was selected out of — and `'Birkin'` files under B. A plant
+ * with no epithet has nothing to sort on and goes last, on its name.
+ */
+function byEpithet(a: Plant, b: Plant): number {
+  const left = epithetKey(a)
+  const right = epithetKey(b)
+  if (!left || !right) return (left ? 0 : 1) - (right ? 0 : 1) || byName(a, b)
+  return left.localeCompare(right) || byName(a, b)
+}
+
+const epithetKey = (plant: Plant) => formatEpithet(plant).replace(/^[('"]+/, '').toLowerCase()

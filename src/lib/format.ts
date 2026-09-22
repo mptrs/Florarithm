@@ -47,6 +47,25 @@ export function formatSpecies({
   return [named, variegation].filter(Boolean).join(' ')
 }
 
+/** The same name with the genus taken off the front: `deliciosa 'Thai
+ *  Constellation'`, `papillilaminum × crystallinum`, `'Birkin'`.
+ *
+ *  Written as `formatSpecies` minus one field rather than as a second joining
+ *  of the same parts, because the parts are joined in exactly one place and
+ *  this is not a second one. A plant identified no further than its genus has
+ *  nothing left to show and returns the empty string — the name alone, with no
+ *  filler under it.
+ *
+ *  Only ever used under a label that is already saying the genus. */
+export function formatEpithet(plant: {
+  species: string
+  cross?: string
+  cultivar: string
+  variegation?: string
+}): string {
+  return formatSpecies({ ...plant, genus: '' })
+}
+
 /** A lone `x` between the parents becomes `×`, so one collection is not spelled
  *  two ways and a search for either character finds both. Applied as you type,
  *  which it can be because the swap is one character for one and leaves the
