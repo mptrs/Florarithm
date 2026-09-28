@@ -24,7 +24,6 @@
  * calendar and calling it botany.
  */
 
-import { useState } from 'react'
 import { useStore } from '~/data/store'
 import {
   daysSinceWater,
@@ -39,6 +38,7 @@ import type { Plant } from '~/data/types'
 import { useSyncStatus } from '~/data/sync'
 import { daysSince, formatDayMonth } from '~/lib/date'
 import { formatSpecies, plural } from '~/lib/format'
+import { useRemembered } from '~/lib/remembered'
 import { navigate, routes } from '~/lib/router'
 import { Banner } from '~/ui/Banner'
 import { Button } from '~/ui/Button'
@@ -63,7 +63,11 @@ export function TodayScreen() {
   const state = useStore()
   const plants = todayList(state)
   const syncStatus = useSyncStatus()
-  const [sort, setSort] = useState<Sort>('thirstiest')
+  const [sort, setSort] = useRemembered<Sort>(
+    'today-sort',
+    'thirstiest',
+    SORTS.map((option) => option.value),
+  )
 
   const byPlace = sort === 'place'
 
