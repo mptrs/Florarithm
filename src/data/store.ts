@@ -219,6 +219,12 @@ async function patchPlant(code: string, patch: Partial<Plant>): Promise<Plant | 
   return plant
 }
 
+/** Which photograph stands for the plant. `null` goes back to the default,
+ *  which is whichever is newest — see `Plant.photoEventId`. */
+export async function choosePhoto(code: string, eventId: Id | null): Promise<void> {
+  await patchPlant(code, { photoEventId: eventId })
+}
+
 function findPlant(code: string): Plant | undefined {
   return state.plants.find((plant) => plant.code === code)
 }

@@ -138,6 +138,10 @@ export const PATHS = {
       <path d="m6 6 12 12" />
     </>
   ),
+  /** lucide chevron-left — stepping back through a series, not leaving it */
+  earlier: <path d="m15 18-6-6 6-6" />,
+  /** lucide chevron-right */
+  later: <path d="m9 18 6-6-6-6" />,
   /** lucide search */
   search: (
     <>

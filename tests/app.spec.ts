@@ -788,6 +788,36 @@ test('the picture that stands for the plant can be chosen in the edit form', asy
   await expect.poll(heroWidth).toBe(1600)
 })
 
+test('every photograph opens in one viewer, and one of them can be made the plant', async ({ page }) => {
+  const code = await addPlant(page, 'Monstera deliciosa', 'Gruyère')
+  await page.goto(`#p=${code}`)
+
+  await addPhotoFromHero(page, png(2400, 1200)) // kept at 1600 × 800
+  await addPhotoFromHero(page, png(1200, 2400)) // kept at 800 × 1600
+
+  // A desktop says it in words under the photograph; a phone and the size in
+  // between make the photograph itself the way in.
+  if (isWide(page)) await page.getByRole('link', { name: 'All photos', exact: true }).click()
+  else await page.getByRole('link', { name: 'All photos of Gruyère' }).click()
+
+  // It opens at the plant's own photo — the newest — and counts oldest first.
+  const picture = page.getByRole('img', { name: /Gruyère, photographed/ })
+  const pictureWidth = () => picture.evaluate((image) => (image as HTMLImageElement).naturalWidth)
+  await expect.poll(pictureWidth).toBe(800)
+  await expect(page.getByText('The plant’s photo').filter({ visible: true })).toBeVisible()
+
+  // Step back to the older one and make it the plant's.
+  await page.getByRole('button', { name: /^Photographed/ }).first().click()
+  await expect.poll(pictureWidth).toBe(1600)
+  await page.getByRole('button', { name: 'Use as the plant’s photo' }).click()
+  await expect(page.getByText('The plant’s photo').filter({ visible: true })).toBeVisible()
+
+  // Escape leaves in one step, however many photographs were looked at.
+  await page.keyboard.press('Escape')
+  await expect(page).toHaveURL(new RegExp(`#p=${code}$`))
+  await expect.poll(pictureWidth).toBe(1600)
+})
+
 /**
  * The sachets: the one record in the app that belongs to no plant.
  *
