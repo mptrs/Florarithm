@@ -467,6 +467,42 @@ test('Today sorts by thirst, or cuts the same list into rooms', async ({ page })
   )
 })
 
+test('a sort chosen on a list is still chosen after opening a plant', async ({ page }) => {
+  await addPlant(page, 'Monstera deliciosa', 'Gruy\u00e8re', 'Living room')
+
+  // The collection keeps its sort and its search across a visit to a plant.
+  await page.goto('#collection')
+  await page.getByRole('button', { name: 'By genus' }).click()
+  await page.getByRole('searchbox', { name: 'Search the collection' }).fill('Gruy')
+  await main(page).getByRole('link', { name: /Gruy\u00e8re/ }).click()
+  await page.goBack()
+
+  await expect(page.getByRole('button', { name: 'By genus' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
+  await expect(page.getByRole('searchbox', { name: 'Search the collection' })).toHaveValue(
+    'Gruy',
+  )
+
+  // So does Today.
+  await page.goto('#today')
+  await page.getByRole('button', { name: 'By place' }).click()
+  await main(page).getByRole('link', { name: /Gruy\u00e8re/ }).click()
+  await page.goBack()
+  await expect(page.getByRole('button', { name: 'By place' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
+
+  // A sort is how this device likes to look at things, so it outlasts a reload.
+  await page.reload()
+  await expect(page.getByRole('button', { name: 'By place' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
+})
+
 test('a plant watered today shows a mark instead of a nought', async ({ page }) => {
   const code = await addPlant(page, 'Hoya carnosa', 'Nore', 'Living room')
 

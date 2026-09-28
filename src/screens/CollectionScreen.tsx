@@ -29,7 +29,6 @@
  * screens shouting the same number at you means you trust neither.
  */
 
-import { useState } from 'react'
 import {
   archivedMatching,
   collectionCounts,
@@ -45,6 +44,7 @@ import { useStore } from '~/data/store'
 import type { Plant } from '~/data/types'
 import { cn } from '~/lib/cn'
 import { formatEpithet, formatSpecies, label } from '~/lib/format'
+import { useRemembered, useTyped } from '~/lib/remembered'
 import { COLLECTION_FILTERS, navigate, routes, type CollectionFilter } from '~/lib/router'
 import { Button } from '~/ui/Button'
 import { Chip, ChipStrip, SortSwitch, type SortOption } from '~/ui/Chip'
@@ -95,8 +95,12 @@ function secondaryOf(plant: Plant, drawer: string): string {
 export function CollectionScreen({ filter }: { filter: CollectionFilter }) {
   const state = useStore()
   const counts = collectionCounts(state)
-  const [query, setQuery] = useState('')
-  const [sort, setSort] = useState<Sort>('place')
+  const [query, setQuery] = useTyped('collection')
+  const [sort, setSort] = useRemembered<Sort>(
+    'collection-sort',
+    'place',
+    SORTS.map((option) => option.value),
+  )
 
   const plants = filterCollection(state, filter, query)
   // An old `#collection/archive` link still works, and when it is what you are
