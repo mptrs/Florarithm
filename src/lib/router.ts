@@ -24,6 +24,7 @@ export const COLLECTION_FILTERS: readonly CollectionFilter[] = [
 export type Route =
   | { name: 'today' }
   | { name: 'plant'; code: string }
+  | { name: 'photos'; code: string; eventId: string | null }
   | { name: 'collection'; filter: CollectionFilter }
   | { name: 'milestones' }
   | { name: 'new'; wish: boolean; parentCode: string | null }
@@ -33,6 +34,9 @@ export type Route =
 export const routes = {
   today: () => '#today',
   plant: (code: string) => `#p=${code}`,
+  /** Every photograph of one plant, open at one of them. Without an id it
+   *  opens at the plant's own photo. */
+  photos: (code: string, eventId?: string) => `#photos/${code}${eventId ? `/${eventId}` : ''}`,
   collection: (filter: CollectionFilter = 'all') =>
     filter === 'all' ? '#collection' : `#collection/${filter}`,
   /** Its own screen, so its own hash. `#collection/wishlist` still parses to
@@ -83,6 +87,10 @@ export function parseRoute(hash: string): Route {
         : { name: 'today' }
     case 'settings':
       return { name: 'settings' }
+    case 'photos':
+      return rest[0]
+        ? { name: 'photos', code: rest[0].toUpperCase(), eventId: rest[1] || null }
+        : { name: 'today' }
     default:
       return { name: 'today' }
   }

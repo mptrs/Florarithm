@@ -60,6 +60,7 @@ export function activeNavKey(route: Route): NavKey | null {
     case 'today':
       return 'today'
     case 'plant':
+    case 'photos':
     case 'edit':
     case 'milestones':
       return 'collection'

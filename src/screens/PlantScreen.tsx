@@ -13,7 +13,7 @@
  * Water and Log activity sit on the title row as two plain buttons instead.
  */
 
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { usePhoto } from '~/data/photos'
 import {
   childrenOf,
@@ -29,10 +29,11 @@ import {
   lastRepot,
   lastWaterAt,
   milestonesOf,
+  photoEventsFor,
   vocabName,
 } from '~/data/selectors'
 import { describeEvent, logEvent, removeEvent, useStore, type State } from '~/data/store'
-import type { Plant, PlantEvent } from '~/data/types'
+import type { EventPhoto, Plant, PlantEvent } from '~/data/types'
 import { formatDate, formatDayMonth, formatMonthYear } from '~/lib/date'
 import { formatPotSize, formatPrice, formatSpecies, label, plural } from '~/lib/format'
 import { navigate, plantUrl, routes } from '~/lib/router'
@@ -100,13 +101,19 @@ export function PlantScreen({ code }: { code: string }) {
 
   return (
     <div className="relative -mx-4 -mt-6 md:mx-0 md:mt-0">
-      <Hero
-        plant={plant}
-        showQr={showQr}
-        onShowQr={() => setShowQr(true)}
-        onHideQr={() => setShowQr(false)}
-        onAddPhoto={() => setIntent({ kind: 'new' })}
-      />
+      {/* `contents`, not a box: the frame inside is sticky, and sticky only
+          holds within its parent — a wrapper as tall as the frame would give
+          it nowhere to stick. From `lg` the photograph leaves the band and
+          stands beside the record instead; see `Specimen`. */}
+      <div className="contents lg:hidden">
+        <Hero
+          plant={plant}
+          showQr={showQr}
+          onShowQr={() => setShowQr(true)}
+          onHideQr={() => setShowQr(false)}
+          onAddPhoto={() => setIntent({ kind: 'new' })}
+        />
+      </div>
 
       {/* The sheet of content rides up over the bottom of the hero, and keeps
           going over it as the page scrolls. The padding at its foot is the
@@ -121,73 +128,119 @@ export function PlantScreen({ code }: { code: string }) {
           rank of 10 here lost to them every time, so the overlay could never
           catch a click landing on Hero. 30 clears Hero's 20 and still loses
           cleanly to a real modal like Sheet or the toast, both `z-50`. */}
-      <div className="relative z-30 -mt-6 rounded-t-[1.75rem] bg-paper px-4 pt-6 pb-16 md:mt-6 md:rounded-none md:px-0 md:pt-0 md:pb-0">
-        {/* The link is the everyday half of the tag, so it rides the name's own
-            line at the far edge of it. The QR is the other half and lives down
-            on the photograph, next to the place. */}
-        <div className="flex items-start justify-between gap-3">
-          {/* Name and species share this box so the gap between them is
-              fixed to the name's own line, not to whatever height the
-              buttons beside them happen to be — a wish, with no buttons
-              row at all, would otherwise read with different spacing than
-              an owned plant. */}
-          <div className="min-w-0">
-            <h1 className="font-display text-[2.5rem] leading-[2.6875rem] font-medium tracking-[-0.025em]">
-              {plant.name}
-              {/* Riding the name rather than sitting in the record below it:
-                  dormancy is the one status that changes how you read
-                  everything else on this page, so it has to arrive with the
-                  name and not four rows later. */}
-              {plant.status === 'dormant' ? <Dozing className="ml-1 align-top text-[1.375rem]" /> : null}
-            </h1>
-            {formatSpecies(plant) ? (
-              <p className="text-[1.0625rem] leading-6 text-ink-muted">{formatSpecies(plant)}</p>
-            ) : null}
-          </div>
-          {plant.wish ? null : (
-            <div className="flex shrink-0 items-center gap-2">
-              <IconButton
-                icon="link"
-                label="Copy the tag link"
-                variant="quiet"
-                onClick={() => void copyLink()}
-              />
-              {/* A desktop spells both actions out here. A phone waters from
-                  the drop and logs from the tab bar's centre button, which
-                  turns into Log on this page — see `AppShell`. `md:contents`
-                  un-boxes the wrapper from `md` up, so the two buttons become
-                  direct flex items of the row. */}
-              <div className="hidden md:contents">
-                <WaterButton onWater={water} />
-                <Button icon="plus" onClick={() => setIntent({ kind: 'new' })}>
-                  Log activity
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
+      <div className="relative z-30 -mt-6 rounded-t-[1.75rem] bg-paper px-4 pt-6 pb-16 md:mt-6 md:rounded-none md:px-0 md:pt-0 md:pb-0 lg:mt-0">
+        {/* Two layouts, one markup. A phone tabs between the state and the
+            record because there is room for one of them; a desktop shows
+            both, with the facts you only ever manage sitting beside them.
 
-        {plant.wish ? (
-          <WishActions plant={plant} />
-        ) : (
-          <>
-            {/* Two layouts, one markup. A phone tabs between the state and the
-                record because there is room for one of them; a desktop shows
-                both, with the facts you only ever manage sitting beside them. */}
-            <Tabs tab={tab} onChange={setTab} />
-            {/* The split waits for `lg`. The care column is a fixed 21rem, and
-                from `md` the shell is already spending 15.5rem on the sidebar —
-                so at 768px the record beside it was left with about 70px to set
-                a date and a title in, and the two ran straight over each other.
-                Everywhere else in the app the desktop layout starts at `lg`;
-                this is the one place that started early. */}
-            <div className="lg:flex lg:items-start lg:gap-8">
+            The split waits for `lg`. The care column is a fixed 21rem, and
+            from `md` the shell is already spending 15.5rem on the sidebar —
+            so at 768px the record beside it was left with about 70px to set
+            a date and a title in, and the two ran straight over each other.
+            Everywhere else in the app the desktop layout starts at `lg`;
+            this is the one place that started early.
+
+            A grid rather than two flex columns because the name has to sit on
+            the left above the record while the photograph starts level with
+            it on the right — and the phone still wants the source order name,
+            tabs, care, record. The second row is `1fr` so the tall column on
+            the right, which spans both rows, stretches the record's row and
+            never the name's. */}
+        <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_21rem] lg:grid-rows-[auto_1fr] lg:items-start lg:gap-x-8">
+          <div className="lg:col-start-1 lg:row-start-1">
+            {/* The band carries Back on a phone; beside the record there is no
+                band, so it comes down to the name it leads away from. A round
+                button has no padding to cancel, so it outdents a row step. */}
+            <div className="-ml-3 mb-2 hidden lg:block">
+              <BackButton variant="bare" />
+            </div>
+
+            {/* The link is the everyday half of the tag, so it rides the name's own
+                line at the far edge of it. The QR is the other half and lives down
+                on the photograph, next to the place. */}
+            {/* From `md` a name and three buttons share a column that is
+                narrow at both ends of its range — beside the sidebar, and
+                from `lg` beside the photograph too. Where they no longer fit
+                on one line the buttons wrap under the name, a row step down,
+                rather than running over it. */}
+            <div className="flex items-start justify-between gap-3 md:flex-wrap">
+              {/* Name and species share this box so the gap between them is
+                  fixed to the name's own line, not to whatever height the
+                  buttons beside them happen to be — a wish, with no buttons
+                  row at all, would otherwise read with different spacing than
+                  an owned plant. */}
+              <div className="min-w-0">
+                {/* `break-words`: a name is typed, not chosen, and one long word
+                    with nowhere to break ran straight off the screen. */}
+                <h1 className="font-display text-[2.5rem] leading-[2.6875rem] font-medium tracking-[-0.025em] break-words">
+                  {plant.name}
+                  {/* Riding the name rather than sitting in the record below it:
+                      dormancy is the one status that changes how you read
+                      everything else on this page, so it has to arrive with the
+                      name and not four rows later. */}
+                  {plant.status === 'dormant' ? <Dozing className="ml-1 align-top text-[1.375rem]" /> : null}
+                </h1>
+                {formatSpecies(plant) ? (
+                  <p className="text-[1.0625rem] leading-6 text-ink-muted">{formatSpecies(plant)}</p>
+                ) : null}
+              </div>
+              {plant.wish ? null : (
+                <div className="flex shrink-0 items-center gap-2">
+                  <IconButton
+                    icon="link"
+                    label="Copy the tag link"
+                    variant="quiet"
+                    onClick={() => void copyLink()}
+                  />
+                  {/* A desktop spells both actions out here. A phone waters from
+                      the drop and logs from the tab bar's centre button, which
+                      turns into Log on this page — see `AppShell`. `md:contents`
+                      un-boxes the wrapper from `md` up, so the two buttons become
+                      direct flex items of the row. */}
+                  <div className="hidden md:contents">
+                    <WaterButton onWater={water} />
+                    <Button icon="plus" onClick={() => setIntent({ kind: 'new' })}>
+                      Log activity
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {plant.wish ? null : <TagLine plant={plant} onShowQr={() => setShowQr(true)} />}
+          </div>
+
+          {plant.wish ? (
+            <>
+              <div className="lg:col-start-1 lg:row-start-2">
+                <WishActions plant={plant} />
+              </div>
+              <div className="hidden lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:block">
+                <Specimen
+                  plant={plant}
+                  showQr={showQr}
+                  onHideQr={() => setShowQr(false)}
+                  onAddPhoto={() => setIntent({ kind: 'new' })}
+                />
+              </div>
+            </>
+          ) : (
+            <>
+              <Tabs tab={tab} onChange={setTab} />
               <div
                 className={cn(
-                  'lg:order-2 lg:w-[21rem] lg:shrink-0',
+                  'lg:col-start-2 lg:row-span-2 lg:row-start-1',
                   tab === 'care' ? '' : 'hidden lg:block',
                 )}
               >
+                <div className="hidden lg:block">
+                  <Specimen
+                    plant={plant}
+                    showQr={showQr}
+                    onHideQr={() => setShowQr(false)}
+                    onAddPhoto={() => setIntent({ kind: 'new' })}
+                  />
+                </div>
                 <Care plant={plant} />
                 <Details plant={plant} />
                 <Family plant={plant} />
@@ -195,15 +248,15 @@ export function PlantScreen({ code }: { code: string }) {
               </div>
               <div
                 className={cn(
-                  'lg:order-1 lg:min-w-0 lg:flex-1',
+                  'lg:col-start-1 lg:row-start-2 lg:min-w-0',
                   tab === 'history' ? '' : 'hidden lg:block',
                 )}
               >
                 <History plant={plant} onEdit={(event) => setIntent({ kind: 'edit', event })} />
               </div>
-            </div>
-          </>
-        )}
+            </>
+          )}
+        </div>
       </div>
 
       {plant.wish ? null : (
@@ -270,17 +323,23 @@ function useScrolled(): number {
  *  a phone has nothing to compensate for on a desktop and only pushes the
  *  photograph off-centre as the page scrolls. */
 function useIsDesktop(): boolean {
-  const [isDesktop, setIsDesktop] = useState(false)
+  return useMinWidth(768)
+}
+
+/** Whether the window is at least this wide, kept up to date as it resizes.
+ *  False on the very first frame, before the query has been read. */
+function useMinWidth(px: number): boolean {
+  const [matches, setMatches] = useState(false)
 
   useEffect(() => {
-    const query = window.matchMedia('(min-width: 768px)')
-    setIsDesktop(query.matches)
-    const onChange = () => setIsDesktop(query.matches)
+    const query = window.matchMedia(`(min-width: ${px}px)`)
+    setMatches(query.matches)
+    const onChange = () => setMatches(query.matches)
     query.addEventListener('change', onChange)
     return () => query.removeEventListener('change', onChange)
-  }, [])
+  }, [px])
 
-  return isDesktop
+  return matches
 }
 
 
@@ -320,11 +379,29 @@ function Hero({
   // id it used to point at has not been evicted yet. Showing the plate for
   // that one frame beats reading `.date` off an event that is already gone.
   const shownPhoto = photoEvent ? photo : null
+  const photoCount = photoEventsFor(state, plant.code).length
 
   // Both layers are the same box. The picture sticks to the top of the window
   // while the sheet below slides up over it; the controls sit in that same
   // space but scroll away with the page, so they never hang over the record.
-  const box = shownPhoto ? 'h-[21.25rem] md:h-72' : 'h-[13.5rem] md:h-56'
+  //
+  // From `md` the width is a column's, not a phone's, and a fixed height made
+  // a band of it that showed well under half of an upright photograph. So
+  // there it takes the photograph's shape, held between 4:3 and 3:2 and never
+  // taller than 26rem: an upright one shows about as much of itself as on a
+  // phone, and a landscape one shows all of itself.
+  //
+  // `w-full` is what keeps the cap a cap. With the width left to `auto`, an
+  // aspect ratio carries a max height across into a max width, so a column
+  // wide enough to hit 26rem got a band narrower than itself and a strip of
+  // paper beside it. A definite width keeps the band the column's width and
+  // lets the cap crop the height instead.
+  const box = shownPhoto
+    ? 'h-[21.25rem] md:h-auto md:w-full md:max-h-[26rem] md:aspect-(--band)'
+    : 'h-[13.5rem] md:h-56'
+  const band = {
+    '--band': Math.min(3 / 2, Math.max(4 / 3, frameRatio(photoEvent?.photo))),
+  } as CSSProperties
 
   // Clamped to the slack the picture actually has, so its bottom edge never
   // lifts off the frame and shows the paper behind it. Zero from `md`, where
@@ -345,61 +422,49 @@ function Hero({
     <>
       <div
         ref={frame}
+        style={band}
         className={cn('sticky top-0 z-0 overflow-hidden bg-sunk md:static md:rounded-xl', box)}
       >
         {shownPhoto ? (
-          // Taller than the frame it sits in, and pulled up through that slack
-          // at a fraction of the page's speed: the sheet moves, the picture
-          // drifts, and the gap between the two reads as depth. That slack is
-          // a mobile-only need — the frame is `md:static`, nothing drifts, and
-          // the image is a plain block sitting at the top of it, so the extra
-          // 30% would just crop off the bottom instead of centring anything.
-          // `md:h-full` drops the slack there and lets `object-cover`'s own
-          // default centring take over.
-          <img
-            src={shownPhoto}
-            alt={`${plant.name}, photographed ${formatDate(photoEvent!.date)}`}
-            style={{ transform: `translate3d(0, ${-drift}px, 0)` }}
-            className="h-[130%] w-full -translate-y-[11.5385%] object-cover will-change-transform md:h-full md:translate-y-0"
-          />
+          // The picture is the way in to every other picture of this plant.
+          // The controls above it are their own targets; everything else on
+          // the photograph opens the series.
+          <a href={routes.photos(plant.code)} aria-label={`All photos of ${plant.name}`} className="block size-full">
+            {/* Taller than the frame it sits in, and pulled up through that
+                slack at a fraction of the page's speed: the sheet moves, the
+                picture drifts, and the gap between the two reads as depth.
+                That slack is a mobile-only need — the frame is `md:static`,
+                nothing drifts, and the image is a plain block sitting at the
+                top of it, so the extra 30% would just crop off the bottom
+                instead of centring anything. `md:h-full` drops the slack there
+                and lets `object-cover`'s own default centring take over. */}
+            <img
+              src={shownPhoto}
+              alt={`${plant.name}, photographed ${formatDate(photoEvent!.date)}`}
+              style={{ transform: `translate3d(0, ${-drift}px, 0)` }}
+              className="h-[130%] w-full -translate-y-[11.5385%] object-cover will-change-transform md:h-full md:translate-y-0"
+            />
+          </a>
         ) : (
           <Plate genus={plant.genus} />
         )}
       </div>
 
       {shownPhoto ? null : (
-        <div className={cn('pointer-events-none absolute inset-x-0 top-0 z-10 flex items-center justify-center', box)}>
-          <button
-            type="button"
-            onClick={onAddPhoto}
-            className="lift pointer-events-auto flex items-center gap-2 rounded-full bg-floating px-4 py-3 text-[0.875rem] font-semibold text-ink shadow-md active:opacity-70 hover:bg-surface hover:shadow-lg"
-          >
-            <Icon name="image" size={17} />
-            {/* Not "Add a photo" — that name already belongs to the button
-                inside the log sheet this opens, one layer in. Two buttons
-                sharing a name is a strict-mode violation for a11y-role
-                queries (tests included), and a real ambiguity for anyone
-                using a screen reader between the two. */}
-            Photograph this plant
-          </button>
+        <div style={band} className={cn('pointer-events-none absolute inset-x-0 top-0 z-10 flex items-center justify-center', box)}>
+          <AddPhotoButton onClick={onAddPhoto} />
         </div>
       )}
 
       {/* Above the sheet rather than under it, so the overflow menu can open
           over the record instead of being clipped by the photograph's edge.
           Transparent, so only the controls themselves take a tap. */}
-      <div className={cn('pointer-events-none absolute inset-x-0 top-0 z-20', box)}>
+      <div style={band} className={cn('pointer-events-none absolute inset-x-0 top-0 z-20', box)}>
         <div className="pointer-events-auto absolute inset-x-4 top-4 flex items-start justify-between">
         <BackButton />
 
         <div className="relative flex items-center gap-2">
-          <a
-            href={routes.edit(plant.code)}
-            aria-label="Edit this plant"
-            className="lift flex size-10 items-center justify-center rounded-full bg-floating text-ink shadow-md active:opacity-70 hover:bg-surface hover:shadow-lg"
-          >
-            <Icon name="edit" size={19} />
-          </a>
+          <EditLink plant={plant} />
         </div>
       </div>
 
@@ -432,22 +497,190 @@ function Hero({
               {place}
             </span>
           ) : null}
+
+          {/* Says that there is more than this one picture to see — the
+              photograph itself is also the way in, but nothing about a
+              photograph says it can be tapped. */}
+          {shownPhoto ? (
+            <a
+              href={routes.photos(plant.code)}
+              aria-label={`All ${plural(photoCount, 'photo')}`}
+              className="lift ml-auto inline-flex items-center gap-1 rounded-full bg-floating px-4 py-2 text-[0.875rem] font-semibold text-ink shadow-md active:opacity-70 hover:bg-surface hover:shadow-lg"
+            >
+              <Icon name="image" size={16} />
+              <span className="font-mono">{photoCount}</span>
+            </a>
+          ) : null}
         </div>
       )}
 
-      {showQr ? (
-        <button
-          type="button"
-          aria-label="Hide the QR code"
-          onClick={onHideQr}
-          className="pointer-events-auto absolute inset-0 flex flex-col items-center justify-center gap-2 bg-veil-strong"
-        >
-          <QrCodeBox value={plantUrl(plant.code)} size={112} />
-          <span className="font-mono text-code tracking-[0.1em] text-ink-muted">{plant.code}</span>
-        </button>
-      ) : null}
+      {showQr ? <QrVeil plant={plant} onHide={onHideQr} /> : null}
       </div>
     </>
+  )
+}
+
+/** The frame's shape, as width over height, for a photograph of this shape.
+ *  Its own shape as far as that goes: no taller than a phone held upright and
+ *  no wider than 3:2, so a screenshot does not become a column down the page
+ *  and a panorama does not become a ribbon across it. The plate, and a
+ *  photograph whose shape was never recorded, get a plain 4:3. */
+export function frameRatio(shape: EventPhoto | undefined): number {
+  if (!shape?.width || !shape.height) return 4 / 3
+  return Math.min(3 / 2, Math.max(3 / 4, shape.width / shape.height))
+}
+
+/**
+ * The photograph beside the record, from `lg`.
+ *
+ * The band a phone shows it in is the window's shape, not the picture's: at
+ * the width of a desktop column and 288px tall it showed about a fifth of an
+ * upright photograph, and never the same fifth twice. So a desktop stops
+ * cropping to a shape the photograph never had. It sits at the head of the
+ * right-hand column in a frame that takes the photograph's own proportions —
+ * the specimen beside its label — and the record beside it gets the full
+ * height of the page.
+ *
+ * The frame is sized from the shape recorded on the entry rather than from the
+ * loaded image, so the column below it does not jump when the bytes arrive.
+ */
+function Specimen({
+  plant,
+  showQr,
+  onHideQr,
+  onAddPhoto,
+}: {
+  plant: Plant
+  showQr: boolean
+  onHideQr: () => void
+  onAddPhoto: () => void
+}) {
+  const state = useStore()
+  const photoEvent = currentPhotoEvent(state, plant.code)
+  const photo = usePhoto(photoEvent?.id ?? null)
+
+  // Out of step for a frame when the entry is deleted — see `Hero`.
+  const shownPhoto = photoEvent ? photo : null
+
+  return (
+    <figure>
+      <div
+        className="relative overflow-hidden rounded-xl bg-sunk"
+        style={{ aspectRatio: frameRatio(photoEvent?.photo) }}
+      >
+        {shownPhoto ? (
+          <img
+            src={shownPhoto}
+            alt={`${plant.name}, photographed ${formatDate(photoEvent!.date)}`}
+            className="size-full object-cover"
+          />
+        ) : (
+          <>
+            <Plate genus={plant.genus} />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <AddPhotoButton onClick={onAddPhoto} />
+            </div>
+          </>
+        )}
+
+        {/* Laid over the photograph, so one inset from its edge — the same 16
+            the band's own controls sit at. */}
+        <div className="absolute top-4 right-4">
+          <EditLink plant={plant} />
+        </div>
+
+        {showQr ? <QrVeil plant={plant} onHide={onHideQr} /> : null}
+      </div>
+
+      {shownPhoto ? (
+        <figcaption className="mt-2 flex items-center justify-between gap-3 text-[0.8125rem] leading-[1.125rem] text-ink-muted">
+          <span>Photographed {formatDate(photoEvent!.date)}</span>
+          <a href={routes.photos(plant.code)} className="font-semibold text-leaf hover:text-leaf-deep">
+            All photos
+          </a>
+        </figcaption>
+      ) : null}
+    </figure>
+  )
+}
+
+/**
+ * The tag, under the name, from `lg`.
+ *
+ * On a phone the place and the QR ride the foot of the photograph. Beside the
+ * record the photograph is its own picture with nothing laid over it but the
+ * way to edit, so the two come down to the name — they are facts about where
+ * this plant is, and that is the line they belong on.
+ */
+function TagLine({ plant, onShowQr }: { plant: Plant; onShowQr: () => void }) {
+  const state = useStore()
+  const place = vocabName(state, plant.locationId)
+
+  return (
+    <div className="mt-2 hidden items-center gap-3 text-[0.875rem] leading-5 lg:flex">
+      {place && place !== '—' ? (
+        <span className="inline-flex items-center gap-1 text-ink-muted">
+          <Icon name="place" size={16} className="text-leaf" />
+          {place}
+        </span>
+      ) : null}
+      {/* Outdented by its own padding, so its text is the row step from the
+          place rather than two of them. */}
+      <button
+        type="button"
+        onClick={onShowQr}
+        aria-label="Show the QR code"
+        className="warm -ml-3 inline-flex h-8 items-center gap-1 rounded-md px-3 font-semibold text-leaf hover:bg-sunk active:opacity-70"
+      >
+        <Icon name="qr" size={16} />
+        <span className="font-mono tracking-[0.08em]">{plant.code}</span>
+      </button>
+    </div>
+  )
+}
+
+function AddPhotoButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="lift pointer-events-auto flex items-center gap-2 rounded-full bg-floating px-4 py-3 text-[0.875rem] font-semibold text-ink shadow-md active:opacity-70 hover:bg-surface hover:shadow-lg"
+    >
+      <Icon name="image" size={17} />
+      {/* Not "Add a photo" — that name already belongs to the button
+          inside the log sheet this opens, one layer in. Two buttons
+          sharing a name is a strict-mode violation for a11y-role
+          queries (tests included), and a real ambiguity for anyone
+          using a screen reader between the two. */}
+      Photograph this plant
+    </button>
+  )
+}
+
+function EditLink({ plant }: { plant: Plant }) {
+  return (
+    <a
+      href={routes.edit(plant.code)}
+      aria-label="Edit this plant"
+      className="lift flex size-10 items-center justify-center rounded-full bg-floating text-ink shadow-md active:opacity-70 hover:bg-surface hover:shadow-lg"
+    >
+      <Icon name="edit" size={19} />
+    </a>
+  )
+}
+
+/** The code, over whatever picture it was asked for from. */
+function QrVeil({ plant, onHide }: { plant: Plant; onHide: () => void }) {
+  return (
+    <button
+      type="button"
+      aria-label="Hide the QR code"
+      onClick={onHide}
+      className="pointer-events-auto absolute inset-0 flex flex-col items-center justify-center gap-2 bg-veil-strong"
+    >
+      <QrCodeBox value={plantUrl(plant.code)} size={112} />
+      <span className="font-mono text-code tracking-[0.1em] text-ink-muted">{plant.code}</span>
+    </button>
   )
 }
 
@@ -656,7 +889,7 @@ function Milestones({ plant }: { plant: Plant }) {
 
 type Filter = 'all' | 'notable' | 'water' | 'photo'
 
-const TONE: Record<PlantEvent['type'], ChipTone> = {
+export const TONE: Record<PlantEvent['type'], ChipTone> = {
   water: 'water',
   repot: 'leaf',
   leaf: 'leaf',
@@ -665,7 +898,7 @@ const TONE: Record<PlantEvent['type'], ChipTone> = {
   photo: 'ink',
 }
 
-const GLYPH: Record<PlantEvent['type'], IconName> = {
+export const GLYPH: Record<PlantEvent['type'], IconName> = {
   water: 'droplet',
   repot: 'pot',
   leaf: 'leaf',
@@ -676,7 +909,12 @@ const GLYPH: Record<PlantEvent['type'], IconName> = {
 
 function History({ plant, onEdit }: { plant: Plant; onEdit: (event: PlantEvent) => void }) {
   const state = useStore()
-  const [filter, setFilter] = useState<Filter>('all')
+  const [chosen, setFilter] = useState<Filter>('all')
+  // Beside the photograph the record is read whole, and the lenses go. A lens
+  // chosen on a narrower window does not follow it across the breakpoint, or
+  // the record would stay narrowed with nothing on screen to undo it.
+  const wide = useMinWidth(1024)
+  const filter = wide ? 'all' : chosen
   const all = eventsFor(state, plant.code)
 
   const waterings = all.filter((event) => event.type === 'water').length
@@ -702,8 +940,8 @@ function History({ plant, onEdit }: { plant: Plant; onEdit: (event: PlantEvent) 
   }
 
   return (
-    <section className="mt-2 lg:mt-6">
-      <div className="flex gap-2 overflow-x-auto -mt-1 pt-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <section className="mt-2 lg:mt-0">
+      <div className="flex gap-2 overflow-x-auto -mt-1 pt-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:hidden">
         <Chip selected={filter === 'all'} onClick={() => setFilter('all')} count={all.length}>
           Everything
         </Chip>
@@ -849,7 +1087,7 @@ function EntryPhoto({ event }: { event: PlantEvent }) {
   )
 }
 
-function detailOf(event: PlantEvent, state: ReturnType<typeof useStore>): ReactNode {
+export function detailOf(event: PlantEvent, state: ReturnType<typeof useStore>): ReactNode {
   switch (event.type) {
     case 'water':
       // Fertiliser is in every watering, so saying so on every row says nothing.

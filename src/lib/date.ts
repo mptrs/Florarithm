@@ -8,6 +8,7 @@ const dayMonthYear = new Intl.DateTimeFormat(LOCALE, {
   month: 'short',
   year: 'numeric',
 })
+const longDate = new Intl.DateTimeFormat(LOCALE, { day: 'numeric', month: 'long', year: 'numeric' })
 const fullDate = new Intl.DateTimeFormat(LOCALE, {
   weekday: 'long',
   day: 'numeric',
@@ -109,6 +110,11 @@ export function addDays(value: string | Date, days: number): Date {
 /** `2 Sep 2026` — for facts, where it is not. */
 export function formatDate(iso: string): string {
   return dayMonthYear.format(new Date(iso))
+}
+
+/** `5 September 2026` — a date that is the heading of what it is about. */
+export function formatLongDate(iso: string): string {
+  return longDate.format(new Date(iso))
 }
 
 /** `Friday 5 September 2026` — the desktop header. */

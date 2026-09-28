@@ -6,6 +6,7 @@ import { useRoute } from '~/lib/router'
 import { AppShell } from '~/layout/AppShell'
 import { CollectionScreen } from '~/screens/CollectionScreen'
 import { MilestonesScreen } from '~/screens/MilestonesScreen'
+import { PhotoViewer } from '~/screens/PhotoViewer'
 import { PlantFormScreen } from '~/screens/PlantFormScreen'
 import { PlantScreen } from '~/screens/PlantScreen'
 import { SettingsScreen } from '~/screens/SettingsScreen'
@@ -45,6 +46,8 @@ function Screen({ route }: { route: ReturnType<typeof useRoute> }) {
       return <TodayScreen />
     case 'plant':
       return <PlantScreen code={route.code} />
+    case 'photos':
+      return <PhotoViewer code={route.code} eventId={route.eventId} />
     case 'collection':
       // A wish and a plant are one record with a flag between them, so they
       // share a route; they stopped sharing a screen the day the collection
