@@ -25,6 +25,7 @@ import { NumberField, SuggestField, TextAreaField, TextField } from '~/ui/fields
 import { Sheet } from '~/ui/Sheet'
 import { type ChipTone } from '~/ui/Card'
 import { cn } from '~/lib/cn'
+import { navigate, routes } from '~/lib/router'
 
 type Action = { icon: IconName; tone: ChipTone; label: string; mode: Mode }
 
@@ -41,6 +42,13 @@ type Action = { icon: IconName; tone: ChipTone; label: string; mode: Mode }
  * entry with that picture, and "Photo only" appears for a picture that is not
  * of anything in particular.
  *
+ * Propagate is not an entry in this plant's log but a new plant off it — a
+ * cutting, a corm, a division or a seed — so it leaves the sheet for the new
+ * plant form, its parent already chosen. It is here because this is where
+ * you are standing the moment you have just taken one. With a photograph
+ * attached it steps aside: the picture is of this plant, and the form would
+ * quietly drop it.
+ *
  * Tone follows the history's own mapping, so an entry looks the same here as
  * it will in the record: blue is a watering, green is the plant, ink is
  * bookkeeping.
@@ -49,6 +57,7 @@ const ACTIONS: Action[] = [
   { icon: 'leaf', tone: 'leaf', label: 'New leaf', mode: 'leaf' },
   { icon: 'bloom', tone: 'leaf', label: 'Blooming', mode: 'bloom' },
   { icon: 'pot', tone: 'leaf', label: 'Repot', mode: 'repot' },
+  { icon: 'scissors', tone: 'leaf', label: 'Propagate', mode: 'propagate' },
   { icon: 'note', tone: 'ink', label: 'Note', mode: 'note' },
   { icon: 'droplet', tone: 'water', label: 'Water', mode: 'water' },
 ]
@@ -61,7 +70,7 @@ const FILL: Record<ChipTone, string> = {
   ink: 'bg-ink text-paper',
 }
 
-type Mode = 'actions' | 'date' | 'water' | 'leaf' | 'bloom' | 'note' | 'repot' | 'photo'
+type Mode = 'actions' | 'date' | 'water' | 'leaf' | 'bloom' | 'note' | 'repot' | 'photo' | 'propagate'
 
 /** What the sheet was opened to do: pick an action, or fix an existing entry. */
 export type LogIntent = { kind: 'new' } | { kind: 'edit'; event: PlantEvent }
@@ -192,6 +201,7 @@ export function LogSheet({
     note: editing ? 'Edit note' : 'Note',
     repot: editing ? 'Edit repot' : 'Repot',
     photo: 'Log activity',
+    propagate: 'Log activity',
   }
 
   return (
@@ -235,7 +245,10 @@ export function LogSheet({
             <p className="mt-6 text-center text-[0.875rem] text-ink-muted">Tap what it shows</p>
           ) : null}
           <div className={cn('grid grid-cols-3 gap-x-3 gap-y-6', photo ? 'mt-2' : 'mt-6')}>
-            {(photo ? [...ACTIONS, PHOTO_ONLY] : ACTIONS).map((action) => (
+            {(photo
+              ? [...ACTIONS.filter((action) => action.mode !== 'propagate'), PHOTO_ONLY]
+              : ACTIONS
+            ).map((action) => (
               <button
                 key={action.mode}
                 type="button"
@@ -246,6 +259,10 @@ export function LogSheet({
                   // A picture of nothing in particular. Only offered once
                   // there is a picture to log.
                   else if (action.mode === 'photo') void log({ type: 'photo', plantCode: plant.code })
+                  else if (action.mode === 'propagate') {
+                    onClose()
+                    navigate(routes.newFrom(plant.code))
+                  }
                   else if (action.mode === 'note' || action.mode === 'repot') {
                     setOpen((was) => (was === action.mode ? null : action.mode as 'note' | 'repot'))
                   }

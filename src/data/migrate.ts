@@ -34,9 +34,17 @@ export function migratePlant(plant: Plant): Plant {
       ? withSpecies
       : { ...withSpecies, variegation: '' }
 
-  return typeof withVariegation.cross === 'string'
-    ? withVariegation
-    : { ...withVariegation, cross: '' }
+  const withCross =
+    typeof withVariegation.cross === 'string'
+      ? withVariegation
+      : { ...withVariegation, cross: '' }
+
+  // "Own cutting" said twice what `parent` already says once. Where the parent
+  // is on record it goes; where it is not, it is the only trace of where the
+  // plant came from, so it stays.
+  return withCross.parent && withCross.origin.type === 'own-cutting'
+    ? { ...withCross, origin: { ...withCross.origin, type: null } }
+    : withCross
 }
 
 /**

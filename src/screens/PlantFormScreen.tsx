@@ -57,6 +57,7 @@ import {
 } from '~/lib/date'
 import { formatSpecies, label, normalizeCross, plural } from '~/lib/format'
 import { suggestNameAI } from '~/lib/aiNameGenerator'
+import { nextInLine } from '~/lib/nameGenerator'
 import { cn } from '~/lib/cn'
 import { redirect, routes } from '~/lib/router'
 import { BackButton, Button, IconButton } from '~/ui/Button'
@@ -129,6 +130,10 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
   const [saving, setSaving] = useState(false)
   const [rolling, setRolling] = useState(false)
   const [loadProgress, setLoadProgress] = useState<string | null>(null)
+  /** What the chosen parent filled in, so choosing another knows which
+   *  fields are still the parent's and which are yours. */
+  const [inherited, setInherited] = useState<Inherited>(NOTHING_INHERITED)
+  const routeParent = parentCode ? findPlant(state, parentCode) : undefined
   const { confirm, dialog: confirmDialog } = useConfirm()
 
   // Fill the form once the record is in memory. Keyed on the plant's identity
@@ -158,23 +163,57 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
       setPhotoEventId(existing.photoEventId ?? '')
     } else {
       setWish(startAsWish ?? false)
-      setParent(parentCode ?? '')
-      if (parentCode) {
-        const source = findPlant(state, parentCode)
-        if (source) {
-          setGenus(source.genus)
-          setSpecies(source.species)
-          setCross(source.cross)
-          setHybrid(source.cross !== '')
-          setCultivar(source.cultivar)
-          setVariegation(source.variegation)
-        }
-      }
+      if (parentCode) adoptParent(parentCode)
     }
+    // Keyed on the parent being *found*, not just named: arriving from a
+    // plant page straight after a reload, the store can still be loading.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [existing?.code, startAsWish, parentCode, promote])
+  }, [existing?.code, startAsWish, routeParent?.code, promote])
 
   const parentPlant = parent ? findPlant(state, parent) : null
+  const known = knownNames(state.plants, genus, species)
+
+  /**
+   * Pick the plant this one came off, and take over what it already knows.
+   *
+   * A cutting is the same plant as its parent in everything but its pot, so
+   * what it is, its next name in the line, where it stands and how it is
+   * grown are all already on record — typing them again, or rolling the dice
+   * for a name the line has already decided, was asking for what the app
+   * knew. Only fields still holding what the last parent put there move:
+   * anything you typed yourself stays yours, whichever parent you pick after.
+   * Only while adding — re-parenting a plant you have is fixing the tree, not
+   * describing a new plant.
+   */
+  function adoptParent(nextCode: string) {
+    setParent(nextCode)
+    if (existing) return
+
+    const source = nextCode ? findPlant(state, nextCode) : undefined
+    const next = source ? inheritFrom(state, source, code) : NOTHING_INHERITED
+    const was = inherited
+    const take = <K extends keyof Inherited>(
+      key: K,
+      current: Inherited[K],
+      set: (value: Inherited[K]) => void,
+    ) => {
+      if (current === was[key]) set(next[key])
+    }
+
+    take('genus', genus, setGenus)
+    take('species', species, setSpecies)
+    if (cross === was.cross) {
+      setCross(next.cross)
+      setHybrid(next.cross !== '')
+    }
+    take('cultivar', cultivar, setCultivar)
+    take('variegation', variegation, setVariegation)
+    take('name', name, setName)
+    take('place', place, setPlace)
+    take('system', system, setSystem)
+    take('medium', medium, setMedium)
+    setInherited(next)
+  }
 
   const rollName = async () => {
     const taken = new Set(state.plants.filter((p) => p.code !== code).map((p) => p.name))
@@ -364,15 +403,21 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
         <div className="flex flex-col gap-8 lg:w-[32rem] lg:shrink-0">
           <Section icon="tag" title="What it is">
             <div className="flex gap-3">
-              <TextField
+              {/* Offered back off the collection, wishes included: a second
+                  Monstera should not mean typing "deliciosa" a second time,
+                  or spelling it a second way. Each narrows to the one before
+                  it, so the species on offer are that genus's own. */}
+              <SuggestField
                 label="Genus"
+                options={known.genera}
                 value={genus}
                 onChange={(event) => setGenus(event.target.value)}
                 placeholder="Monstera"
                 fieldClassName="flex-1"
               />
-              <TextField
+              <SuggestField
                 label="Species"
+                options={known.species}
                 value={species}
                 onChange={(event) => setSpecies(event.target.value)}
                 placeholder="deliciosa"
@@ -382,8 +427,9 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
             </div>
 
             <div className="flex gap-3">
-              <TextField
+              <SuggestField
                 label="Cultivar"
+                options={known.cultivars}
                 value={cultivar}
                 onChange={(event) => setCultivar(event.target.value)}
                 placeholder="Ninja"
@@ -452,7 +498,7 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
                 hint={
                   loadProgress ??
                   (parentPlant
-                    ? `The dice continues the line from ${parentPlant.name}, so the family tree reads without a diagram.`
+                    ? `Next in the line from ${parentPlant.name}, so the family tree reads without a diagram.`
                     : 'The dice asks a small AI, running in your browser, for something that fits the genus. It is an offer, not a decision.')
                 }
               >
@@ -528,51 +574,51 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
                   there is a second plant for it to have come off. */}
               {candidates.length === 0 && !parentPlant ? null : (
                 <Section icon="scissors" title="Family">
-                  <SelectField
-                    label="Cutting or corm of"
-                    value={parent}
-                    onChange={(event) => setParent(event.target.value)}
-                  >
-                    <option value="">Not propagated from one of yours</option>
-                    {candidates.map((candidate) => (
-                      <option key={candidate.code} value={candidate.code}>
-                        {candidate.name} · {candidate.code}
-                      </option>
-                    ))}
-                  </SelectField>
+                    <SelectField
+                      label="Propagated from"
+                      value={parent}
+                      onChange={(event) => adoptParent(event.target.value)}
+                    >
+                      <option value="">Not propagated from one of yours</option>
+                      {candidates.map((candidate) => (
+                        <option key={candidate.code} value={candidate.code}>
+                          {candidate.name} · {candidate.code}
+                        </option>
+                      ))}
+                    </SelectField>
 
-                  {parentPlant ? <Lineage state={state} parent={parentPlant} /> : null}
+                    {parentPlant ? <Lineage state={state} parent={parentPlant} /> : null}
 
-                  {existing && childrenOf(state, existing.code).length > 0 ? (
-                    <div className="flex gap-2 rounded-lg bg-ember-tint px-4 py-3">
-                      <span className="flex h-5 shrink-0 items-center">
-                        <Icon name="alert" size={19} className="text-ember" />
-                      </span>
-                      <p className="text-[0.8125rem] leading-5 text-pretty">
-                        {existing.name} has{' '}
-                        {plural(descendantCodes(state, existing.code).size, 'plant')} of its own
-                        below it. Moving it to another parent moves that whole branch with it.
-                      </p>
-                    </div>
-                  ) : null}
-
-                  {parentPlant ? (
-                    <Field label="How">
-                      <div className="flex flex-wrap gap-2">
-                        {PROPAGATION_METHODS.map((candidate) => (
-                          <Chip
-                            key={candidate}
-                            kind="choice"
-                            selected={method === candidate}
-                            onClick={() => setMethod(candidate)}
-                          >
-                            {label(candidate)}
-                          </Chip>
-                        ))}
+                    {existing && childrenOf(state, existing.code).length > 0 ? (
+                      <div className="flex gap-2 rounded-lg bg-ember-tint px-4 py-3">
+                        <span className="flex h-5 shrink-0 items-center">
+                          <Icon name="alert" size={19} className="text-ember" />
+                        </span>
+                        <p className="text-[0.8125rem] leading-5 text-pretty">
+                          {existing.name} has{' '}
+                          {plural(descendantCodes(state, existing.code).size, 'plant')} of its own
+                          below it. Moving it to another parent moves that whole branch with it.
+                        </p>
                       </div>
-                    </Field>
-                  ) : null}
-                </Section>
+                    ) : null}
+
+                    {parentPlant ? (
+                      <Field label="How">
+                        <div className="flex flex-wrap gap-2">
+                          {PROPAGATION_METHODS.map((candidate) => (
+                            <Chip
+                              key={candidate}
+                              kind="choice"
+                              selected={method === candidate}
+                              onClick={() => setMethod(candidate)}
+                            >
+                              {label(candidate)}
+                            </Chip>
+                          ))}
+                        </div>
+                      </Field>
+                    ) : null}
+                  </Section>
               )}
             </>
           )}
@@ -589,8 +635,20 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
         {wish ? null : (
           <div className="flex min-w-0 flex-1 flex-col gap-8">
             <Section icon="receipt" title="Where it came from">
+              {/* Off one of your own plants, the family already says where it
+                  came from: there is no shop, no seller and no price to it.
+                  Nothing is hidden while still set, though, so a plant that
+                  has them keeps them in view. */}
+              {parentPlant && !originType && !originFrom && !originPrice ? null : (
+              <>
               <div className="flex flex-wrap gap-2">
-                {ORIGIN_TYPES.map((candidate) => (
+                {/* "Own cutting" was one of these until Family could say it
+                    better. An older plant still carrying it is offered it
+                    back, so editing anything else cannot drop it. */}
+                {(originType && !ORIGIN_TYPES.includes(originType)
+                  ? [...ORIGIN_TYPES, originType]
+                  : ORIGIN_TYPES
+                ).map((candidate) => (
                   <Chip
                     key={candidate}
                     kind="choice"
@@ -620,6 +678,8 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
                   fieldClassName="w-36"
                 />
               </div>
+              </>
+              )}
 
               {/* The app's own calendar, the one the log sheet opens. */}
               <DatePickerField
@@ -722,6 +782,75 @@ function DeleteRow({ onDelete, wish }: { onDelete: () => void; wish?: boolean })
  * it. So the form shows what it just committed to, in the order the plant page
  * will read it back.
  */
+/**
+ * The genera, species and cultivars already in the collection, for the
+ * suggest lists. Species are the typed genus's own and cultivars that
+ * species's (or, with no species yet, the genus's), compared without case so
+ * "monstera" still finds them. Plants not in the collection any more count:
+ * a name you once spelled right is still spelled right.
+ */
+function knownNames(plants: readonly Plant[], genus: string, species: string) {
+  const same = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase()
+  const sorted = (values: string[]) =>
+    [...new Set(values.filter(Boolean))].sort((a, b) => a.localeCompare(b))
+
+  const ofGenus = genus.trim() ? plants.filter((p) => same(p.genus, genus)) : []
+  const ofSpecies = species.trim() ? ofGenus.filter((p) => same(p.species, species)) : ofGenus
+
+  return {
+    genera: sorted(plants.map((p) => p.genus)),
+    species: sorted(ofGenus.map((p) => p.species)),
+    cultivars: sorted(ofSpecies.map((p) => p.cultivar)),
+  }
+}
+
+/** The fields a parent can fill in for the plant that came off it. */
+type Inherited = {
+  genus: string
+  species: string
+  cross: string
+  cultivar: string
+  variegation: string
+  name: string
+  place: string
+  system: System
+  medium: string
+}
+
+/** The blank form, which is also what "no parent" hands back. */
+const NOTHING_INHERITED: Inherited = {
+  genus: '',
+  species: '',
+  cross: '',
+  cultivar: '',
+  variegation: '',
+  name: '',
+  place: '',
+  system: 'hydro',
+  medium: '',
+}
+
+/**
+ * What a cutting already is, the moment it comes off `parent`.
+ *
+ * Not the pot size, the price or the seller: a cutting starts in a smaller
+ * pot than the one it came off, and where it came from is the family itself.
+ */
+function inheritFrom(state: State, parent: Plant, self?: string): Inherited {
+  const taken = new Set(state.plants.filter((p) => p.code !== self).map((p) => p.name))
+  return {
+    genus: parent.genus,
+    species: parent.species,
+    cross: parent.cross,
+    cultivar: parent.cultivar,
+    variegation: parent.variegation,
+    name: nextInLine(parent.name, taken),
+    place: vocabName(state, parent.locationId).replace('—', ''),
+    system: parent.system,
+    medium: vocabName(state, parent.mediumId).replace('—', ''),
+  }
+}
+
 function Lineage({ state, parent }: { state: State; parent: Plant }) {
   const line = [...ancestorsOf(state, parent.code), parent]
 
