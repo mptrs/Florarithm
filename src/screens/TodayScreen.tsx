@@ -15,9 +15,12 @@
  * prose — a ranking of two facts that are not the same kind of fact — and on
  * a narrow phone it truncated mid-word besides. The switch is one tap.
  *
- * Nothing is written from here. Today is the list you water *from* — you arrive
- * at the plant by its tag and log it there — so a plant that has had water today
- * shows a mark where its figure was, read straight back out of the log.
+ * Watering is not logged from here. Today is the list you water *from* — you
+ * arrive at the plant by its tag and log it there — so a plant that has had
+ * water today shows a mark where its figure was, read straight back out of the
+ * log. The one exception is emptying the cachepots the day after, a single
+ * round of the house that would be a second round if every pot had to be
+ * reached by its sticker; see `EmptyPotsReminder`.
  *
  * No prediction of when a plant *needs* water: watering happens on fixed days,
  * so every measured gap lands on 7 or 14 and the app would be predicting the
@@ -41,6 +44,7 @@ import { formatSpecies, plural } from '~/lib/format'
 import { useRemembered } from '~/lib/remembered'
 import { navigate, routes } from '~/lib/router'
 import { Banner } from '~/ui/Banner'
+import { EmptyPotsReminder } from '~/ui/EmptyPots'
 import { Button } from '~/ui/Button'
 import { SortSwitch, type SortOption } from '~/ui/Chip'
 import { PlantThumb } from '~/ui/plantPicture'
@@ -100,6 +104,10 @@ export function TodayScreen() {
           rather than about any plant in it — and below the backup warning,
           which is the only thing here about losing data. */}
       <SachetReminder />
+
+      {/* Under the sachets and above the ledger: a chore owed from yesterday's
+          round, done before today's starts. */}
+      <EmptyPotsReminder />
 
       {plants.length === 0 ? (
         <EmptyState

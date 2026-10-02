@@ -349,6 +349,27 @@ export async function removeEvent(id: string): Promise<void> {
   commit({ events: state.events.map((current) => (current.id === id ? tombstone : current)) })
 }
 
+/**
+ * Say these cachepots have been emptied, all in one go.
+ *
+ * Written straight to the log with no folding: Today only offers a pot that has
+ * nothing of this kind after its watering, so a second press on the same pot
+ * is the row's own undo — `removeEvent` on the entry this wrote — and never
+ * reaches here.
+ */
+export async function emptyPots(plantCodes: readonly string[]): Promise<void> {
+  const date = nowISO()
+  const written: PlantEvent[] = plantCodes.map((plantCode) => ({
+    id: newId(),
+    type: 'drain',
+    plantCode,
+    date,
+  }))
+
+  for (const event of written) await db.putEvent(event)
+  commit({ events: [...state.events, ...written] })
+}
+
 /** One sentence describing what happened, without the plant's name. */
 export function describeEvent(event: PlantEvent): string {
   switch (event.type) {
@@ -364,6 +385,8 @@ export function describeEvent(event: PlantEvent): string {
       return 'Note'
     case 'photo':
       return 'Photo'
+    case 'drain':
+      return 'Pot emptied'
   }
 }
 

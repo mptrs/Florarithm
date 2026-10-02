@@ -17,6 +17,17 @@ import { cn } from '~/lib/cn'
 export const PATHS = {
   /** lucide droplet */
   droplet: <path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z" />,
+  /** lucide paint-bucket — a pot tipped over with the last drop leaving it:
+   *  emptying the cachepot the day after a watering. Not `check`, which on
+   *  Today already means watered. */
+  drain: (
+    <>
+      <path d="M11 7 6 2" />
+      <path d="M18.992 12H2.041" />
+      <path d="M21.145 18.38A3.34 3.34 0 0 1 20 16.5a3.3 3.3 0 0 1-1.145 1.88c-.575.46-.855 1.02-.855 1.595A2 2 0 0 0 20 22a2 2 0 0 0 2-2.025c0-.58-.285-1.13-.855-1.595" />
+      <path d="m8.5 4.5 2.148-2.148a1.205 1.205 0 0 1 1.704 0l7.296 7.296a1.205 1.205 0 0 1 0 1.704l-7.592 7.592a3.615 3.615 0 0 1-5.112 0l-3.888-3.888a3.615 3.615 0 0 1 0-5.112L5.67 7.33" />
+    </>
+  ),
   /** lucide flask-conical */
   fertilizer: (
     <>

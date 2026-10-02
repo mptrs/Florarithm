@@ -121,6 +121,7 @@ const LABELS: Record<string, string> = {
   leaf: 'New leaf',
   bloom: 'Blooming',
   note: 'Note',
+  drain: 'Pot emptied',
   location: 'Place',
   medium: 'Medium',
 }

@@ -897,6 +897,7 @@ export const TONE: Record<PlantEvent['type'], ChipTone> = {
   bloom: 'leaf',
   note: 'ink',
   photo: 'ink',
+  drain: 'water',
 }
 
 export const GLYPH: Record<PlantEvent['type'], IconName> = {
@@ -906,6 +907,7 @@ export const GLYPH: Record<PlantEvent['type'], IconName> = {
   bloom: 'bloom',
   note: 'note',
   photo: 'image',
+  drain: 'drain',
 }
 
 function History({ plant, onEdit }: { plant: Plant; onEdit: (event: PlantEvent) => void }) {
@@ -916,7 +918,9 @@ function History({ plant, onEdit }: { plant: Plant; onEdit: (event: PlantEvent) 
   // the record would stay narrowed with nothing on screen to undo it.
   const wide = useMinWidth(1024)
   const filter = wide ? 'all' : chosen
-  const all = eventsFor(state, plant.code)
+  // Emptying the pot is a chore that follows a watering, not something that
+  // happened to the plant — see `DrainEvent`.
+  const all = eventsFor(state, plant.code).filter((event) => event.type !== 'drain')
 
   const waterings = all.filter((event) => event.type === 'water').length
   const photos = all.filter((event) => event.photo).length

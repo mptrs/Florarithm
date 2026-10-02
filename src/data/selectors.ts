@@ -14,10 +14,14 @@ import { daysBetween, daysSince, yearOf } from '~/lib/date'
 import { formatEpithet, formatSpecies, normalizeCross, plural } from '~/lib/format'
 import type { CollectionFilter } from '~/lib/router'
 import type { State } from './store'
-import type { EventType, Id, Plant, PlantEvent, VocabItem, VocabKind } from './types'
+import type { DrainEvent, EventType, Id, Plant, PlantEvent, VocabItem, VocabKind } from './types'
 
 /** Below this many days the count is a fact; at or above it, it is a nudge. */
 export const THIRSTY_AFTER_DAYS = 14
+
+/** A cachepot still holding water this many days after the watering has been
+ *  forgotten rather than put off, and the line says so. */
+export const UNEMPTIED_AFTER_DAYS = 2
 
 function memo<T>(compute: (state: State) => T): (state: State) => T {
   const cache = new WeakMap<State, T>()
@@ -698,6 +702,50 @@ export function todayList(state: State): Plant[] {
       const right = daysSinceWater(state, b.code) ?? Number.POSITIVE_INFINITY
       return right - left || a.name.localeCompare(b.name)
     })
+}
+
+/** One cachepot on Today's emptying list. */
+export type PotToEmpty = {
+  plant: Plant
+  /** The watering that filled it. */
+  wateredAt: string
+  /** Set once it has been emptied today — the row stays, ticked, so a mis-tap
+   *  is undone on the row it was made on rather than somewhere else. */
+  emptied: DrainEvent | null
+}
+
+/**
+ * The plants on soil whose cachepot still holds the water that ran through.
+ *
+ * Every active plant on soil, because every one of them stands in a cachepot.
+ * It joins the list the day *after* a watering — on the day itself the water
+ * is still on its way down — and leaves it once a `drain` is logged after that
+ * watering. One that was emptied today stays on, ticked, until the day ends;
+ * water it again and it starts over, because the newest watering is the only
+ * one whose water is still in the pot.
+ *
+ * Longest waiting first, so a forgotten one is at the top; and a tick does not
+ * move a row, so the list does not shuffle under your thumb.
+ */
+export function potsToEmpty(state: State): PotToEmpty[] {
+  const pots: PotToEmpty[] = []
+
+  for (const plant of todayList(state)) {
+    if (plant.system !== 'soil') continue
+    const wateredAt = lastWaterAt(state, plant.code)
+    if (wateredAt === null || daysSince(wateredAt) < 1) continue
+
+    const drain = eventsFor(state, plant.code).find(
+      (event): event is DrainEvent => event.type === 'drain' && event.date > wateredAt,
+    )
+    if (drain && daysSince(drain.date) > 0) continue
+
+    pots.push({ plant, wateredAt, emptied: drain ?? null })
+  }
+
+  return pots.sort(
+    (a, b) => a.wateredAt.localeCompare(b.wateredAt) || a.plant.name.localeCompare(b.plant.name),
+  )
 }
 
 export function collectionValue(state: State): number {

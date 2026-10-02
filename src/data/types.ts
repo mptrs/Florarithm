@@ -147,7 +147,7 @@ export type Plant = {
   deleted?: boolean
 }
 
-export type EventType = 'water' | 'repot' | 'leaf' | 'bloom' | 'note' | 'photo'
+export type EventType = 'water' | 'repot' | 'leaf' | 'bloom' | 'note' | 'photo' | 'drain'
 export const EVENT_TYPES: readonly EventType[] = [
   'water',
   'repot',
@@ -155,6 +155,7 @@ export const EVENT_TYPES: readonly EventType[] = [
   'bloom',
   'note',
   'photo',
+  'drain',
 ]
 
 /**
@@ -227,6 +228,22 @@ export type NoteEvent = EventBase & {
  *  now. The one event type that is meaningless without its `photo`. */
 export type PhotoEvent = EventBase & { type: 'photo' }
 
+/**
+ * The water that ran through a plant on soil, poured out of the cachepot the
+ * day after. Nothing but the moment, like a new leaf.
+ *
+ * An event rather than a flag on the watering it follows, because events are
+ * never edited: a flag would be a write to an old record, and a merge would
+ * have to decide whose copy of that watering wins. Whether a pot still needs
+ * emptying is read back out of the log — soil, watered before today, nothing
+ * of this type since — the same way days-since-water is.
+ *
+ * A chore, not something that happened to the plant, so the history leaves it
+ * out: a row under every watering would say nothing that the watering above it
+ * had not already said.
+ */
+export type DrainEvent = EventBase & { type: 'drain' }
+
 export type PlantEvent =
   | WaterEvent
   | RepotEvent
@@ -234,6 +251,7 @@ export type PlantEvent =
   | BloomEvent
   | NoteEvent
   | PhotoEvent
+  | DrainEvent
 
 /**
  * The sachets of predatory mites hanging in the collection.
