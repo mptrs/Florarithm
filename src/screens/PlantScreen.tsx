@@ -38,6 +38,7 @@ import { formatDate, formatDayMonth, formatMonthYear } from '~/lib/date'
 import { formatPotSize, formatPrice, formatSpecies, label, plural } from '~/lib/format'
 import { navigate, plantUrl, routes } from '~/lib/router'
 import { cn } from '~/lib/cn'
+import { nextInLine } from '~/lib/nameGenerator'
 import { Dozing } from '~/ui/Dozing'
 import { BackButton, Button, IconButton } from '~/ui/Button'
 import { Card, GroupLabel, IconChip, type ChipTone } from '~/ui/Card'
@@ -1141,7 +1142,13 @@ function Family({ plant }: { plant: Plant }) {
     ? childrenOf(state, plant.parent.code).filter((other) => other.code !== plant.code)
     : []
 
-  if (ancestors.length === 0 && descendants.length === 0) return null
+  // A line can start here as well as run through here: so the card is up for
+  // any plant you can still take something off, not only one that already has
+  // family — with just itself, and the row for the next one.
+  const canPropagate = plant.status !== 'died' && plant.status !== 'given-away'
+  const alone = ancestors.length === 0 && descendants.length === 0
+  if (alone && !canPropagate) return null
+  const next = nextInLine(plant.name, new Set(state.plants.map((other) => other.name)))
 
   // Siblings keep their place in the order the cuttings were taken: the ones
   // older than this plant sit above it, the later ones below. Same rail, same
@@ -1172,11 +1179,12 @@ function Family({ plant }: { plant: Plant }) {
         </span>
       </div>
 
-      {descendants.length > 0 ? (
+      {descendants.length > 0 || canPropagate ? (
         <Rail>
           {descendants.map((node) => (
             <Branch key={node.plant.code} node={node} />
           ))}
+          {canPropagate ? <PropagateRow plant={plant} next={next} /> : null}
         </Rail>
       ) : null}
 
@@ -1200,10 +1208,12 @@ function Family({ plant }: { plant: Plant }) {
     <section className="mt-8">
       <div className="flex items-baseline justify-between gap-3">
         <GroupLabel>Family</GroupLabel>
-        <span className="text-[0.8125rem] text-ink-faint">
-          {plants + siblings.length > generations ? `${plants + siblings.length} plants · ` : ''}
-          {plural(generations, 'generation')}
-        </span>
+        {alone ? null : (
+          <span className="text-[0.8125rem] text-ink-faint">
+            {plants + siblings.length > generations ? `${plants + siblings.length} plants · ` : ''}
+            {plural(generations, 'generation')}
+          </span>
+        )}
       </div>
 
       <Card className="mt-2 p-4">
@@ -1234,7 +1244,7 @@ function Rail({ children, className }: { children: ReactNode; className?: string
  * marks themselves; only the position is spacing, and it has no number of its
  * own.
  */
-function Bead({ kind }: { kind: 'kin' | 'own' | 'self' | 'sibling' | 'more' }) {
+function Bead({ kind }: { kind: 'kin' | 'own' | 'self' | 'sibling' | 'more' | 'next' }) {
   return (
     <span
       aria-hidden
@@ -1248,6 +1258,7 @@ function Bead({ kind }: { kind: 'kin' | 'own' | 'self' | 'sibling' | 'more' }) {
         kind === 'own' ? 'border-leaf' : '',
         kind === 'kin' ? 'border-line-strong' : '',
         kind === 'more' ? 'border border-dashed border-line-strong' : '',
+        kind === 'next' ? 'border-dashed border-leaf' : '',
       )}
     />
   )
@@ -1280,6 +1291,31 @@ function Branch({ node }: { node: Descendant }) {
         </Rail>
       )}
     </>
+  )
+}
+
+/**
+ * Where the next plant off this one will hang, before it exists.
+ *
+ * Dashed, because it is not there yet, and already carrying the name it will
+ * get — the same name the form fills in — so the row says what pressing it
+ * makes rather than only that it makes something.
+ */
+function PropagateRow({ plant, next }: { plant: Plant; next: string }) {
+  return (
+    <a
+      href={routes.newFrom(plant.code)}
+      className="warm block min-h-touch py-2 text-leaf hover:text-leaf-deep"
+    >
+      <span className="relative flex items-center gap-1 text-[0.9375rem] leading-6 font-semibold">
+        <Bead kind="next" />
+        <Icon name="plus" size={16} />
+        Propagate
+      </span>
+      <span className="block truncate font-mono text-micro tracking-[0.08em] text-ink-faint">
+        BECOMES <span className="font-display text-[0.875rem] tracking-normal text-ink-muted italic">{next}</span>
+      </span>
+    </a>
   )
 }
 

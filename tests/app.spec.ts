@@ -282,6 +282,79 @@ test('a hybrid is recorded as a cross, not as a cultivar', async ({ page }) => {
   await expect(page.getByRole('link', { name: /Vlek/ })).toBeVisible()
 })
 
+test('picking the parent fills in what the parent already knows', async ({ page }) => {
+  const parent = await addPlant(page, 'Monstera deliciosa', 'Fluweel', 'Kitchen')
+
+  await page.goto('#new')
+  await page.getByLabel('Cultivar').fill('Thai Constellation')
+  await page.getByLabel('Propagated from').selectOption(parent)
+
+  // What it is, its place, and the next name in the line — no dice needed.
+  await expect(page.getByLabel('Genus')).toHaveValue('Monstera')
+  await expect(page.getByLabel('Species', { exact: true })).toHaveValue('deliciosa')
+  await expect(page.getByLabel('Name', { exact: true })).toHaveValue('Fluweel II')
+  await expect(page.getByLabel('Place')).toHaveValue('Kitchen')
+  // Off one of your own, there is no shop, seller or price to ask about.
+  await expect(page.getByRole('button', { name: 'Nursery' })).toBeHidden()
+  await expect(page.getByLabel('Price')).toBeHidden()
+  await expect(page.getByRole('button', { name: 'Own cutting' })).toBeHidden()
+  // But nothing typed before the parent was picked is overwritten.
+  await expect(page.getByLabel('Cultivar')).toHaveValue('Thai Constellation')
+
+  // Changing your mind takes back only what the parent put there.
+  await page.getByLabel('Propagated from').selectOption('')
+  await expect(page.getByLabel('Genus')).toHaveValue('')
+  await expect(page.getByLabel('Name', { exact: true })).toHaveValue('')
+  await expect(page.getByLabel('Cultivar')).toHaveValue('Thai Constellation')
+  await expect(page.getByRole('button', { name: 'Nursery' })).toBeVisible()
+
+  // Arriving from the parent's own page fills it in the same way.
+  await page.goto(`#new/from/${parent}`)
+  await expect(page.getByLabel('Name', { exact: true })).toHaveValue('Fluweel II')
+  await expect(page.getByLabel('Genus')).toHaveValue('Monstera')
+})
+
+test('a plant page propagates from the log sheet and from its family', async ({ page }) => {
+  const parent = await addPlant(page, 'Alocasia zebrina', 'Marla')
+
+  // From the sheet: you have just taken one, and that is where you are.
+  await openLogSheet(page)
+  await page.getByRole('button', { name: 'Propagate' }).click()
+  await expect(page).toHaveURL(new RegExp(`#new/from/${parent}$`))
+  await expect(page.getByLabel('Name', { exact: true })).toHaveValue('Marla II')
+  await page.getByRole('button', { name: 'Add to the collection' }).click()
+  await expect(page.getByRole('heading', { name: 'Marla II' })).toBeVisible()
+
+  // From the rail: a plant with no family yet still gets the card, with the
+  // next one already named where it will hang.
+  await page.goto(`#p=${parent}`)
+  const next = page.getByRole('link', { name: /Propagate/ })
+  await expect(next).toContainText('Marla III')
+  await next.click()
+  await expect(page.getByLabel('Name', { exact: true })).toHaveValue('Marla III')
+})
+
+test('genus, species and cultivar are offered back off the collection', async ({ page }) => {
+  await addPlant(page, 'Monstera deliciosa', 'Fluweel')
+  await addPlant(page, 'Alocasia zebrina', 'Streep')
+
+  await page.goto('#new')
+  const offered = (field: string) =>
+    page
+      .getByLabel(field, { exact: true })
+      .evaluate((input: HTMLInputElement) =>
+        Array.from(input.list?.options ?? []).map((option) => option.value),
+      )
+
+  expect(await offered('Genus')).toEqual(['Alocasia', 'Monstera'])
+  // Nothing to narrow to yet, so no species are offered at random.
+  expect(await offered('Species')).toEqual([])
+
+  // Typed in lower case, it still finds the genus's own species.
+  await page.getByLabel('Genus').fill('monstera')
+  expect(await offered('Species')).toEqual(['deliciosa'])
+})
+
 test('the hybrid switch comes back on for a plant that has a cross', async ({ page }) => {
   await page.goto('#new')
   await page.getByLabel('Genus').fill('Anthurium')

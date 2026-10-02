@@ -44,12 +44,14 @@ export const PROPAGATION_METHODS: readonly PropagationMethod[] = [
   'seed',
 ]
 
+/** `own-cutting` is no longer offered — a plant off one of yours says so in its
+ *  `parent` — but it stays readable for a plant recorded before that, whose
+ *  parent was never in the app. */
 export type OriginType = 'nursery' | 'shop' | 'trade' | 'own-cutting' | 'gift'
 export const ORIGIN_TYPES: readonly OriginType[] = [
   'nursery',
   'shop',
   'trade',
-  'own-cutting',
   'gift',
 ]
 

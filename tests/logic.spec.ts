@@ -291,6 +291,17 @@ test.describe('hybrids', () => {
     } as unknown as Plant
     expect(migratePlant(current)).toBe(current)
   })
+
+  test('"own cutting" goes where the parent says it, and stays where nothing else does', () => {
+    const origin = { type: 'own-cutting', from: '', date: null, price: null } as const
+    const base = { code: 'MON-0002', name: 'Bert II', genus: 'Monstera', species: '', cross: '', cultivar: '', variegation: '' }
+
+    const withParent = { ...base, origin, parent: { code: 'MON-0001', method: 'cutting' } } as unknown as Plant
+    expect(migratePlant(withParent).origin.type).toBeNull()
+
+    const orphan = { ...base, origin, parent: null } as unknown as Plant
+    expect(migratePlant(orphan).origin.type).toBe('own-cutting')
+  })
 })
 
 test.describe('dates', () => {
