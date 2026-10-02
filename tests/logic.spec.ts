@@ -26,6 +26,7 @@ import {
   lastMark,
   lineageOf,
   milestonesOf,
+  potsToEmpty,
   yearsInReview,
 } from '../src/data/selectors'
 import type { State } from '../src/data/store'
@@ -915,5 +916,109 @@ test.describe('sachets', () => {
     expect(sachetPhase(sachets, at('2026-09-16'))).toBe('order')
     expect(sachetPhase(sachets, at('2026-09-17'))).toBe('spent')
     expect(sachetPhase(sachets, at('2026-09-20'))).toBe('spent')
+  })
+})
+
+test.describe('cachepots to empty', () => {
+  const plant = (code: string, extra: Partial<Plant> = {}): Plant => ({
+    code,
+    name: code,
+    genus: 'Monstera',
+    species: '',
+    cross: '',
+    cultivar: '',
+    variegation: '',
+    locationId: null,
+    system: 'soil',
+    potSize: null,
+    mediumId: null,
+    origin: { type: null, from: '', date: null, price: null },
+    parent: null,
+    status: 'active',
+    wish: false,
+    wishNote: '',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+    ...extra,
+  })
+
+  /** Noon, `back` days ago — far enough from midnight that no timezone moves it a day. */
+  const daysAgo = (back: number): string => {
+    const date = new Date()
+    date.setDate(date.getDate() - back)
+    date.setHours(12, 0, 0, 0)
+    return date.toISOString()
+  }
+
+  let next = 0
+  const event = (plantCode: string, type: 'water' | 'drain', date: string, extra = {}): PlantEvent =>
+    ({ id: `e${(next += 1)}`, plantCode, type, date, fertilized: true, ...extra }) as PlantEvent
+
+  const stateOf = (plants: Plant[], events: PlantEvent[]): State => ({
+    status: 'ready',
+    plants,
+    events,
+    vocab: [],
+    sachets: null,
+    lastBackupAt: null,
+  })
+
+  const codes = (state: State) => potsToEmpty(state).map((pot) => pot.plant.code)
+
+  test('a plant on soil joins the day after its watering, not the day of it', () => {
+    const plants = [plant('YESTERDAY'), plant('TODAY')]
+    const state = stateOf(plants, [
+      event('YESTERDAY', 'water', daysAgo(1)),
+      event('TODAY', 'water', daysAgo(0)),
+    ])
+    expect(codes(state)).toEqual(['YESTERDAY'])
+  })
+
+  test('only soil, only plants still cared for', () => {
+    const plants = [
+      plant('SOIL'),
+      plant('HYDRO', { system: 'hydro' }),
+      plant('SEMI', { system: 'semi-hydro' }),
+      plant('DORMANT', { status: 'dormant' }),
+      plant('WISH', { wish: true }),
+    ]
+    const state = stateOf(
+      plants,
+      plants.map((one) => event(one.code, 'water', daysAgo(1))),
+    )
+    expect(codes(state)).toEqual(['SOIL'])
+  })
+
+  test('an emptying after the watering takes it off — from tomorrow; today it stays, ticked', () => {
+    const emptiedToday = event('A', 'drain', daysAgo(0))
+    const today = stateOf([plant('A')], [event('A', 'water', daysAgo(2)), emptiedToday])
+    expect(potsToEmpty(today)[0]?.emptied?.id).toBe(emptiedToday.id)
+
+    const earlier = stateOf([plant('A')], [event('A', 'water', daysAgo(3)), event('A', 'drain', daysAgo(2))])
+    expect(codes(earlier)).toEqual([])
+  })
+
+  test('a new watering starts it over, and an emptying before it does not count', () => {
+    const state = stateOf(
+      [plant('A')],
+      [event('A', 'water', daysAgo(5)), event('A', 'drain', daysAgo(4)), event('A', 'water', daysAgo(1))],
+    )
+    expect(potsToEmpty(state)).toMatchObject([{ emptied: null }])
+  })
+
+  test('an emptying taken back puts the pot back on the list', () => {
+    const state = stateOf(
+      [plant('A')],
+      [event('A', 'water', daysAgo(1)), event('A', 'drain', daysAgo(0), { deleted: true })],
+    )
+    expect(potsToEmpty(state)).toMatchObject([{ emptied: null }])
+  })
+
+  test('the longest forgotten is at the top', () => {
+    const state = stateOf(
+      [plant('NEW'), plant('OLD')],
+      [event('NEW', 'water', daysAgo(1)), event('OLD', 'water', daysAgo(4))],
+    )
+    expect(codes(state)).toEqual(['OLD', 'NEW'])
   })
 })

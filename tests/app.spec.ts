@@ -921,3 +921,71 @@ test('the sachets count down on Today, ask to be replaced, and reset in one shee
   await page.goto('#today')
   await expect(page.getByText(/28 days left/)).toBeHidden()
 })
+
+/**
+ * The cachepots: the one thing Today writes.
+ *
+ * Two plants on soil watered yesterday and one on hydro, written straight to
+ * the database — a watering dated yesterday through the log sheet would be a
+ * test of the date picker. Then the round: one pot by its own button, the
+ * mis-tap taken back on the same row, the rest in one press, and the block
+ * folding to a line that says so.
+ */
+test('the cachepots are owed the day after, ticked off on Today, and taken back on the row', async ({
+  page,
+}) => {
+  await page.goto('#today')
+  await page.evaluate(async () => {
+    const yesterday = new Date()
+    yesterday.setDate(yesterday.getDate() - 1)
+    yesterday.setHours(12, 0, 0, 0)
+    const at = yesterday.toISOString()
+    const plant = (code: string, name: string, system: string) => ({
+      code, name, genus: 'Monstera', species: '', cross: '', cultivar: '', variegation: '',
+      locationId: null, system, potSize: null, mediumId: null,
+      origin: { type: null, from: '', date: null, price: null }, parent: null,
+      status: 'active', wish: false, wishNote: '', createdAt: at, updatedAt: at,
+    })
+    const plants = [plant('MON-0001', 'Gruyère', 'soil'), plant('MON-0002', 'Emmentaler', 'soil'), plant('MON-0003', 'Brie', 'hydro')]
+    await new Promise<void>((resolve, reject) => {
+      const open = indexedDB.open('florarithm')
+      open.onsuccess = () => {
+        const transaction = open.result.transaction(['plants', 'events'], 'readwrite')
+        for (const one of plants) {
+          transaction.objectStore('plants').put(one)
+          transaction.objectStore('events').put({ id: `w-${one.code}`, plantCode: one.code, type: 'water', date: at, fertilized: true })
+        }
+        transaction.oncomplete = () => resolve()
+        transaction.onerror = () => reject(transaction.error)
+      }
+      open.onerror = () => reject(open.error)
+    })
+  })
+  await page.reload()
+
+  await expect(page.getByRole('heading', { name: 'Empty the cachepots' })).toBeVisible()
+  const gruyere = page.getByRole('button', { name: 'Gruyère: cachepot emptied' })
+  await expect(gruyere).toHaveAttribute('aria-pressed', 'false')
+  await expect(page.getByRole('button', { name: 'Emmentaler: cachepot emptied' })).toBeVisible()
+  // Hydro has no cachepot to empty.
+  await expect(page.getByRole('button', { name: 'Brie: cachepot emptied' })).toBeHidden()
+
+  // A tick is written, survives a reload, and stays on its row for the day.
+  await gruyere.click()
+  await expect(gruyere).toHaveAttribute('aria-pressed', 'true')
+  await page.reload()
+  await expect(gruyere).toHaveAttribute('aria-pressed', 'true')
+
+  // Pressed again, it is taken back.
+  await gruyere.click()
+  await expect(gruyere).toHaveAttribute('aria-pressed', 'false')
+
+  await page.getByRole('button', { name: 'All emptied' }).click()
+  await expect(page.getByRole('button', { name: '2 cachepots emptied' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Empty the cachepots' })).toBeHidden()
+
+  // The emptying is a chore, not a moment in the plant's life.
+  await page.goto('#p=MON-0001')
+  await openHistory(page)
+  await expect(main(page).getByText('Pot emptied')).toBeHidden()
+})
