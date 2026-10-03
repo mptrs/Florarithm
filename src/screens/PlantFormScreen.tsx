@@ -58,6 +58,7 @@ import {
 } from '~/lib/date'
 import { formatSpecies, label, normalizeCross, parseDecimal, plural, priceInputValue } from '~/lib/format'
 import { suggestNameAI } from '~/lib/aiNameGenerator'
+import { respell, searchTaxa, speciesOf, useLookup, type Taxon } from '~/lib/taxa'
 import { nextInLine } from '~/lib/nameGenerator'
 import { cn } from '~/lib/cn'
 import { redirect, routes } from '~/lib/router'
@@ -189,6 +190,7 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
 
   const parentPlant = parent ? findPlant(state, parent) : null
   const known = knownNames(state.plants, genus, species)
+  const online = useOnlineNames(state.plants, genus, known)
   /**
    * The plant already answering to the name typed here, if any. A name is how
    * a plant is called out across the room and found in a list, so two of them
@@ -502,9 +504,48 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
                         onPick: () => copyWhatItIs(plant),
                       })),
                   },
+                  {
+                    label: 'iNaturalist · fills in what it is',
+                    whileTyping: true,
+                    items: online.taxa.map((taxon) => ({
+                      key: `${taxon.genus} ${taxon.species}`,
+                      value: taxon.species ? `${taxon.genus} ${taxon.species}` : taxon.genus,
+                      italic: true,
+                      detail: taxon.species ? taxon.common : 'Genus only',
+                      // Already found by iNaturalist, often on the common
+                      // name, which is nowhere in the row to match.
+                      always: true,
+                      onPick: () => {
+                        setGenus(taxon.genus)
+                        if (!taxon.species) return
+                        setSpecies(taxon.species)
+                        setHybrid(false)
+                        setCross('')
+                      },
+                    })),
+                  },
+                  {
+                    label: 'GBIF · did you mean',
+                    whileTyping: true,
+                    items: online.genusSpelling
+                      ? [
+                          {
+                            key: online.genusSpelling.genus,
+                            value: online.genusSpelling.genus,
+                            italic: true,
+                            detail: online.genusSpelling.family,
+                            meta: online.genusSpelling.count
+                              ? plantCount(online.genusSpelling.count)
+                              : undefined,
+                            always: true,
+                          },
+                        ]
+                      : [],
+                  },
                 ]}
                 placeholder="Monstera"
                 fieldClassName="flex-1"
+                onQuery={online.setGenusQuery}
               />
               <SuggestField
                 label="Species"
@@ -515,10 +556,36 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
                     label: genus.trim() ? `Of ${genus.trim()}` : 'Species',
                     items: known.species.map((usage) => nameRow(usage, species, true)),
                   },
+                  {
+                    label: 'iNaturalist · most seen first',
+                    items: online.species.map((taxon) => ({
+                      key: taxon.species,
+                      value: taxon.species,
+                      italic: true,
+                      detail: taxon.common || undefined,
+                      selected: taxon.species.toLowerCase() === species.trim().toLowerCase(),
+                    })),
+                  },
+                  {
+                    label: 'GBIF · did you mean',
+                    whileTyping: true,
+                    items: online.speciesSpelling
+                      ? [
+                          {
+                            key: online.speciesSpelling,
+                            value: online.speciesSpelling,
+                            italic: true,
+                            always: true,
+                          },
+                        ]
+                      : [],
+                  },
                 ]}
                 placeholder="deliciosa"
                 fieldClassName="flex-1"
                 align="end"
+                onQuery={online.setSpeciesQuery}
+                onOpen={online.lookForSpecies}
                 disabled={hybrid}
               />
             </div>
@@ -955,6 +1022,86 @@ function DeleteRow({ onDelete, wish }: { onDelete: () => void; wish?: boolean })
  * it. So the form shows what it just committed to, in the order the plant page
  * will read it back.
  */
+/**
+ * What the genus and species lists add from outside the collection: names
+ * nobody here has used yet, from iNaturalist, and a spelling from GBIF when
+ * what is typed matches nothing at all.
+ *
+ * Asked only about what is being typed — never about a value the field opened
+ * holding, so opening a plant to edit it sends nothing anywhere — and the
+ * species of a genus only once that list is opened. A name already in the
+ * collection is left out: it is on the list above, with its count.
+ */
+function useOnlineNames(
+  plants: readonly Plant[],
+  genus: string,
+  known: ReturnType<typeof knownNames>,
+) {
+  const [genusQuery, setGenusQuery] = useState<string | null>(null)
+  const [speciesQuery, setSpeciesQuery] = useState<string | null>(null)
+  const [speciesWanted, setSpeciesWanted] = useState(false)
+
+  const lower = (value: string) => value.trim().toLowerCase()
+  const g = lower(genusQuery ?? '')
+  const s = lower(speciesQuery ?? '')
+  const ownGenera = new Set(known.genera.map((usage) => lower(usage.name)))
+  const ownSpecies = new Set(known.species.map((usage) => lower(usage.name)))
+  const owned = new Set(
+    plants.filter((p) => !p.deleted && p.species).map((p) => `${lower(p.genus)} ${lower(p.species)}`),
+  )
+
+  // Three letters before asking: "Mo" is half the plant kingdom.
+  const found = useLookup(g.length >= 3 ? g : null, () => searchTaxa(g))
+  const taxa = (found ?? []).filter((taxon: Taxon) =>
+    taxon.species
+      ? !owned.has(`${lower(taxon.genus)} ${lower(taxon.species)}`)
+      : !ownGenera.has(lower(taxon.genus)),
+  )
+
+  // A typo is what nothing else starts like: not a genus here, and nothing
+  // iNaturalist knows either. Four letters, or every short start is a typo.
+  const unmatched =
+    g.length >= 4 && found?.length === 0 && ![...ownGenera].some((name) => name.includes(g))
+  const genusFix = useLookup(unmatched ? g : null, () => respell(g))
+  const genusSpelling = genusFix
+    ? {
+        ...genusFix,
+        count: known.genera.find((usage) => lower(usage.name) === lower(genusFix.genus))?.count ?? 0,
+      }
+    : null
+
+  const forGenus = lower(genus)
+  const listed = useLookup(speciesWanted && forGenus ? forGenus : null, () => speciesOf(forGenus))
+  const speciesList = (listed ?? []).filter((taxon) => !ownSpecies.has(lower(taxon.species)))
+
+  const speciesUnmatched =
+    forGenus !== '' &&
+    s.length >= 4 &&
+    listed !== undefined &&
+    ![...ownSpecies, ...speciesList.map((taxon) => lower(taxon.species))].some((name) =>
+      name.includes(s),
+    )
+  const speciesFix = useLookup(speciesUnmatched ? `${forGenus} ${s}` : null, () =>
+    respell(genus, s),
+  )
+  // Only a species of the genus already in the field: anything else would
+  // quietly move the plant to another genus from the species box.
+  const speciesSpelling =
+    speciesFix && lower(speciesFix.genus) === forGenus && speciesFix.species
+      ? speciesFix.species
+      : null
+
+  return {
+    taxa,
+    genusSpelling,
+    species: speciesList,
+    speciesSpelling,
+    setGenusQuery,
+    setSpeciesQuery,
+    lookForSpecies: () => setSpeciesWanted(true),
+  }
+}
+
 /**
  * The genera, species and cultivars already in the collection, for the
  * suggest lists. Species are the typed genus's own and cultivars that

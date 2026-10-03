@@ -1,5 +1,5 @@
 /**
- * Settings — sync, the two growing lists, and the manual backup.
+ * Settings — sync, the growing lists and the names, and the manual backup.
  *
  * Sync is the real safety net now: a repository somewhere else, kept
  * current automatically. The manual export is what it was before M2 —
@@ -8,13 +8,14 @@
  * nagging at the top.
  */
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { buildBackup, BackupParseError, readBackupFile, shareBackup } from '~/data/backup'
-import { allVocabOf } from '~/data/selectors'
+import { allVocabOf, nameIndex, type GenusName } from '~/data/selectors'
 import {
   ensureVocabItem,
   hangSachets,
   markBackedUp,
+  renameName,
   renameVocabItem,
   replaceEverything,
   setVocabArchived,
@@ -22,14 +23,15 @@ import {
 } from '~/data/store'
 import { configureSync, getSyncConfig, syncNow, useSyncStatus } from '~/data/sync'
 import { ORDER_WORKDAYS } from '~/data/sachets'
-import { SACHET_DAYS, VOCAB_KINDS, type VocabKind } from '~/data/types'
+import { SACHET_DAYS, VOCAB_KINDS, type Plant, type VocabKind } from '~/data/types'
 import { cn } from '~/lib/cn'
 import { daysSince, formatDate } from '~/lib/date'
-import { label, plural } from '~/lib/format'
+import { formatSpecies, label, plural } from '~/lib/format'
+import { respell } from '~/lib/taxa'
 import { Banner } from '~/ui/Banner'
 import { Button, IconButton } from '~/ui/Button'
 import { useConfirm } from '~/ui/ConfirmDialog'
-import { Field, TextField } from '~/ui/fields'
+import { Field, Label, TextField } from '~/ui/fields'
 import { showToast } from '~/ui/toast'
 import { Icon } from '~/ui/Icon'
 import { Rows, ScreenHeader, Section, SectionHeading } from '~/ui/primitives'
@@ -193,6 +195,366 @@ function SyncSection() {
       </Button>
     </Section>
   )
+}
+
+// --- names ------------------------------------------------------------------
+
+/**
+ * Every genus and species the plants carry, renamed in one place.
+ *
+ * Not a list of its own the way places are: a genus is written on each plant,
+ * so a typo made once is a genus of its own — its own drawer in the
+ * collection, one more genus counted. Renaming here rewrites it on every
+ * plant that carries it, and renaming onto a name already here merges them.
+ *
+ * Online, each name is checked against GBIF, and one spelled differently
+ * there says so, with the fix one tap away. Offline the list is the same,
+ * just without the hints.
+ */
+function NamesList() {
+  const state = useStore()
+  const genera = nameIndex(state.plants)
+  const spellings = useSpellings(genera)
+  const [open, setOpen] = useState<string | null>(null)
+
+  if (genera.length === 0) return null
+
+  return (
+    <div className="flex flex-col gap-2">
+      <SectionHeading>Names</SectionHeading>
+      <p className="max-w-prose text-[0.8125rem] leading-5 text-ink-muted text-pretty">
+        Every genus and species your plants carry, spelled the way they are spelled. Fix one here
+        and every plant with it follows. Names are checked against{' '}
+        <a href="https://www.gbif.org" target="_blank" rel="noreferrer" className="text-leaf underline">
+          GBIF
+        </a>{' '}
+        when you are online.
+      </p>
+
+      <Rows className="mt-1">
+        {genera.map((genus) => (
+          <GenusEntry
+            key={genus.name}
+            genus={genus}
+            genera={genera}
+            spellings={spellings}
+            open={open === genus.name}
+            onToggle={() => setOpen((current) => (current === genus.name ? null : genus.name))}
+          />
+        ))}
+      </Rows>
+    </div>
+  )
+}
+
+/** Keyed `Genus` or `Genus epithet`, holding how GBIF spells the part that
+ *  is spelled differently. */
+type Spellings = ReadonlyMap<string, string>
+
+function GenusEntry({
+  genus,
+  genera,
+  spellings,
+  open,
+  onToggle,
+}: {
+  genus: GenusName
+  genera: readonly GenusName[]
+  spellings: Spellings
+  open: boolean
+  onToggle: () => void
+}) {
+  const [renaming, setRenaming] = useState<{ species?: string; to: string } | null>(null)
+  const fix = spellings.get(genus.name)
+
+  if (renaming && renaming.species === undefined) {
+    return (
+      <RenameName
+        kind="Genus"
+        from={genus.name}
+        initial={renaming.to}
+        plants={genus.plants}
+        existing={(to) => genera.find((other) => other.name === to && other !== genus)?.plants}
+        onRename={(to) => renameName({ genus: genus.name }, to)}
+        onDone={() => setRenaming(null)}
+      />
+    )
+  }
+
+  return (
+    <>
+      <div className="flex min-h-13 items-center gap-3 border-b border-line py-2">
+        <button
+          type="button"
+          aria-expanded={open}
+          onClick={onToggle}
+          className="warm flex min-w-0 flex-1 items-center gap-3 self-stretch text-left"
+        >
+          <span className="flex min-w-0 flex-1 flex-col">
+            <span className="truncate font-display text-[1.125rem] leading-6 italic">{genus.name}</span>
+            {fix ? <SpelledAs name={fix} /> : null}
+          </span>
+          <span className="shrink-0 font-mono text-micro text-ink-faint">{genus.plants.length}</span>
+          {fix ? null : (
+            <Icon
+              name="chevronDown"
+              size={18}
+              className={cn('shrink-0 text-ink-faint transition-transform', open && 'rotate-180')}
+            />
+          )}
+        </button>
+        {fix ? (
+          <Button size="sm" aria-label={`Fix ${genus.name}`} onClick={() => setRenaming({ to: fix })}>
+            Fix
+          </Button>
+        ) : null}
+      </div>
+
+      {open ? (
+        <div className="border-b border-line pl-4">
+          {genus.species.map((species) => (
+            <SpeciesEntry
+              key={species.name}
+              genus={genus}
+              species={species.name}
+              plants={species.plants}
+              fix={spellings.get(`${genus.name} ${species.name}`)}
+              renaming={renaming?.species === species.name ? renaming.to : null}
+              onRename={(to) => setRenaming({ species: species.name, to })}
+              onDone={() => setRenaming(null)}
+            />
+          ))}
+          {genus.unnamed > 0 ? (
+            <div className="flex min-h-13 items-center gap-3 border-b border-line py-2 last:border-b-0">
+              <span className="flex-1 text-[0.875rem] text-ink-faint">Crosses and unnamed</span>
+              <span className="font-mono text-micro text-ink-faint">{genus.unnamed}</span>
+              {/* Where the other rows have their button, so the counts line up. */}
+              <span aria-hidden className="w-control shrink-0" />
+            </div>
+          ) : null}
+          <div className="py-2">
+            <Button size="sm" variant="quiet" icon="pencil" onClick={() => setRenaming({ to: genus.name })}>
+              Rename {genus.name}
+            </Button>
+          </div>
+        </div>
+      ) : null}
+    </>
+  )
+}
+
+function SpeciesEntry({
+  genus,
+  species,
+  plants,
+  fix,
+  renaming,
+  onRename,
+  onDone,
+}: {
+  genus: GenusName
+  species: string
+  plants: readonly Plant[]
+  fix: string | undefined
+  renaming: string | null
+  onRename: (to: string) => void
+  onDone: () => void
+}) {
+  if (renaming !== null) {
+    return (
+      <RenameName
+        kind="Species"
+        from={species}
+        initial={renaming}
+        plants={plants}
+        existing={(to) => genus.species.find((other) => other.name === to && other.name !== species)?.plants}
+        within={genus.name}
+        onRename={(to) => renameName({ genus: genus.name, species }, to)}
+        onDone={onDone}
+      />
+    )
+  }
+
+  return (
+    <div className="flex min-h-13 items-center gap-3 border-b border-line py-2">
+      <span className="flex min-w-0 flex-1 flex-col">
+        <span className="truncate font-display text-[1.0625rem] leading-[1.375rem] italic">{species}</span>
+        {fix ? <SpelledAs name={fix} /> : null}
+      </span>
+      <span className="shrink-0 font-mono text-micro text-ink-faint">{plants.length}</span>
+      {fix ? (
+        <Button size="sm" aria-label={`Fix ${species}`} onClick={() => onRename(fix)}>
+          Fix
+        </Button>
+      ) : (
+        <IconButton icon="pencil" variant="quiet" label={`Rename ${species}`} onClick={() => onRename(species)} />
+      )}
+    </div>
+  )
+}
+
+function SpelledAs({ name }: { name: string }) {
+  return (
+    <span className="flex items-center gap-2 text-[0.8125rem] leading-[1.125rem] text-ember">
+      <Icon name="pencil" size={13} />
+      <span>
+        GBIF spells it <i className="font-display text-[0.875rem]">{name}</i>
+      </span>
+    </span>
+  )
+}
+
+/**
+ * The row turned into its own editor. What happens is said before it is
+ * done — and most of all when the new spelling is a name already here,
+ * because that merges two groups into one and is not taken back by renaming
+ * again.
+ */
+function RenameName({
+  kind,
+  from,
+  initial,
+  plants,
+  existing,
+  within,
+  onRename,
+  onDone,
+}: {
+  kind: 'Genus' | 'Species'
+  from: string
+  initial: string
+  plants: readonly Plant[]
+  existing: (to: string) => readonly Plant[] | undefined
+  /** The genus a species is renamed inside. */
+  within?: string
+  onRename: (to: string) => Promise<number>
+  onDone: () => void
+}) {
+  const id = useId()
+  const [to, setTo] = useState(initial)
+  const spelled = to.trim()
+  const joins = spelled ? existing(spelled) : undefined
+  const unchanged = !spelled || spelled === from
+
+  const rename = async () => {
+    const count = await onRename(spelled)
+    showToast(`${plural(count, 'plant')} renamed`)
+    onDone()
+  }
+
+  return (
+    <div className="flex flex-col gap-4 border-b border-line py-4">
+      <div className="flex flex-col gap-2">
+        <Label htmlFor={id}>
+          {kind}, now spelled{' '}
+          <i className="font-display text-[0.875rem] font-normal tracking-normal normal-case">{from}</i>
+        </Label>
+        <input
+          id={id}
+          autoFocus
+          value={to}
+          onChange={(event) => setTo(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' && !unchanged) void rename()
+            if (event.key === 'Escape') onDone()
+          }}
+          spellCheck={false}
+          autoComplete="off"
+          className="warm h-control w-full rounded-sm border border-line-strong bg-surface px-4 font-display text-[1.125rem] italic text-ink focus:border-leaf focus:outline-none"
+        />
+      </div>
+
+      {unchanged ? null : (
+        <div className="flex flex-col gap-3 rounded-md bg-sunk p-4">
+          <p className="text-[0.9375rem] leading-[1.375rem] text-ink text-pretty">
+            {joins ? (
+              <>
+                <i className="font-display text-base">{spelled}</i> is already{' '}
+                {within ? (
+                  <>
+                    a species of <i className="font-display text-base">{within}</i>
+                  </>
+                ) : (
+                  'a genus'
+                )}{' '}
+                here, with {plural(joins.length, 'plant')}.{' '}
+                {plants.length === 1 ? 'This one joins it.' : `These ${plants.length} join it.`}
+              </>
+            ) : plants.length === 1 ? (
+              'This plant changes.'
+            ) : (
+              `These ${plants.length} plants change.`
+            )}
+          </p>
+          <div className="flex flex-col border-t border-line">
+            {plants.map((plant) => (
+              <div
+                key={plant.code}
+                className="flex items-baseline gap-3 border-b border-line py-2 last:border-b-0"
+              >
+                <span className="min-w-0 flex-1 truncate font-display text-[1.0625rem] font-medium">
+                  {plant.name || plant.code}
+                </span>
+                <span className="shrink-0 font-display text-[0.875rem] text-ink-muted italic">
+                  {formatSpecies(plant)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="flex justify-end gap-3">
+        <Button onClick={onDone}>Cancel</Button>
+        <Button variant="accent" icon="check" disabled={unchanged} onClick={() => void rename()}>
+          {`Rename ${plural(plants.length, 'plant')}`}
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * GBIF's spelling of each genus and species here that it spells differently.
+ * One question per name, two at a time, and only about names not asked about
+ * this month (see `KEPT` in taxa.ts); nothing is asked offline, and a name
+ * GBIF is unsure of gets no hint.
+ */
+function useSpellings(genera: readonly GenusName[]): Spellings {
+  const [spellings, setSpellings] = useState<Spellings>(new Map())
+  const asked = genera
+    .flatMap((genus) => [genus.name, ...genus.species.map((species) => `${genus.name} ${species.name}`)])
+    .join('|')
+
+  useEffect(() => {
+    if (!navigator.onLine || !asked) return
+    let current = true
+    const names = asked.split('|')
+
+    void (async () => {
+      const found = new Map<string, string>()
+      for (let i = 0; i < names.length && current; i += 2) {
+        await Promise.all(
+          names.slice(i, i + 2).map(async (name) => {
+            const [genus = '', species = ''] = name.split(' ')
+            const spelling = await respell(genus, species).catch(() => null)
+            if (!spelling) return
+            // A species is only flagged for its own epithet: a genus spelled
+            // wrong is flagged on the genus, once, not again on every species.
+            const fix = species ? spelling.species : spelling.genus
+            if (fix && fix !== (species || genus)) found.set(name, fix)
+          }),
+        )
+        if (current) setSpellings(new Map(found))
+      }
+    })()
+
+    return () => {
+      current = false
+    }
+  }, [asked])
+
+  return spellings
 }
 
 // --- backup -----------------------------------------------------------------
@@ -446,6 +808,8 @@ function ListsSection() {
       {VOCAB_KINDS.map((kind) => (
         <VocabList key={kind} kind={kind} />
       ))}
+
+      <NamesList />
     </Section>
   )
 }

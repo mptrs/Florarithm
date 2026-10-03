@@ -79,6 +79,12 @@ type Props = {
   align?: 'start' | 'end'
   /** Backspace in an empty field: takes back the last filter. */
   onBackspaceEmpty?: () => void
+  /** What has been typed since the list opened, or `null` while nothing has —
+   *  for a caller that asks somewhere else for more rows, and must not ask
+   *  about a value the field merely opened holding. */
+  onQuery?: (query: string | null) => void
+  /** The list opened: for rows that are worth fetching only once looked for. */
+  onOpen?: () => void
   fieldClassName?: string
 }
 
@@ -100,6 +106,8 @@ export function SuggestField({
   browse = true,
   align = 'start',
   onBackspaceEmpty,
+  onQuery,
+  onOpen,
   fieldClassName,
 }: Props) {
   const id = useId()
@@ -150,12 +158,15 @@ export function SuggestField({
     setOpen(true)
     setQuery(null)
     setActive(-1)
+    onQuery?.(null)
+    onOpen?.()
   }
 
   function close() {
     setOpen(false)
     setQuery(null)
     setActive(-1)
+    onQuery?.(null)
   }
 
   function pick(row: Row) {
@@ -242,6 +253,7 @@ export function SuggestField({
           setOpen(true)
           setQuery(next)
           setActive(-1)
+          onQuery?.(next)
           if (free) onChange(next)
         }}
         onKeyDown={onKeyDown}
