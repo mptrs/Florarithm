@@ -23,7 +23,7 @@ import {
   currentPhotoEvent,
   daysSinceWater,
   eventsByMonth,
-  eventsFor,
+  historyFor,
   findPlant,
   isThirsty,
   lastRepot,
@@ -918,9 +918,7 @@ function History({ plant, onEdit }: { plant: Plant; onEdit: (event: PlantEvent) 
   // the record would stay narrowed with nothing on screen to undo it.
   const wide = useMinWidth(1024)
   const filter = wide ? 'all' : chosen
-  // Emptying the pot is a chore that follows a watering, not something that
-  // happened to the plant — see `DrainEvent`.
-  const all = eventsFor(state, plant.code).filter((event) => event.type !== 'drain')
+  const all = historyFor(state, plant.code)
 
   const waterings = all.filter((event) => event.type === 'water').length
   const photos = all.filter((event) => event.photo).length

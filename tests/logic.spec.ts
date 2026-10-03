@@ -1032,6 +1032,18 @@ test.describe('cachepots to empty', () => {
     )
     expect(codes(state)).toEqual(['OLD', 'NEW'])
   })
+
+  test('an emptying later on the day of a back-dated watering does not count for it', () => {
+    // Emptied yesterday afternoon; the watering that evening was logged this
+    // morning as "Yesterday", which carries midday — hours before the emptying.
+    const afternoon = new Date(daysAgo(1))
+    afternoon.setHours(16)
+    const state = stateOf(
+      [plant('A')],
+      [event('A', 'water', daysAgo(3)), event('A', 'drain', afternoon.toISOString()), event('A', 'water', daysAgo(1))],
+    )
+    expect(potsToEmpty(state)).toMatchObject([{ emptied: null }])
+  })
 })
 
 test.describe('typed numbers', () => {

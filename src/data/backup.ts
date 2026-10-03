@@ -74,7 +74,9 @@ function download(json: string, filename: string): void {
   link.href = url
   link.download = filename
   link.click()
-  URL.revokeObjectURL(url)
+  // Not straight away: Safari and Firefox read the blob after `click` returns,
+  // and a URL revoked first saves nothing.
+  setTimeout(() => URL.revokeObjectURL(url), 60_000)
 }
 
 export class BackupParseError extends Error {}
