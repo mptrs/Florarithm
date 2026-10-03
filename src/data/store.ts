@@ -374,6 +374,18 @@ export async function removeEvent(id: string): Promise<void> {
 }
 
 /**
+ * Water a whole room from Today in one press.
+ *
+ * Each one goes through `logEvent`, so a plant in the room that already had
+ * water today folds into that entry rather than gaining a second.
+ */
+export async function waterPlants(plantCodes: readonly string[]): Promise<void> {
+  for (const plantCode of plantCodes) {
+    await logEvent({ type: 'water', plantCode, fertilized: true })
+  }
+}
+
+/**
  * Say these cachepots have been emptied, all in one go.
  *
  * Written straight to the log with no folding: Today only offers a pot that has

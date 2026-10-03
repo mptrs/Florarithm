@@ -1,10 +1,10 @@
 /**
  * The cachepots to empty — every plant on soil, the day after it had water.
  *
- * The one thing Today writes. Everything else on it is the list you water
- * *from*, logged at the plant by its tag; this is a round of the house with
- * the pots tipped over the sink one after another, and walking back to each
- * sticker to say so would turn a two-minute chore into a second round.
+ * A round of the house with the pots tipped over the sink one after another,
+ * and walking back to each sticker to say so would turn a two-minute chore
+ * into a second round. The watering it follows is ticked off the same way, on
+ * the ledger below: one round, one list.
  *
  * Whether a pot is on the list is read out of the log by `potsToEmpty`, so
  * there is nothing to clear: an emptied pot is simply no longer owed. A tick

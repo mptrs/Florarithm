@@ -10,11 +10,20 @@
  * five selectors builds them once.
  */
 
-import { daysBetween, daysSince, isoToInputValue, yearOf } from '~/lib/date'
+import { daysBetween, daysSince, isoToInputValue, todayInputValue, yearOf } from '~/lib/date'
 import { formatEpithet, formatSpecies, normalizeCross, plural } from '~/lib/format'
 import type { CollectionFilter } from '~/lib/router'
 import type { State } from './store'
-import type { DrainEvent, EventType, Id, Plant, PlantEvent, VocabItem, VocabKind } from './types'
+import type {
+  DrainEvent,
+  EventType,
+  Id,
+  Plant,
+  PlantEvent,
+  VocabItem,
+  VocabKind,
+  WaterEvent,
+} from './types'
 
 /** Below this many days the count is a fact; at or above it, it is a nudge. */
 export const THIRSTY_AFTER_DAYS = 14
@@ -135,6 +144,13 @@ export function lastWaterAt(state: State, code: string): string | null {
 export function daysSinceWater(state: State, code: string): number | null {
   const last = lastWaterAt(state, code)
   return last === null ? null : daysSince(last)
+}
+
+/** Today's watering of this plant, if it has had one: the entry a second press
+ *  on Today's figure takes back. */
+export function wateringToday(state: State, code: string): WaterEvent | null {
+  const last = lastEventOf(state, code, 'water')
+  return last && isoToInputValue(last.date) === todayInputValue() ? (last as WaterEvent) : null
 }
 
 export function isThirsty(days: number | null): boolean {

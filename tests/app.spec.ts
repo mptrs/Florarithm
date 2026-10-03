@@ -579,17 +579,73 @@ test('a sort chosen on a list is still chosen after opening a plant', async ({ p
 
 test('a plant watered today shows a mark instead of a nought', async ({ page }) => {
   const code = await addPlant(page, 'Hoya carnosa', 'Nore', 'Living room')
+  const figure = main(page).getByRole('button', { name: 'Nore: watered today' })
 
   // Nothing logged is not the same fact as a long time ago, and says so.
   await page.goto('#today')
-  await expect(main(page).getByRole('link', { name: /Nore/ })).toContainText('never logged')
+  await expect(figure).toContainText('never logged')
+  await expect(figure).toHaveAttribute('aria-pressed', 'false')
 
   await page.goto(`#p=${code}`)
   await water(page)
 
+  // Watered at the plant, the figure on Today says so in the same mark.
   await page.goto('#today')
-  await expect(main(page).getByRole('link', { name: /Nore/ })).toContainText('watered today')
-  await expect(main(page).getByRole('link', { name: /Nore/ })).not.toContainText('days')
+  await expect(figure).toHaveAttribute('aria-pressed', 'true')
+  await expect(figure).not.toContainText('days')
+})
+
+/**
+ * The round from the list: the figure is the button, a second press takes it
+ * back, the rows hold still while you work down them, and a room goes in one.
+ */
+test('watering from Today is a press on the figure, and another takes it back', async ({
+  page,
+}) => {
+  await addPlant(page, 'Monstera deliciosa', 'Gruy\u00e8re', 'Living room')
+  await addPlant(page, 'Hoya carnosa', 'Nore', 'Bedroom')
+  await addPlant(page, 'Alocasia zebrina', 'Zebra', 'Living room')
+  await page.goto('#today')
+
+  const figures = main(page).getByRole('button', { name: /: watered today$/ })
+  const gruyere = main(page).getByRole('button', { name: 'Gruy\u00e8re: watered today' })
+  const round = main(page).getByText(/of 3 watered today/)
+
+  // None logged, so the three tie and stand by name.
+  await expect(figures.first()).toHaveAccessibleName('Gruy\u00e8re: watered today')
+  await expect(round).toBeHidden()
+
+  await gruyere.click()
+  await expect(gruyere).toHaveAttribute('aria-pressed', 'true')
+  await expect(round).toHaveText('1 of 3 watered today')
+  // Watered, it would rank last; while the screen is up it stays where it was.
+  await expect(figures.first()).toHaveAccessibleName('Gruy\u00e8re: watered today')
+
+  // It is a real entry, and the next visit opens in the real order.
+  await page.reload()
+  await expect(gruyere).toHaveAttribute('aria-pressed', 'true')
+  await expect(figures.last()).toHaveAccessibleName('Gruy\u00e8re: watered today')
+
+  // Pressed again, it is taken back.
+  await gruyere.click()
+  await expect(gruyere).toHaveAttribute('aria-pressed', 'false')
+  await expect(round).toBeHidden()
+
+  // By place, a room with more than one still to go is one press.
+  await page.getByRole('button', { name: 'By place' }).click()
+  const all = main(page).getByRole('button', { name: 'All watered' })
+  await expect(all).toHaveCount(1)
+  await all.click()
+  await expect(gruyere).toHaveAttribute('aria-pressed', 'true')
+  await expect(main(page).getByRole('button', { name: 'Zebra: watered today' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
+  await expect(main(page).getByRole('button', { name: 'Nore: watered today' })).toHaveAttribute(
+    'aria-pressed',
+    'false',
+  )
+  await expect(all).toBeHidden()
 })
 
 test('an archived plant is out of the way but still findable', async ({ page }) => {
@@ -997,7 +1053,7 @@ test('the sachets count down on Today, ask to be replaced, and reset in one shee
 })
 
 /**
- * The cachepots: the one thing Today writes.
+ * The cachepots, emptied from Today the day after the round.
  *
  * Two plants on soil watered yesterday and one on hydro, written straight to
  * the database — a watering dated yesterday through the log sheet would be a

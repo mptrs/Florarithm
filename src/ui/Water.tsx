@@ -20,6 +20,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { cn } from '~/lib/cn'
 import { Icon } from './Icon'
+import { DaysSinceWater } from './primitives'
 import { DROP, RIPPLE, throwWater, type Splash } from './splash'
 
 /** The splash state, and a press that starts a fresh one every time. */
@@ -97,6 +98,84 @@ export function WaterButton({ onWater }: { onWater: () => void }) {
       {/* A circle sized to the button's height rather than stretched to its
           width, which would draw an ellipse. */}
       {splash ? <SplashMark splash={splash} ring="size-12" /> : null}
+    </button>
+  )
+}
+
+/**
+ * Today's figure, pressed to water.
+ *
+ * The days since water is the control, so a row gains no chrome of its own:
+ * the figure turns to the check that already meant "watered today", and that
+ * check is the one mark for it — a filled button beside it would say the same
+ * fact twice. A faint drop in front of the figure is the only hint it presses.
+ *
+ * A second press takes the day's watering back, the way a cachepot's tick
+ * does: the correction is made on the row where the mistake shows.
+ */
+export function WaterFigure({
+  name,
+  days,
+  thirsty,
+  watered,
+  onWater,
+  onTakeBack,
+  className,
+}: {
+  name: string
+  days: number | null
+  thirsty: boolean
+  watered: boolean
+  onWater: () => void
+  onTakeBack: () => void
+  className?: string
+}) {
+  const [splash, setSplash] = useState<number | null>(null)
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => () => { if (timer.current) clearTimeout(timer.current) }, [])
+
+  const press = () => {
+    if (timer.current) clearTimeout(timer.current)
+    if (watered) {
+      setSplash(null)
+      onTakeBack()
+      return
+    }
+    setSplash(Date.now())
+    timer.current = setTimeout(() => setSplash(null), 800)
+    onWater()
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={press}
+      aria-pressed={watered}
+      aria-label={`${name}: watered today`}
+      title={watered ? 'Watered today. Press to take it back' : 'Watered'}
+      className={cn(
+        'warm relative flex min-h-14 shrink-0 items-center justify-end gap-2 rounded-md py-2 pr-3 pl-2',
+        'hover:bg-sunk active:bg-line',
+        'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-leaf',
+        className,
+      )}
+    >
+      {watered ? null : (
+        <Icon name="droplet" size={14} className="shrink-0 text-ink-faint opacity-70" />
+      )}
+      <DaysSinceWater days={watered ? 0 : days} thirsty={thirsty} />
+      {/* One ring, centred on the check: the pour on a plant's page, at the
+          size of a figure in a list. */}
+      {splash ? (
+        <span
+          key={splash}
+          aria-hidden
+          className="pointer-events-none absolute inset-y-0 right-0 flex w-11 items-center justify-center motion-reduce:hidden"
+        >
+          <span className={cn('size-5 rounded-full border-2 animate-ripple', RIPPLE.water)} />
+        </span>
+      ) : null}
     </button>
   )
 }
