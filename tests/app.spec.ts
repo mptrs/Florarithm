@@ -6,7 +6,7 @@
  * tap the sticker, land on the plant, log a watering with one tap.
  */
 
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Locator, type Page } from '@playwright/test'
 import { png } from './imageFixture'
 
 /** Add a plant through the interface and hand back the code it was given.
@@ -34,6 +34,18 @@ async function addPlant(page: Page, species: string, name: string, place = 'Livi
  */
 async function water(page: Page) {
   await page.getByRole('button', { name: 'Water', exact: true }).click()
+}
+
+/**
+ * Two presses landing before the first has been written — a quick double tap,
+ * or a busy phone. Clicked from inside the page, so nothing can happen in
+ * between them, which is the case that went wrong.
+ */
+async function pressTwiceAtOnce(button: Locator) {
+  await button.evaluate((element: HTMLElement) => {
+    element.click()
+    element.click()
+  })
 }
 
 /** The sheet of everything that is not a plain watering. */
@@ -197,7 +209,9 @@ test('a plant takes water once a day, and a second press folds into the first', 
   const code = await addPlant(page, 'Calathea orbifolia', 'Olga')
   await page.goto(`#p=${code}`)
 
-  await water(page)
+  // The first two before the first is written: each once looked, found no
+  // watering yet, and logged one of its own.
+  await pressTwiceAtOnce(page.getByRole('button', { name: 'Water', exact: true }))
   await water(page)
 
   // Watering something twice in one day is still one watering.
@@ -897,6 +911,25 @@ test('a photograph becomes the plant, and is shrunk on the way in', async ({ pag
 
   await removeEntry(page, 'Photo', /Delete photo of/)
   await expect(photo).toBeHidden()
+})
+
+test('a double tap in the log sheet logs one entry', async ({ page }) => {
+  const code = await addPlant(page, 'Monstera deliciosa', 'Gruyère')
+  await page.goto(`#p=${code}`)
+
+  await openLogSheet(page)
+  await pressTwiceAtOnce(page.getByRole('button', { name: 'New leaf', exact: true }))
+
+  await openHistory(page)
+  await expect(page.getByText('1 entry')).toBeVisible()
+})
+
+test('a place added twice at once is one place', async ({ page }) => {
+  await page.goto('#settings')
+  await page.getByLabel('New place').fill('Balkon')
+  await pressTwiceAtOnce(page.getByRole('button', { name: 'Add place' }))
+
+  await expect(page.getByLabel('Rename Balkon')).toHaveCount(1)
 })
 
 test('a photo attached to a new leaf is one entry, not two', async ({ page }) => {

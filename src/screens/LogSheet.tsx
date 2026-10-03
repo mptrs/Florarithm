@@ -137,6 +137,9 @@ export function LogSheet({
     return () => URL.revokeObjectURL(photo.previewUrl)
   }, [photo])
 
+  // Above the return below: a ref is a hook, and hooks are called every time.
+  const logging = useRef(false)
+
   if (!intent) return null
 
   const editing = intent.kind === 'edit' ? intent.event : null
@@ -168,7 +171,7 @@ export function LogSheet({
     }
   }
 
-  const log = async (draft: EventDraft) => {
+  const log = oneAtATime(logging, async (draft: EventDraft) => {
     let attached: { id: string; photo: EventPhoto } | undefined
     if (pending) {
       try {
@@ -182,7 +185,7 @@ export function LogSheet({
     await logEvent({ ...draft, date, ...attached })
     onClose()
     onLogged()
-  }
+  })
 
   const logged = () => {
     onClose()
@@ -413,7 +416,8 @@ function NoteForm({
 }) {
   const [text, setText] = useState(editing?.text ?? '')
 
-  const save = async () => {
+  const saving = useRef(false)
+  const save = oneAtATime(saving, async () => {
     const trimmed = text.trim()
     if (!trimmed) return
 
@@ -429,7 +433,7 @@ function NoteForm({
       })
     }
     onDone()
-  }
+  })
 
   return (
     <div>
@@ -492,7 +496,8 @@ function RepotForm({
     if (!onPickDate) top.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
   }, [onPickDate])
 
-  const save = async () => {
+  const saving = useRef(false)
+  const save = oneAtATime(saving, async () => {
     const mediumId = await ensureVocabItem('medium', medium)
     const fields = {
       toSize: parseDecimal(toSize),
@@ -512,7 +517,7 @@ function RepotForm({
       })
     }
     onDone()
-  }
+  })
 
   return (
     <div ref={top} className="flex flex-col gap-6">
@@ -562,4 +567,25 @@ function RepotForm({
       </Button>
     </div>
   )
+}
+
+/**
+ * A press that does nothing while the last one is still being written. Each of
+ * these closes its sheet or form once the entry has landed, so until then the
+ * button is still under the finger, and a double tap logged two of the same
+ * leaf, note or repot.
+ */
+function oneAtATime<A extends unknown[]>(
+  busy: { current: boolean },
+  run: (...args: A) => Promise<void>,
+) {
+  return async (...args: A) => {
+    if (busy.current) return
+    busy.current = true
+    try {
+      await run(...args)
+    } finally {
+      busy.current = false
+    }
+  }
 }

@@ -132,6 +132,27 @@ export async function load(): Promise<void> {
   }
 }
 
+// --- one at a time ----------------------------------------------------------
+
+/**
+ * Writes that decide what to write by looking at what is already there — does
+ * this plant have a watering today, is this place on the list yet — run one
+ * at a time. What they write only shows up once it has landed on disk, so two
+ * of them started together both looked before either had, found nothing, and
+ * each wrote its own: a double tap on the drop logged two waterings, and a
+ * place added twice was two places.
+ *
+ * Nothing queued here may wait on something else queued here, or neither
+ * would ever run.
+ */
+let writing: Promise<unknown> = Promise.resolve()
+
+function serially<T>(write: () => Promise<T>): Promise<T> {
+  const next = writing.then(write)
+  writing = next.catch(() => undefined)
+  return next
+}
+
 // --- plants -----------------------------------------------------------------
 
 export type PlantDraft = {
@@ -293,7 +314,11 @@ function wateringThatDay(plantCode: string, iso: string): WaterEvent | null {
  * This lives here rather than in the two buttons that call it, so the drop and
  * the log sheet cannot drift into disagreeing about the rule.
  */
-export async function logEvent(draft: EventDraft): Promise<PlantEvent> {
+export function logEvent(draft: EventDraft): Promise<PlantEvent> {
+  return serially(() => writeEvent(draft))
+}
+
+async function writeEvent(draft: EventDraft): Promise<PlantEvent> {
   const event = tidyEvent({ ...draft, id: draft.id ?? newId(), date: draft.date ?? nowISO() } as PlantEvent)
 
   if (event.type === 'water') {
@@ -448,7 +473,11 @@ export function describeEvent(event: PlantEvent): string {
 
 /** Look a name up, or add it. This is what makes places, mediums and
  *  mediums lists you pick from instead of text you retype. */
-export async function ensureVocabItem(kind: VocabKind, name: string): Promise<Id | null> {
+export function ensureVocabItem(kind: VocabKind, name: string): Promise<Id | null> {
+  return serially(() => findOrAddVocabItem(kind, name))
+}
+
+async function findOrAddVocabItem(kind: VocabKind, name: string): Promise<Id | null> {
   const trimmed = name.trim()
   if (!trimmed) return null
 
