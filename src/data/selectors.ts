@@ -1047,3 +1047,49 @@ function byEpithet(a: Plant, b: Plant): number {
 }
 
 const epithetKey = (plant: Plant) => formatEpithet(plant).replace(/^[('"]+/, '').toLowerCase()
+
+// --- names ------------------------------------------------------------------
+
+export type SpeciesName = { name: string; plants: readonly Plant[] }
+export type GenusName = {
+  name: string
+  plants: readonly Plant[]
+  species: readonly SpeciesName[]
+  /** Crosses and plants not identified past their genus: nothing to spell. */
+  unnamed: number
+}
+
+/**
+ * Every genus the collection carries, each with its species, spelled exactly
+ * as they are spelled — "anthurium" and "Anthurium" are two entries, because
+ * telling them apart is what the list is for. Wishes count: they are spelled
+ * the same way. In alphabetical order, so a typo sits next to the name it
+ * meant to be.
+ */
+export function nameIndex(plants: readonly Plant[]): GenusName[] {
+  const genera = new Map<string, Plant[]>()
+  for (const plant of plants) {
+    const genus = plant.genus.trim()
+    if (plant.deleted || !genus) continue
+    genera.set(genus, [...(genera.get(genus) ?? []), plant])
+  }
+
+  const byName = (a: { name: string }, b: { name: string }) =>
+    a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }) || a.name.localeCompare(b.name)
+
+  return [...genera]
+    .map(([name, members]) => {
+      const species = new Map<string, Plant[]>()
+      for (const plant of members) {
+        const epithet = plant.species.trim()
+        if (epithet) species.set(epithet, [...(species.get(epithet) ?? []), plant])
+      }
+      return {
+        name,
+        plants: members,
+        species: [...species].map(([epithet, carriers]) => ({ name: epithet, plants: carriers })).sort(byName),
+        unnamed: members.filter((plant) => !plant.species.trim()).length,
+      }
+    })
+    .sort(byName)
+}

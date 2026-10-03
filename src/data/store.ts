@@ -216,6 +216,45 @@ export async function deletePlantForever(code: string): Promise<void> {
   })
 }
 
+/**
+ * Spell a genus, or one species of a genus, differently on every plant that
+ * carries it — wishes included, since a wish is spelled the same way it will
+ * be once it arrives. Matched exactly, capitals and all: "anthurium" and
+ * "Anthurium" are two spellings, and fixing one is the point.
+ *
+ * Renaming onto a name that is already here merges the two, which is how a
+ * typo is put right. The plant code stays: it goes on a sticker, and was
+ * only ever drawn from the genus as it stood that day.
+ *
+ * Hands back how many plants changed.
+ */
+export async function renameName(
+  target: { genus: string; species?: string },
+  to: string,
+): Promise<number> {
+  const spelled = to.trim()
+  if (!spelled) return 0
+  const field = target.species === undefined ? 'genus' : 'species'
+
+  const timestamp = nowISO()
+  const changed = state.plants
+    .filter(
+      (plant) =>
+        !plant.deleted &&
+        plant.genus.trim() === target.genus &&
+        (target.species === undefined || plant.species.trim() === target.species) &&
+        plant[field] !== spelled,
+    )
+    .map((plant) => ({ ...plant, [field]: spelled, updatedAt: timestamp }))
+  if (changed.length === 0) return 0
+
+  await Promise.all(changed.map((plant) => db.putPlant(plant)))
+  const byCode = new Map(changed.map((plant) => [plant.code, plant]))
+  commit({ plants: state.plants.map((plant) => byCode.get(plant.code) ?? plant) })
+
+  return changed.length
+}
+
 async function patchPlant(code: string, patch: Partial<Plant>): Promise<Plant | null> {
   const existing = findPlant(code)
   if (!existing) return null

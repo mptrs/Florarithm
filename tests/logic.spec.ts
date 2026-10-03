@@ -26,6 +26,7 @@ import {
   lastMark,
   lineageOf,
   milestonesOf,
+  nameIndex,
   potsToEmpty,
   yearsInReview,
 } from '../src/data/selectors'
@@ -1107,5 +1108,54 @@ test.describe('typed numbers', () => {
     expect(parseDecimal('   ')).toBeNull()
     expect(parseDecimal('twaalf')).toBeNull()
     expect(parseDecimal('12,5a')).toBeNull()
+  })
+})
+
+test.describe('names', () => {
+  const plant = (code: string, genus: string, species = '', extra: Partial<Plant> = {}): Plant => ({
+    code,
+    name: code,
+    genus,
+    species,
+    cross: '',
+    cultivar: '',
+    variegation: '',
+    locationId: null,
+    system: 'soil',
+    potSize: null,
+    mediumId: null,
+    origin: { type: null, from: '', date: null, price: null },
+    parent: null,
+    status: 'active',
+    wish: false,
+    wishNote: '',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+    ...extra,
+  })
+
+  test('a typo is a genus of its own, sorted next to the one it meant', () => {
+    const index = nameIndex([
+      plant('A', 'Anthurium', 'crystallinum'),
+      plant('B', 'Anthurium', 'crystallinum'),
+      plant('C', 'Anthurium', '', { cross: 'papillilaminum × crystallinum' }),
+      plant('D', 'Anthurim', 'crystalinum'),
+      plant('E', 'anthurium'),
+      plant('F', 'Monstera', 'deliciosa', { wish: true }),
+      plant('G', 'Monstera', 'deliciosa', { deleted: true }),
+      plant('H', ' '),
+    ])
+
+    expect(index.map((genus) => [genus.name, genus.plants.length])).toEqual([
+      ['Anthurim', 1],
+      ['anthurium', 1],
+      ['Anthurium', 3],
+      ['Monstera', 1],
+    ])
+    const anthurium = index[2]!
+    expect(anthurium.species.map((species) => [species.name, species.plants.length])).toEqual([
+      ['crystallinum', 2],
+    ])
+    expect(anthurium.unnamed).toBe(1)
   })
 })

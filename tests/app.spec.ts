@@ -117,6 +117,10 @@ async function expectPlaceShown(page: Page, name: RegExp, place: string) {
 }
 
 test.beforeEach(async ({ page }) => {
+  // Plant names come from iNaturalist and GBIF while typing. Never from the
+  // real ones here: a test that passes or fails with somebody else's server
+  // is not testing this app. Tests that are about those lists answer for them.
+  await page.route(/api\.(inaturalist\.org|gbif\.org)/, (route) => route.abort())
   await page.goto('')
   // Each test starts from an empty collection rather than inheriting one.
   await page.evaluate(async () => {
@@ -1193,4 +1197,156 @@ test('the cachepots are owed the day after, ticked off on Today, and taken back 
   await page.goto('#p=MON-0001')
   await openHistory(page)
   await expect(main(page).getByText('Pot emptied')).toBeHidden()
+})
+
+// --- names from outside --------------------------------------------------------
+
+/** iNaturalist and GBIF, answering only what a test tells them to. */
+async function answerNames(
+  page: Page,
+  answers: { inaturalist?: Record<string, unknown[]>; gbif?: Record<string, unknown> },
+) {
+  const asked: string[] = []
+  await page.route(/api\.inaturalist\.org/, (route) => {
+    const url = new URL(route.request().url())
+    asked.push(url.toString())
+    const key = url.searchParams.get('q') ?? url.searchParams.get('taxon_id') ?? ''
+    return route.fulfill({ json: { results: answers.inaturalist?.[key] ?? [] } })
+  })
+  await page.route(/api\.gbif\.org/, (route) => {
+    const url = new URL(route.request().url())
+    asked.push(url.toString())
+    return route.fulfill({ json: answers.gbif?.[url.searchParams.get('name') ?? ''] ?? { matchType: 'NONE' } })
+  })
+  return asked
+}
+
+test.describe('names from outside', () => {
+  // The service worker passes these requests on itself, and a request that
+  // goes through it never reaches \`page.route\` — so the real iNaturalist
+  // would answer instead of the one each test describes.
+  test.use({ serviceWorkers: 'block' })
+
+  test('a plant nobody here has yet is found by its common name, and fills in both', async ({ page }) => {
+    await answerNames(page, {
+      inaturalist: {
+        'mini monst': [
+          { name: 'Rhaphidophora tetrasperma', rank: 'species', preferred_common_name: 'mini monstera' },
+          { name: 'Monsteroideae', rank: 'subfamily' },
+        ],
+      },
+    })
+
+    await page.goto('#new')
+    await page.getByLabel('Genus').fill('mini monst')
+    const listbox = page.getByRole('listbox', { name: 'Suggestions' })
+    await expect(listbox.getByRole('group', { name: 'iNaturalist · fills in what it is' })).toBeVisible()
+    // Not a subfamily: nothing a plant is labelled with.
+    await expect(listbox.getByText('Monsteroideae')).toHaveCount(0)
+
+    await listbox.getByRole('option', { name: /Rhaphidophora tetrasperma/ }).click()
+    await expect(page.getByLabel('Genus')).toHaveValue('Rhaphidophora')
+    await expect(page.getByLabel('Species', { exact: true })).toHaveValue('tetrasperma')
+  })
+
+  test('a genus already here is not offered a second time from outside', async ({ page }) => {
+    await addPlant(page, 'Monstera deliciosa', 'Gruyère')
+    await answerNames(page, {
+      inaturalist: {
+        mons: [
+          { name: 'Monstera deliciosa', rank: 'species' },
+          { name: 'Monstera adansonii', rank: 'species' },
+          { name: 'Monstera', rank: 'genus' },
+          { name: 'Monsonia', rank: 'genus' },
+        ],
+      },
+    })
+
+    await page.goto('#new')
+    await page.getByLabel('Genus').fill('Mons')
+    const outside = page.getByRole('group', { name: 'iNaturalist · fills in what it is' })
+    await expect(outside.getByRole('option')).toHaveCount(2)
+    await expect(outside.getByRole('option', { name: /Monstera adansonii/ })).toBeVisible()
+    await expect(outside.getByRole('option', { name: /Monsonia/ })).toContainText('Genus only')
+  })
+
+  test('a typo nothing starts like is answered with how GBIF spells it', async ({ page }) => {
+    await addPlant(page, 'Anthurium crystallinum', 'Kristal')
+    await answerNames(page, {
+      gbif: {
+        Anthurim: { canonicalName: 'Anthurium', rank: 'GENUS', matchType: 'FUZZY', confidence: 89, family: 'Araceae' },
+      },
+    })
+
+    await page.goto('#new')
+    await page.getByLabel('Genus').fill('Anthurim')
+    const meant = page.getByRole('group', { name: 'GBIF · did you mean' }).getByRole('option')
+    await expect(meant).toContainText('Anthurium')
+    await expect(meant).toContainText('1 plant')
+    await meant.click()
+    await expect(page.getByLabel('Genus')).toHaveValue('Anthurium')
+  })
+
+  test('a genus new to the collection opens on its species, most seen first', async ({ page }) => {
+    await answerNames(page, {
+      inaturalist: {
+        rhaphidophora: [{ id: 51, name: 'Rhaphidophora', rank: 'genus' }],
+        '51': [
+          { name: 'Rhaphidophora hongkongensis', rank: 'species' },
+          { name: 'Rhaphidophora hayi', rank: 'species', preferred_common_name: 'shingle plant' },
+        ],
+      },
+    })
+
+    await page.goto('#new')
+    await page.getByLabel('Genus').fill('Rhaphidophora')
+    await page.keyboard.press('Escape')
+    await page.getByLabel('Species', { exact: true }).focus()
+    const listed = page.getByRole('group', { name: 'iNaturalist · most seen first' }).getByRole('option')
+    await expect(listed).toHaveCount(2)
+    await expect(listed.first()).toContainText('hongkongensis')
+    await listed.nth(1).click()
+    await expect(page.getByLabel('Species', { exact: true })).toHaveValue('hayi')
+  })
+
+  test('opening a plant to edit it asks nobody anything', async ({ page }) => {
+    const code = await addPlant(page, 'Monstera deliciosa', 'Gruyère')
+    const asked = await answerNames(page, {})
+
+    await page.goto(`#edit/${code}`)
+    await page.getByLabel('Genus').focus()
+    await expect(page.getByRole('listbox', { name: 'Suggestions' })).toBeVisible()
+    await page.waitForTimeout(500)
+    expect(asked).toEqual([])
+  })
+
+  test('a genus spelled wrong is put right on every plant, from Settings', async ({ page }) => {
+    await addPlant(page, 'Anthurium crystallinum', 'Kristal')
+    await addPlant(page, 'Anthurim crystallinum', 'Kleintje')
+    await addPlant(page, 'Anthurim', 'Rood blad')
+    await answerNames(page, {
+      gbif: {
+        Anthurim: { canonicalName: 'Anthurium', rank: 'GENUS', matchType: 'FUZZY', confidence: 89 },
+      },
+    })
+
+    await page.goto('#settings')
+    await expect(page.getByText('GBIF spells it')).toBeVisible()
+    await page.getByRole('button', { name: 'Fix Anthurim' }).click()
+
+    await expect(page.getByLabel(/Genus, now spelled/)).toHaveValue('Anthurium')
+    await expect(page.getByText(/is already a genus here, with 1 plant/)).toBeVisible()
+    await page.getByRole('button', { name: 'Rename 2 plants' }).click()
+
+    await expect(page.getByText('2 plants renamed')).toBeVisible()
+    await expect(page.getByText('GBIF spells it')).toHaveCount(0)
+    const anthurium = page.getByRole('button', { name: /^Anthurium 3$/ })
+    await expect(anthurium).toBeVisible()
+
+    // A species is renamed inside its genus only.
+    await anthurium.click()
+    await page.getByRole('button', { name: 'Rename crystallinum' }).click()
+    await page.getByLabel(/Species, now spelled/).fill('crystallinum ')
+    await expect(page.getByRole('button', { name: 'Rename 2 plants' })).toBeDisabled()
+  })
 })
