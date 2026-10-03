@@ -136,6 +136,16 @@ export async function markPhotoSynced(eventId: string): Promise<void> {
   await transaction.done
 }
 
+/** Back on the upload queue: the repo's copy is filed under a path that no
+ *  longer matches its entry. */
+export async function markPhotoUnsynced(eventId: string): Promise<void> {
+  const database = await db()
+  const transaction = database.transaction('photos', 'readwrite')
+  const photo = await transaction.store.get(eventId)
+  if (photo) await transaction.store.put({ ...photo, synced: 0 })
+  await transaction.done
+}
+
 /** A hard delete, and the only one in this file. The tombstone rule exists so a
  *  merge cannot resurrect a deleted row; a photograph has no row to resurrect —
  *  its event carries the tombstone, and these are the bytes that event was

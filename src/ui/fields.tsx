@@ -143,7 +143,10 @@ export function SuggestField({
   )
 }
 
-/** A number with its unit shown inside the field, so the value stays numeric. */
+/** A number with its unit shown inside the field, so the value stays numeric.
+ *  A text input rather than `type="number"`: that one silently empties itself
+ *  on a decimal comma whenever the browser's locale expects a point, so read
+ *  the value with `parseDecimal` instead. */
 export function NumberField({
   label,
   hint,
@@ -159,7 +162,7 @@ export function NumberField({
       <div className="relative">
         <input
           id={id}
-          type="number"
+          type="text"
           inputMode="decimal"
           className={cn(CONTROL, 'font-mono', unit ? 'pr-12' : '', className)}
           {...rest}

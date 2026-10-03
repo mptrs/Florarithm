@@ -19,6 +19,7 @@ import { generatePlantCode } from '~/lib/plantCode'
 import * as db from './db'
 import { migrateEvents, migratePlant, migrateVocab, needsMigration } from './migrate'
 import { dropPhotos, refilePhoto } from './photos'
+import { monthKeyOf } from './remoteFormat'
 import type {
   Id,
   Origin,
@@ -335,7 +336,30 @@ export async function updateEvent(id: string, patch: Partial<PlantEvent>): Promi
 
   const next = { ...event, ...patch } as PlantEvent
   await db.putEvent(next)
+  // The repo files a photograph by its entry's month, so one that moves month
+  // has to go up again under the path the entry now points at.
+  if (next.photo && monthKeyOf(next.date) !== monthKeyOf(event.date)) {
+    await db.markPhotoUnsynced(id)
+  }
   commit({ events: state.events.map((current) => (current.id === id ? next : current)) })
+
+  // Correcting the latest repot corrects the plant it changed, the same way
+  // logging it did.
+  if (next.type === 'repot' && latestRepotOf(next.plantCode)?.id === id) {
+    const before = findPlant(next.plantCode)
+    if (before) {
+      await patchPlant(next.plantCode, {
+        potSize: next.toSize ?? before.potSize,
+        mediumId: next.mediumId ?? before.mediumId,
+      })
+    }
+  }
+}
+
+function latestRepotOf(plantCode: string): PlantEvent | undefined {
+  return state.events
+    .filter((event) => event.type === 'repot' && !event.deleted && event.plantCode === plantCode)
+    .sort((a, b) => b.date.localeCompare(a.date))[0]
 }
 
 /** A deletion is a tombstone, never a removal: an append-only log that forgets
@@ -366,20 +390,31 @@ export async function waterPlants(plantCodes: readonly string[]): Promise<void> 
  *
  * Written straight to the log with no folding: Today only offers a pot that has
  * nothing of this kind after its watering, so a second press on the same pot
- * is the row's own undo — `removeEvent` on the entry this wrote — and never
- * reaches here.
+ * is the row's own undo — `removeEvent` on the entry this wrote. The one way
+ * round that is a second press landing before the first has committed, which
+ * `emptying` drops: a pot emptied twice would need taking back twice.
  */
-export async function emptyPots(plantCodes: readonly string[]): Promise<void> {
-  const date = nowISO()
-  const written: PlantEvent[] = plantCodes.map((plantCode) => ({
-    id: newId(),
-    type: 'drain',
-    plantCode,
-    date,
-  }))
+const emptying = new Set<string>()
 
-  for (const event of written) await db.putEvent(event)
-  commit({ events: [...state.events, ...written] })
+export async function emptyPots(plantCodes: readonly string[]): Promise<void> {
+  const codes = plantCodes.filter((code) => !emptying.has(code))
+  if (codes.length === 0) return
+  for (const code of codes) emptying.add(code)
+
+  try {
+    const date = nowISO()
+    const written: PlantEvent[] = codes.map((plantCode) => ({
+      id: newId(),
+      type: 'drain',
+      plantCode,
+      date,
+    }))
+
+    await Promise.all(written.map((event) => db.putEvent(event)))
+    commit({ events: [...state.events, ...written] })
+  } finally {
+    for (const code of codes) emptying.delete(code)
+  }
 }
 
 /** One sentence describing what happened, without the plant's name. */

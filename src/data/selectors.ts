@@ -105,6 +105,13 @@ export function eventsFor(state: State, code: string): PlantEvent[] {
   return eventsByPlant(state).get(code) ?? []
 }
 
+/** What a plant's history shows, newest first: the log without the emptied
+ *  cachepots, which are a chore that follows a watering rather than something
+ *  that happened to the plant — see `DrainEvent`. */
+export function historyFor(state: State, code: string): PlantEvent[] {
+  return eventsFor(state, code).filter((event) => event.type !== 'drain')
+}
+
 /** Every entry with a picture, newest first — the timeline, which is just the
  *  history with the wordless entries left out. */
 export function photoEventsFor(state: State, code: string): PlantEvent[] {
@@ -746,13 +753,18 @@ export type PotToEmpty = {
 export function potsToEmpty(state: State): PotToEmpty[] {
   const pots: PotToEmpty[] = []
 
-  for (const plant of todayList(state)) {
-    if (plant.system !== 'soil') continue
+  for (const plant of livePlants(state)) {
+    if (plant.wish || plant.status !== 'active' || plant.system !== 'soil') continue
     const wateredAt = lastWaterAt(state, plant.code)
     if (wateredAt === null || daysSince(wateredAt) < 1) continue
 
+    // By calendar day, not by the clock: a pot is never offered on the day of
+    // its watering, so an emptying that day was for the water before it — even
+    // when the watering was back-dated and so carries midday, hours before.
+    const wateredOn = isoToInputValue(wateredAt)
     const drain = eventsFor(state, plant.code).find(
-      (event): event is DrainEvent => event.type === 'drain' && event.date > wateredAt,
+      (event): event is DrainEvent =>
+        event.type === 'drain' && isoToInputValue(event.date) > wateredOn,
     )
     if (drain && daysSince(drain.date) > 0) continue
 
