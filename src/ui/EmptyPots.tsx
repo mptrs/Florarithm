@@ -17,15 +17,34 @@
  */
 
 import { useState } from 'react'
-import { emptyPots, removeEvent, useStore } from '~/data/store'
-import { potsToEmpty, UNEMPTIED_AFTER_DAYS, type PotToEmpty } from '~/data/selectors'
+import { emptyPots, removeEvent, useStore, type State } from '~/data/store'
+import {
+  groupByPlace,
+  potsToEmpty,
+  UNEMPTIED_AFTER_DAYS,
+  type PotToEmpty,
+} from '~/data/selectors'
 import { daysSince } from '~/lib/date'
 import { cn } from '~/lib/cn'
-import { plural } from '~/lib/format'
+import { formatSpecies, plural } from '~/lib/format'
 import { Button } from './Button'
 import { Icon } from './Icon'
 import { PlantThumb } from './plantPicture'
 import { Rows } from './primitives'
+import { ColumnHeader, DrawerLabel } from './rows'
+
+/**
+ * The pots cut into rooms by the ledger's own `groupByPlace` — because emptying
+ * is a round of the house, and a round goes room by room. Grouping keeps the
+ * order it is given, so a room stays longest-waiting first.
+ */
+function potsByPlace(state: State, pots: readonly PotToEmpty[]): [string, PotToEmpty[]][] {
+  const byCode = new Map(pots.map((pot) => [pot.plant.code, pot]))
+  return groupByPlace(
+    state,
+    pots.map((pot) => pot.plant),
+  ).map(([place, plants]) => [place, plants.map((plant) => byCode.get(plant.code)!)])
+}
 
 /**
  * The block on Today, and nothing at all when no pot is owed — the same rule as
@@ -78,24 +97,39 @@ export function EmptyPotsReminder() {
         ) : null}
       </div>
 
-      <Rows className="border-t-0">
-        {pots.map((pot) => (
-          <PotRow key={pot.plant.code} pot={pot} />
-        ))}
-      </Rows>
+      {/* The same table head as the ledger below, so the two lists read as one
+          kind of list. Only from `lg`, where there are columns to head. */}
+      <div className="hidden items-center gap-3 border-b border-line-strong px-3 pb-2 lg:flex">
+        <span className="w-10 shrink-0" />
+        <ColumnHeader className="flex-1">Plant</ColumnHeader>
+        <ColumnHeader className="w-28 text-right">Watered</ColumnHeader>
+        <span className="w-touch shrink-0" />
+      </div>
+
+      {potsByPlace(state, pots).map(([place, members]) => (
+        <div key={place} className="mt-4 first:mt-2 lg:first:mt-4">
+          <DrawerLabel name={place} count={members.length} />
+          <Rows className="border-t-0">
+            {members.map((pot) => (
+              <PotRow key={pot.plant.code} pot={pot} />
+            ))}
+          </Rows>
+        </div>
+      ))}
     </section>
   )
 }
 
 /** `yesterday`, `3 days ago` — counted from the watering that filled the pot. */
 function wateredPhrase(days: number): string {
-  return days === 1 ? 'Watered yesterday' : `Watered ${plural(days, 'day')} ago`
+  return days === 1 ? 'yesterday' : `${plural(days, 'day')} ago`
 }
 
 function PotRow({ pot }: { pot: PotToEmpty }) {
   const days = daysSince(pot.wateredAt)
   const emptied = pot.emptied !== null
   const late = !emptied && days >= UNEMPTIED_AFTER_DAYS
+  const species = formatSpecies(pot.plant)
 
   return (
     <div className="flex min-h-touch items-center gap-3 border-b border-line px-3 py-3">
@@ -105,15 +139,29 @@ function PotRow({ pot }: { pot: PotToEmpty }) {
         <span className="truncate font-display text-[1.09375rem] leading-[1.375rem] font-medium">
           {pot.plant.name}
         </span>
-        <span
-          className={cn(
-            'truncate text-[0.8125rem] leading-[1.0625rem]',
-            emptied ? 'text-ink-faint' : late ? 'text-ember' : 'text-ink-muted',
-          )}
-        >
-          {emptied ? 'Emptied' : wateredPhrase(days)}
-        </span>
+        {/* The species, as on every other row; the room is the drawer label. */}
+        {species ? (
+          <span
+            className={cn(
+              'truncate text-[0.8125rem] leading-[1.0625rem]',
+              emptied ? 'text-ink-faint' : 'text-ink-muted',
+            )}
+          >
+            {species}
+          </span>
+        ) : null}
       </div>
+
+      {/* Since the watering, in ember once it has been forgotten rather than
+          put off. A column from `lg`, under the head that names it. */}
+      <span
+        className={cn(
+          'shrink-0 text-right text-[0.8125rem] whitespace-nowrap lg:w-28 lg:text-[0.875rem]',
+          emptied ? 'text-ink-faint' : late ? 'font-semibold text-ember' : 'text-ink-muted',
+        )}
+      >
+        {emptied ? 'emptied' : wateredPhrase(days)}
+      </span>
 
       {/* Round because it is an icon alone; outlined while owed and filled
           with the water tint once done, the way the drop on a plant's page
