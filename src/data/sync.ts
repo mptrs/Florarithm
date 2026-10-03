@@ -284,11 +284,15 @@ async function performSync(): Promise<void> {
   phase = 'syncing'
   emit()
 
+  // Edits made while the round is out are not in what it pushes; they stay
+  // counted until the round they scheduled has carried them.
+  const pendingAtStart = pendingCount
+
   try {
     await syncOnce(active)
     phase = 'idle'
     lastSyncedAt = nowISO()
-    pendingCount = 0
+    pendingCount = Math.max(0, pendingCount - pendingAtStart)
     errorMessage = ''
     retryAttempt = 0
     cooldownUntil = 0
@@ -360,8 +364,7 @@ async function syncOnce(active: SyncConfig): Promise<void> {
   const remotePlantsFile = await getFile(active, 'plants.json')
   const remotePlants = remotePlantsFile ? parsePlantsFile(remotePlantsFile.content) : []
 
-  const local = getState()
-  const localMonths = groupEventsByMonth(local.events)
+  const localMonths = groupEventsByMonth(getState().events)
   const remoteMonthEntries = (await listDir(active, 'events')) ?? []
   const remoteMonthKeys = remoteMonthEntries
     .map((entry) => entry.name.replace(/\.json$/, ''))
@@ -371,12 +374,18 @@ async function syncOnce(active: SyncConfig): Promise<void> {
   const remoteMonthFiles = new Map<string, RemoteFile | null>()
   const remoteEvents: PlantEvent[] = []
 
-  for (const key of monthKeys) {
-    const file = await getFile(active, monthFilePath(key))
+  const fetched = await Promise.all(
+    [...monthKeys].map(async (key) => [key, await getFile(active, monthFilePath(key))] as const),
+  )
+  for (const [key, file] of fetched) {
     remoteMonthFiles.set(key, file)
     if (file) remoteEvents.push(...parseEventsFile(file.content, monthFilePath(key)))
   }
 
+  // Read only now, after every fetch: the merge below replaces the whole local
+  // collection, so a snapshot taken before the network wait would write back
+  // over anything logged while it was out.
+  const local = getState()
   const localSnapshot: Snapshot = {
     plants: [...local.plants],
     events: [...local.events],
@@ -413,6 +422,11 @@ async function syncOnce(active: SyncConfig): Promise<void> {
   for (const [key, events] of mergedMonths) {
     const path = monthFilePath(key)
     addIfChanged(writes, path, remoteMonthFiles.get(key) ?? null, buildEventsFile(events))
+  }
+  // A month whose last entry was re-dated out of it still holds the old copy;
+  // emptied rather than left, or a restore reads that copy back in.
+  for (const [key, file] of remoteMonthFiles) {
+    if (file && !mergedMonths.has(key)) addIfChanged(writes, monthFilePath(key), file, buildEventsFile([]))
   }
 
   // Photographs ride in the same commit as the log that describes them, so a

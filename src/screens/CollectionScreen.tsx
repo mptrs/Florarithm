@@ -38,19 +38,22 @@ import {
   groupByPlace,
   isArchiveQuery,
   isThirsty,
+  ownedPlants,
   vocabName,
+  vocabOf,
+  vocabUsage,
 } from '~/data/selectors'
 import { useStore } from '~/data/store'
 import type { Plant } from '~/data/types'
 import { cn } from '~/lib/cn'
 import { formatEpithet, formatSpecies, label } from '~/lib/format'
-import { useRemembered, useTyped } from '~/lib/remembered'
+import { useHeld, useRemembered, useTyped } from '~/lib/remembered'
 import { COLLECTION_FILTERS, navigate, routes, type CollectionFilter } from '~/lib/router'
 import { Button } from '~/ui/Button'
 import { Chip, ChipStrip, SortSwitch, type SortOption } from '~/ui/Chip'
 import { Dozing } from '~/ui/Dozing'
 import { Icon } from '~/ui/Icon'
-import { SearchField } from '~/ui/fields'
+import { plants as plantCount, SuggestField, type SuggestGroup } from '~/ui/suggest'
 import { PlantThumb, PlantTile } from '~/ui/plantPicture'
 import { EmptyState, ScreenHeader } from '~/ui/primitives'
 import { ColumnHeader, DrawerLabel, RowLink } from '~/ui/rows'
@@ -71,6 +74,23 @@ const FILTER_LABELS: Record<CollectionFilter, string> = {
 }
 
 type Sort = 'place' | 'genus' | 'name'
+
+/**
+ * A place or a genus picked out of the search's suggestions: a filter that
+ * sits in the field as a tag, rather than words that happen to match. "Plant
+ * cabinet" typed also finds a plant named Cabinet; picked, it means the room.
+ * One of each at most — a plant stands in one place and is one genus, so two
+ * of a kind would only ever show nothing.
+ */
+type Scope = { kind: 'place' | 'genus'; value: string; label: string }
+
+function inScope(plant: Plant, scope: readonly Scope[]): boolean {
+  return scope.every((part) =>
+    part.kind === 'place'
+      ? plant.locationId === part.value
+      : plant.genus.trim().toLowerCase() === part.value.toLowerCase(),
+  )
+}
 
 /** By place is where a plant is, by genus is what it is, and A–Z is the list
  *  with nothing done to it — which is why it goes last. */
@@ -96,17 +116,27 @@ export function CollectionScreen({ filter }: { filter: CollectionFilter }) {
   const state = useStore()
   const counts = collectionCounts(state)
   const [query, setQuery] = useTyped('collection')
+  const [scope, setScope] = useHeld<Scope[]>('collection-scope', [])
   const [sort, setSort] = useRemembered<Sort>(
     'collection-sort',
     'place',
     SORTS.map((option) => option.value),
   )
 
-  const plants = filterCollection(state, filter, query)
+  const plants = filterCollection(state, filter, query).filter((plant) => inScope(plant, scope))
   // An old `#collection/archive` link still works, and when it is what you are
   // looking at the drawer would only show you the same plants twice.
-  const archived = filter === 'archive' ? [] : archivedMatching(state, query)
+  const archived =
+    filter === 'archive'
+      ? []
+      : archivedMatching(state, query).filter((plant) => inScope(plant, scope))
   const nothing = plants.length === 0 && archived.length === 0
+  const searching = query.trim() !== '' || scope.length > 0
+
+  function narrow(part: Scope) {
+    setScope([...scope.filter((other) => other.kind !== part.kind), part])
+    setQuery('')
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -136,12 +166,27 @@ export function CollectionScreen({ filter }: { filter: CollectionFilter }) {
       />
 
       <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
-        <SearchField
+        <SuggestField
           value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Name, species or place"
+          onChange={setQuery}
+          groups={searchSuggestions(state, query, plants, scope, narrow)}
+          leading={
+            <>
+              <Icon name="search" size={17} className="shrink-0 text-ink-faint" />
+              {scope.map((part) => (
+                <ScopeTag
+                  key={part.kind}
+                  part={part}
+                  onRemove={() => setScope(scope.filter((other) => other !== part))}
+                />
+              ))}
+            </>
+          }
+          onBackspaceEmpty={() => setScope(scope.slice(0, -1))}
+          browse={false}
+          placeholder={scope.length > 0 ? 'Search within' : 'Name, species or place'}
           aria-label="Search the collection"
-          className="lg:w-76"
+          fieldClassName={scope.length > 0 ? 'lg:w-104' : 'lg:w-76'}
         />
 
         {/* Filtering by system is a desk job: on a phone it cost a whole row
@@ -164,10 +209,16 @@ export function CollectionScreen({ filter }: { filter: CollectionFilter }) {
 
       {nothing ? (
         <EmptyState
-          title={query ? 'Nothing matches' : emptyTitle(filter)}
-          description={query ? `No plant matches “${query}”.` : emptyDescription(filter)}
+          title={searching ? 'Nothing matches' : emptyTitle(filter)}
+          description={
+            query.trim()
+              ? `No plant matches “${query}”.`
+              : searching
+                ? `Nothing in ${scope.map((part) => part.label).join(' · ')} here.`
+                : emptyDescription(filter)
+          }
           action={
-            query ? null : (
+            searching ? null : (
               <Button variant="accent" onClick={() => navigate(routes.new())}>
                 Add a plant
               </Button>
@@ -191,6 +242,116 @@ export function CollectionScreen({ filter }: { filter: CollectionFilter }) {
 
       {archived.length > 0 ? <Archive plants={archived} query={query} /> : null}
     </div>
+  )
+}
+
+/**
+ * What the search offers while you type: first what it could narrow the list
+ * to — a room, a genus — then the plants themselves to go straight to, and
+ * last the plain search, which is what Enter or simply reading on gives you.
+ */
+function searchSuggestions(
+  state: ReturnType<typeof useStore>,
+  query: string,
+  found: readonly Plant[],
+  scope: readonly Scope[],
+  narrow: (part: Scope) => void,
+): SuggestGroup[] {
+  const taken = new Set(scope.map((part) => part.kind))
+  const placeCounts = new Map(vocabUsage(state, 'location').all.map((u) => [u.name, u.count]))
+  const generaCounts = new Map<string, number>()
+  for (const plant of ownedPlants(state)) {
+    const genus = plant.genus.trim()
+    if (genus) generaCounts.set(genus, (generaCounts.get(genus) ?? 0) + 1)
+  }
+
+  const places = taken.has('place')
+    ? []
+    : vocabOf(state, 'location').map((item) => ({
+        key: `place-${item.id}`,
+        value: item.name,
+        detail: 'Place',
+        meta: String(placeCounts.get(item.name) ?? 0),
+        leading: <Mark icon="place" />,
+        onPick: () => narrow({ kind: 'place', value: item.id, label: item.name }),
+      }))
+  const genera = taken.has('genus')
+    ? []
+    : [...generaCounts].sort(([a], [b]) => a.localeCompare(b)).map(([genus, count]) => ({
+        key: `genus-${genus}`,
+        value: genus,
+        italic: true,
+        detail: 'Genus',
+        meta: String(count),
+        leading: <Mark icon="leaf" />,
+        onPick: () => narrow({ kind: 'genus', value: genus, label: genus }),
+      }))
+
+  return [
+    { label: 'Show only', whileTyping: true, items: [...places, ...genera] },
+    {
+      label: 'Go to plant',
+      whileTyping: true,
+      items: found.slice(0, 4).map((plant) => ({
+        key: plant.code,
+        value: plant.name,
+        detail: formatSpecies(plant),
+        detailItalic: true,
+        meta: plant.code,
+        // Already matched by the collection's own search, which knows about
+        // codes and places, so the row needs no matching of its own.
+        always: true,
+        leading: <PlantThumb plant={plant} />,
+        onPick: () => navigate(routes.plant(plant.code)),
+      })),
+    },
+    {
+      label: '',
+      whileTyping: true,
+      items: [
+        {
+          key: 'every',
+          value: `Every plant matching “${query.trim()}”`,
+          muted: true,
+          always: true,
+          meta: plantCount(found.length),
+          // The list under the field already is this search: picking it
+          // only puts the suggestions away.
+          onPick: () => {},
+        },
+      ],
+    },
+  ]
+}
+
+function Mark({ icon }: { icon: 'place' | 'leaf' }) {
+  return (
+    <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-sunk text-ink-muted">
+      <Icon name={icon} size={17} />
+    </span>
+  )
+}
+
+/** A filter sitting in the field, with its own way out. */
+function ScopeTag({ part, onRemove }: { part: Scope; onRemove: () => void }) {
+  return (
+    <span className="flex h-8 max-w-[10rem] shrink-0 items-center gap-2 rounded-md bg-leaf-tint pl-3 text-[0.875rem] text-ink">
+      <Icon name={part.kind === 'place' ? 'place' : 'leaf'} size={14} className="shrink-0 text-leaf" />
+      <span className={cn('truncate', part.kind === 'genus' && 'font-display text-[0.9375rem] italic')}>
+        {part.label}
+      </span>
+      <button
+        type="button"
+        aria-label={`Stop showing only ${part.label}`}
+        onClick={(event) => {
+          event.stopPropagation()
+          onRemove()
+        }}
+        className="warm flex size-8 shrink-0 items-center justify-center rounded-md text-leaf hover:text-leaf-deep"
+      >
+        <Icon name="close" size={14} />
+      </button>
+    </span>
   )
 }
 

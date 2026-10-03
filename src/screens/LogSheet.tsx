@@ -13,7 +13,7 @@
 
 import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { preparePhoto, storePhoto, type PreparedPhoto } from '~/data/photos'
-import { vocabOf } from '~/data/selectors'
+import { vocabOf, vocabUsage } from '~/data/selectors'
 import { ensureVocabItem, logEvent, updateEvent, useStore, type EventDraft } from '~/data/store'
 import type { EventPhoto, NoteEvent, Plant, PlantEvent, RepotEvent } from '~/data/types'
 import { nowISO } from '~/lib/date'
@@ -21,7 +21,9 @@ import { newId } from '~/lib/id'
 import { Button } from '~/ui/Button'
 import { Icon, type IconName } from '~/ui/Icon'
 import { DateChip, DatePicker } from '~/ui/DatePicker'
-import { NumberField, SuggestField, TextAreaField, TextField } from '~/ui/fields'
+import { parseDecimal } from '~/lib/format'
+import { NumberField, TextAreaField, TextField } from '~/ui/fields'
+import { SuggestField, usageGroups } from '~/ui/suggest'
 import { Sheet } from '~/ui/Sheet'
 import { type ChipTone } from '~/ui/Card'
 import { cn } from '~/lib/cn'
@@ -474,6 +476,7 @@ function RepotForm({
 }) {
   const state = useStore()
   const mediums = vocabOf(state, 'medium')
+  const mediumUsage = vocabUsage(state, 'medium')
   const currentMedium = mediums.find((item) => item.id === (editing?.mediumId ?? plant.mediumId))
 
   const [toSize, setToSize] = useState(
@@ -492,7 +495,7 @@ function RepotForm({
   const save = async () => {
     const mediumId = await ensureVocabItem('medium', medium)
     const fields = {
-      toSize: toSize ? Number(toSize) : null,
+      toSize: parseDecimal(toSize),
       mediumId: mediumId ?? plant.mediumId,
       reason: reason.trim(),
       date,
@@ -540,9 +543,10 @@ function RepotForm({
 
       <SuggestField
         label="Medium"
-        options={mediums.map((item) => item.name)}
         value={medium}
-        onChange={(event) => setMedium(event.target.value)}
+        onChange={setMedium}
+        groups={usageGroups(mediumUsage.all, mediumUsage.recent, medium, 'All mediums')}
+        addLabel="Add as a new medium"
         placeholder="Pick one, or type a new medium"
       />
 

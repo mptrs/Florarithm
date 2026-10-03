@@ -10,11 +10,20 @@
  * five selectors builds them once.
  */
 
-import { daysBetween, daysSince, yearOf } from '~/lib/date'
+import { daysBetween, daysSince, isoToInputValue, todayInputValue, yearOf } from '~/lib/date'
 import { formatEpithet, formatSpecies, normalizeCross, plural } from '~/lib/format'
 import type { CollectionFilter } from '~/lib/router'
 import type { State } from './store'
-import type { DrainEvent, EventType, Id, Plant, PlantEvent, VocabItem, VocabKind } from './types'
+import type {
+  DrainEvent,
+  EventType,
+  Id,
+  Plant,
+  PlantEvent,
+  VocabItem,
+  VocabKind,
+  WaterEvent,
+} from './types'
 
 /** Below this many days the count is a fact; at or above it, it is a nudge. */
 export const THIRSTY_AFTER_DAYS = 14
@@ -66,6 +75,70 @@ export function vocabOf(state: State, kind: VocabKind): VocabItem[] {
     .sort((a, b) => a.name.localeCompare(b.name))
 }
 
+/**
+ * A list to pick from, with how many plants each entry holds and the couple
+ * you used last — the newest plants' own, since adding a plant is when you
+ * reach for a place.
+ */
+export function vocabUsage(
+  state: State,
+  kind: VocabKind,
+): { all: { name: string; count: number }[]; recent: string[] } {
+  const idOf = (plant: Plant) => (kind === 'location' ? plant.locationId : plant.mediumId)
+  const owned = livePlants(state).filter((plant) => !plant.wish && !isArchived(plant))
+  const counts = new Map<Id, number>()
+  for (const plant of owned) {
+    const id = idOf(plant)
+    if (id) counts.set(id, (counts.get(id) ?? 0) + 1)
+  }
+
+  const items = vocabOf(state, kind)
+  const recent: string[] = []
+  for (const plant of [...owned].sort((a, b) => b.createdAt.localeCompare(a.createdAt))) {
+    const name = vocabById(state).get(idOf(plant) ?? '')
+    if (name && !name.archived && !recent.includes(name.name)) recent.push(name.name)
+    if (recent.length === 2) break
+  }
+
+  return {
+    all: items.map((item) => ({ name: item.name, count: counts.get(item.id) ?? 0 })),
+    recent,
+  }
+}
+
+/**
+ * Everyone a plant has come from, spelled the way you spelled it most, with
+ * the kind of source it was most often — so picking a nursery can say it is
+ * one. Archived plants count: the shop is still the shop.
+ */
+export function originSources(
+  state: State,
+): { name: string; count: number; type: Plant['origin']['type'] }[] {
+  const seen = new Map<string, { names: Map<string, number>; types: Map<string, number> }>()
+  for (const plant of livePlants(state)) {
+    const name = plant.origin.from.trim()
+    if (!name) continue
+    const key = name.toLowerCase()
+    const entry = seen.get(key) ?? { names: new Map(), types: new Map() }
+    entry.names.set(name, (entry.names.get(name) ?? 0) + 1)
+    if (plant.origin.type) {
+      entry.types.set(plant.origin.type, (entry.types.get(plant.origin.type) ?? 0) + 1)
+    }
+    seen.set(key, entry)
+  }
+
+  const most = (counts: Map<string, number>) =>
+    [...counts].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null
+
+  return [...seen.values()]
+    .map(({ names, types }) => ({
+      name: most(names) ?? '',
+      count: [...names.values()].reduce((sum, n) => sum + n, 0),
+      type: most(types) as Plant['origin']['type'],
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name))
+}
+
 export function allVocabOf(state: State, kind: VocabKind): VocabItem[] {
   return state.vocab
     .filter((item) => item.kind === kind)
@@ -94,6 +167,13 @@ export const eventsByPlant = memo((state) => {
 
 export function eventsFor(state: State, code: string): PlantEvent[] {
   return eventsByPlant(state).get(code) ?? []
+}
+
+/** What a plant's history shows, newest first: the log without the emptied
+ *  cachepots, which are a chore that follows a watering rather than something
+ *  that happened to the plant — see `DrainEvent`. */
+export function historyFor(state: State, code: string): PlantEvent[] {
+  return eventsFor(state, code).filter((event) => event.type !== 'drain')
 }
 
 /** Every entry with a picture, newest first — the timeline, which is just the
@@ -128,6 +208,13 @@ export function lastWaterAt(state: State, code: string): string | null {
 export function daysSinceWater(state: State, code: string): number | null {
   const last = lastWaterAt(state, code)
   return last === null ? null : daysSince(last)
+}
+
+/** Today's watering of this plant, if it has had one: the entry a second press
+ *  on Today's figure takes back. */
+export function wateringToday(state: State, code: string): WaterEvent | null {
+  const last = lastEventOf(state, code, 'water')
+  return last && isoToInputValue(last.date) === todayInputValue() ? (last as WaterEvent) : null
 }
 
 export function isThirsty(days: number | null): boolean {
@@ -730,13 +817,18 @@ export type PotToEmpty = {
 export function potsToEmpty(state: State): PotToEmpty[] {
   const pots: PotToEmpty[] = []
 
-  for (const plant of todayList(state)) {
-    if (plant.system !== 'soil') continue
+  for (const plant of livePlants(state)) {
+    if (plant.wish || plant.status !== 'active' || plant.system !== 'soil') continue
     const wateredAt = lastWaterAt(state, plant.code)
     if (wateredAt === null || daysSince(wateredAt) < 1) continue
 
+    // By calendar day, not by the clock: a pot is never offered on the day of
+    // its watering, so an emptying that day was for the water before it — even
+    // when the watering was back-dated and so carries midday, hours before.
+    const wateredOn = isoToInputValue(wateredAt)
     const drain = eventsFor(state, plant.code).find(
-      (event): event is DrainEvent => event.type === 'drain' && event.date > wateredAt,
+      (event): event is DrainEvent =>
+        event.type === 'drain' && isoToInputValue(event.date) > wateredOn,
     )
     if (drain && daysSince(drain.date) > 0) continue
 

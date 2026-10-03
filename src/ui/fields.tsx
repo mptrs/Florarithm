@@ -6,9 +6,10 @@
  * `h-control` (48px) and `text-body` (16px) — anything smaller and Safari zooms
  * the page in on focus and never zooms back out.
  *
- * `SuggestField` is the one that matters most. Places, mediums and fertilizers
- * are growing lists: what you type for the first plant is there to pick for the
- * second. That is the difference between an app you fill in and an app you use.
+ * The field for a growing list — places, mediums, genera — is big enough to
+ * be its own module: `SuggestField` in `suggest.tsx`. What you type for the
+ * first plant is there to pick for the second, and that is the difference
+ * between an app you fill in and an app you use.
  */
 
 import {
@@ -116,34 +117,10 @@ export function TextField({ label, hint, fieldClassName, className, ...rest }: T
   )
 }
 
-/**
- * A text input backed by a growing list. Typing and picking both work, which is
- * what `<datalist>` gives natively in Safari on both devices.
- */
-export function SuggestField({
-  label,
-  hint,
-  options,
-  fieldClassName,
-  className,
-  ...rest
-}: TextFieldProps & { options: readonly string[] }) {
-  const id = useId()
-  const listId = `${id}-options`
-
-  return (
-    <Field label={label} hint={hint} htmlFor={id} className={fieldClassName}>
-      <input id={id} type="text" list={listId} className={cn(CONTROL, className)} {...rest} />
-      <datalist id={listId}>
-        {options.map((option) => (
-          <option key={option} value={option} />
-        ))}
-      </datalist>
-    </Field>
-  )
-}
-
-/** A number with its unit shown inside the field, so the value stays numeric. */
+/** A number with its unit shown inside the field, so the value stays numeric.
+ *  A text input rather than `type="number"`: that one silently empties itself
+ *  on a decimal comma whenever the browser's locale expects a point, so read
+ *  the value with `parseDecimal` instead. */
 export function NumberField({
   label,
   hint,
@@ -159,7 +136,7 @@ export function NumberField({
       <div className="relative">
         <input
           id={id}
-          type="number"
+          type="text"
           inputMode="decimal"
           className={cn(CONTROL, 'font-mono', unit ? 'pr-12' : '', className)}
           {...rest}
