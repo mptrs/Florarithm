@@ -55,7 +55,7 @@ import {
   nowISO,
   todayInputValue,
 } from '~/lib/date'
-import { formatSpecies, label, normalizeCross, plural } from '~/lib/format'
+import { formatSpecies, label, normalizeCross, parseDecimal, plural, priceInputValue } from '~/lib/format'
 import { suggestNameAI } from '~/lib/aiNameGenerator'
 import { nextInLine } from '~/lib/nameGenerator'
 import { cn } from '~/lib/cn'
@@ -156,7 +156,7 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
       setMedium(vocabName(state, existing.mediumId).replace('—', ''))
       setOriginType(existing.origin.type)
       setOriginFrom(existing.origin.from)
-      setOriginPrice(existing.origin.price === null ? '' : String(existing.origin.price))
+      setOriginPrice(priceInputValue(existing.origin.price))
       setOriginDate(existing.origin.date ? isoToInputValue(existing.origin.date) : todayInputValue())
       setWishNote(existing.wishNote)
       setStatus(existing.status)
@@ -269,13 +269,13 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
         variegation: variegationTrimmed,
         locationId,
         system,
-        potSize: potSize ? Number(potSize) : null,
+        potSize: parseDecimal(potSize),
         mediumId,
         origin: {
           type: originType,
           from: originFrom.trim(),
           date: inputValueToISO(originDate),
-          price: originPrice ? Number(originPrice) : null,
+          price: parseDecimal(originPrice),
         },
         parent: parentPlant ? { code: parentPlant.code, method } : null,
         status,
