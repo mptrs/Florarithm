@@ -172,6 +172,14 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
 
   const parentPlant = parent ? findPlant(state, parent) : null
   const known = knownNames(state.plants, genus, species)
+  /**
+   * The plant already answering to the name typed here, if any. A name is how
+   * a plant is called out across the room and found in a list, so two of them
+   * sharing one is a mix-up waiting to happen — caught while typing, not after.
+   * Compared without case or edge spaces, since "gruyère " is still Gruyère.
+   * Wishes are left out on both sides: they carry no name of their own yet.
+   */
+  const nameTaken = wish ? undefined : findNameClash(state.plants, name, code)
 
   /**
    * Pick the plant this one came off, and take over what it already knows.
@@ -496,17 +504,26 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
               <Field
                 label="Name"
                 hint={
-                  loadProgress ??
-                  (parentPlant
-                    ? `Next in the line from ${parentPlant.name}, so the family tree reads without a diagram.`
-                    : 'The dice asks a small AI, running in your browser, for something that fits the genus. It is an offer, not a decision.')
+                  nameTaken ? (
+                    <span className="text-ember">
+                      {nameTaken.name} · {nameTaken.code} already has this name. Pick another, so
+                      the two never get mixed up.
+                    </span>
+                  ) : (
+                    loadProgress ??
+                    (parentPlant
+                      ? `Next in the line from ${parentPlant.name}, so the family tree reads without a diagram.`
+                      : 'The dice asks a small AI, running in your browser, for something that fits the genus. It is an offer, not a decision.')
+                  )
                 }
               >
                 <div className="flex gap-2">
                   <TextField
                     aria-label="Name"
+                    aria-invalid={nameTaken ? true : undefined}
                     value={name}
                     onChange={(event) => setName(event.target.value)}
+                    className={nameTaken ? 'border-ember hover:border-ember focus:border-ember' : undefined}
                     fieldClassName="flex-1"
                     placeholder="Gruyère"
                   />
@@ -724,7 +741,7 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
         <Button
           variant="accent"
           icon={existing ? 'check' : 'plus'}
-          disabled={saving}
+          disabled={saving || nameTaken !== undefined}
           onClick={submit}
           className="flex-1 sm:flex-none"
         >
@@ -740,6 +757,16 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
   )
 }
 
+
+/** The other plant in the collection already called `name`, ignoring case and
+ *  surrounding spaces. `self` is the plant being edited, which may keep its own. */
+function findNameClash(plants: readonly Plant[], name: string, self: string | undefined) {
+  const wanted = name.trim().toLocaleLowerCase()
+  if (!wanted) return undefined
+  return plants.find(
+    (plant) => !plant.wish && plant.code !== self && plant.name.trim().toLocaleLowerCase() === wanted,
+  )
+}
 
 /**
  * The way out that is almost never the right one.

@@ -17,7 +17,7 @@ import { isoToInputValue, nowISO } from '~/lib/date'
 import { newId } from '~/lib/id'
 import { generatePlantCode } from '~/lib/plantCode'
 import * as db from './db'
-import { migrateEvents, migratePlant, migrateVocab, needsMigration } from './migrate'
+import { migrateEvents, migratePlant, migrateVocab, needsMigration, tidyEvent, tidyPlant } from './migrate'
 import { dropPhotos, refilePhoto } from './photos'
 import type {
   Id,
@@ -106,9 +106,13 @@ export async function load(): Promise<void> {
     const vocab = migrateVocab(snapshot.vocab)
     if (needsMigration(snapshot.events, snapshot.vocab)) {
       const changed = events.filter((event, index) => event !== snapshot.events[index])
-      const dropped = snapshot.vocab.filter((item) => !vocab.includes(item))
+      const dropped = snapshot.vocab.filter(
+        (item) => !vocab.some((kept) => kept.id === item.id),
+      )
+      const renamed = vocab.filter((item) => !snapshot.vocab.includes(item))
       await Promise.all([
         ...changed.map((event) => db.putEvent(event)),
+        ...renamed.map((item) => db.putVocab(item)),
         ...dropped.map((item) => db.deleteVocab(item.id)),
       ])
     }
@@ -150,7 +154,10 @@ export type PlantDraft = {
   wishNote: string
 }
 
-export async function savePlant(draft: PlantDraft): Promise<Plant> {
+export async function savePlant(typed: PlantDraft): Promise<Plant> {
+  // Trimmed here, not only in the form: whatever calls this, no record goes
+  // to disk with spaces around what was typed.
+  const draft = tidyPlant(typed)
   const existing = draft.code ? findPlant(draft.code) : undefined
   const timestamp = nowISO()
 
@@ -286,7 +293,7 @@ function wateringThatDay(plantCode: string, iso: string): WaterEvent | null {
  * the log sheet cannot drift into disagreeing about the rule.
  */
 export async function logEvent(draft: EventDraft): Promise<PlantEvent> {
-  const event = { ...draft, id: draft.id ?? newId(), date: draft.date ?? nowISO() } as PlantEvent
+  const event = tidyEvent({ ...draft, id: draft.id ?? newId(), date: draft.date ?? nowISO() } as PlantEvent)
 
   if (event.type === 'water') {
     const standing = wateringThatDay(event.plantCode, event.date)
@@ -333,7 +340,7 @@ export async function updateEvent(id: string, patch: Partial<PlantEvent>): Promi
   const event = state.events.find((candidate) => candidate.id === id)
   if (!event || event.deleted) return
 
-  const next = { ...event, ...patch } as PlantEvent
+  const next = tidyEvent({ ...event, ...patch } as PlantEvent)
   await db.putEvent(next)
   commit({ events: state.events.map((current) => (current.id === id ? next : current)) })
 }
