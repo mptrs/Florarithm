@@ -14,7 +14,7 @@ import { nextInLine, splitLineage } from '../src/lib/nameGenerator'
 import { parseBackup, BackupParseError } from '../src/data/backup'
 import { migrateEvent, migratePlant, migrateVocab } from '../src/data/migrate'
 import { daysBetween, inputValueToISO, isoToInputValue, isoWeek } from '../src/lib/date'
-import { formatSpecies, normalizeCross, toRoman, fromRoman } from '../src/lib/format'
+import { formatSpecies, normalizeCross, parseDecimal, priceInputValue, toRoman, fromRoman } from '../src/lib/format'
 import { parseRoute } from '../src/lib/router'
 import {
   ancestorsOf,
@@ -1043,5 +1043,33 @@ test.describe('cachepots to empty', () => {
       [event('A', 'water', daysAgo(3)), event('A', 'drain', afternoon.toISOString()), event('A', 'water', daysAgo(1))],
     )
     expect(potsToEmpty(state)).toMatchObject([{ emptied: null }])
+  })
+})
+
+test.describe('typed numbers', () => {
+  test('a decimal comma reads the same as a decimal point', () => {
+    expect(parseDecimal('12,50')).toBe(12.5)
+    expect(parseDecimal('12.50')).toBe(12.5)
+    expect(parseDecimal(' 7 ')).toBe(7)
+    expect(parseDecimal(',5')).toBe(0.5)
+  })
+
+  test('with both marks, the last one is the decimal point', () => {
+    expect(parseDecimal('1.234,50')).toBe(1234.5)
+    expect(parseDecimal('1,234.50')).toBe(1234.5)
+  })
+
+  test('a stored price goes back into the field with a comma and both cents', () => {
+    expect(priceInputValue(12.5)).toBe('12,50')
+    expect(priceInputValue(8)).toBe('8,00')
+    expect(priceInputValue(null)).toBe('')
+    expect(parseDecimal(priceInputValue(12.5)!)).toBe(12.5)
+  })
+
+  test('empty or unreadable is no value at all', () => {
+    expect(parseDecimal('')).toBeNull()
+    expect(parseDecimal('   ')).toBeNull()
+    expect(parseDecimal('twaalf')).toBeNull()
+    expect(parseDecimal('12,5a')).toBeNull()
   })
 })

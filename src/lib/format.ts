@@ -10,6 +10,29 @@ export function formatPrice(value: number | null | undefined): string {
   return money.format(value ?? 0)
 }
 
+/** What was typed into a number field, read the way it was meant: `12,50`
+ *  and `12.50` are the same price, as they are anywhere in the Netherlands.
+ *  With both marks in it (`1.234,50`, `1,234.50`) the last one is the decimal
+ *  point and the other only groups thousands. Empty or unreadable is null. */
+export function parseDecimal(input: string): number | null {
+  const text = input.trim().replace(/\s/g, '')
+  if (!text) return null
+  const point = Math.max(text.lastIndexOf(','), text.lastIndexOf('.'))
+  const normalized =
+    point === -1
+      ? text
+      : `${text.slice(0, point).replace(/[.,]/g, '')}.${text.slice(point + 1)}`
+  if (!/^-?\d*\.?\d+$|^-?\d+\.$/.test(normalized)) return null
+  const value = Number(normalized)
+  return Number.isFinite(value) ? value : null
+}
+
+/** A stored price put back into the form the way it is written here, with a
+ *  decimal comma and both cents: `12.5` comes back as `12,50`. */
+export function priceInputValue(value: number | null): string {
+  return value === null ? '' : value.toFixed(2).replace('.', ',')
+}
+
 export function formatPotSize(cm: number | null): string {
   return cm === null ? '—' : `${cm} cm`
 }
