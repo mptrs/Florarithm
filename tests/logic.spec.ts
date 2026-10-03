@@ -303,6 +303,42 @@ test.describe('hybrids', () => {
     const orphan = { ...base, origin, parent: null } as unknown as Plant
     expect(migratePlant(orphan).origin.type).toBe('own-cutting')
   })
+
+  test('spaces around anything typed into a plant are gone when it is read', () => {
+    const stored = {
+      code: 'MON-0003',
+      name: ' Gruyère ',
+      genus: 'Monstera ',
+      species: ' deliciosa',
+      cross: '',
+      cultivar: " Thai Constellation ",
+      variegation: 'sectoral ',
+      wishNote: '',
+      origin: { type: 'shop', from: ' Wilstra ', date: null, price: null },
+      parent: null,
+    } as unknown as Plant
+
+    const tidy = migratePlant(stored)
+    expect(tidy.name).toBe('Gruyère')
+    expect(tidy.genus).toBe('Monstera')
+    expect(tidy.species).toBe('deliciosa')
+    expect(tidy.cultivar).toBe('Thai Constellation')
+    expect(tidy.variegation).toBe('sectoral')
+    expect(tidy.origin.from).toBe('Wilstra')
+    // Only the edges: a space inside a name is part of it.
+    expect(formatSpecies(tidy)).toBe("Monstera deliciosa 'Thai Constellation' sectoral")
+  })
+
+  test('spaces around a note, a reason or a place are gone when they are read', () => {
+    const note = { id: 'e3', plantCode: 'MON-0001', date: '2026-08-01T12:00:00.000Z', type: 'note', text: ' New leaf unfurling ' } as never
+    expect((migrateEvent(note) as { text: string }).text).toBe('New leaf unfurling')
+
+    const repot = { id: 'e4', plantCode: 'MON-0001', date: '2026-08-01T12:00:00.000Z', type: 'repot', fromSize: 12, toSize: 14, mediumId: null, reason: 'roots out ' } as never
+    expect((migrateEvent(repot) as { reason: string }).reason).toBe('roots out')
+
+    const vocab = [{ id: '1', kind: 'location', name: ' Living room ' }] as never
+    expect(migrateVocab(vocab)[0]?.name).toBe('Living room')
+  })
 })
 
 test.describe('dates', () => {

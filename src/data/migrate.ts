@@ -14,6 +14,9 @@
  * database at boot, an imported backup, a pull from the remote — goes through
  * `migratePlant`, so no screen ever has to ask whether a field is there.
  *
+ * Text is tidied the same way: spaces before or after a typed value are never
+ * part of it, so every record comes in with them gone — see `tidyPlant`.
+ *
  * Migration is a pure function of one record. Nothing here writes.
  */
 
@@ -42,9 +45,46 @@ export function migratePlant(plant: Plant): Plant {
   // "Own cutting" said twice what `parent` already says once. Where the parent
   // is on record it goes; where it is not, it is the only trace of where the
   // plant came from, so it stays.
-  return withCross.parent && withCross.origin.type === 'own-cutting'
-    ? { ...withCross, origin: { ...withCross.origin, type: null } }
-    : withCross
+  const withOrigin =
+    withCross.parent && withCross.origin.type === 'own-cutting'
+      ? { ...withCross, origin: { ...withCross.origin, type: null } }
+      : withCross
+
+  return tidyPlant(withOrigin)
+}
+
+/**
+ * Every typed field of a plant without spaces before or after it. "Monstera "
+ * and "Monstera" are one genus, and a stray space turns them into two in every
+ * list that groups or matches on it. Hands back the very same record when
+ * there was nothing to tidy, so callers can tell a change by identity.
+ */
+export function tidyPlant<T extends Partial<Plant>>(plant: T): T {
+  let tidy = trimFields(plant, PLANT_TEXT)
+  const origin = plant.origin
+  if (origin && typeof origin.from === 'string' && origin.from !== origin.from.trim()) {
+    tidy = { ...tidy, origin: { ...origin, from: origin.from.trim() } }
+  }
+  return tidy
+}
+
+const PLANT_TEXT = ['name', 'genus', 'species', 'cross', 'cultivar', 'variegation', 'wishNote'] as const
+
+/** The named string fields of `record`, trimmed. Anything absent or not a
+ *  string is left exactly as it is, and so is the record when nothing moved. */
+function trimFields<T extends object>(record: T, keys: readonly string[]): T {
+  let tidy = record
+  for (const key of keys) {
+    const value = (tidy as Record<string, unknown>)[key]
+    if (typeof value === 'string' && value !== value.trim()) tidy = { ...tidy, [key]: value.trim() }
+  }
+  return tidy
+}
+
+/** A note's text and a repot's reason, trimmed; the same record if neither
+ *  needed it. */
+export function tidyEvent<T extends Partial<PlantEvent>>(event: T): T {
+  return trimFields(event, ['text', 'reason'])
 }
 
 /**
@@ -75,7 +115,8 @@ type LegacyWater = {
  * A watering from before the split. `fertilizerId` pointing at anything at all
  * means fertilizer went in; which one it was is the part being dropped.
  */
-export function migrateEvent(event: PlantEvent): PlantEvent {
+export function migrateEvent(stored: PlantEvent): PlantEvent {
+  const event = tidyEvent(stored)
   if (event.type !== 'water') return event
 
   const legacy = event as PlantEvent & LegacyWater
@@ -90,15 +131,20 @@ export function migrateEvents(events: readonly PlantEvent[]): PlantEvent[] {
   return events.map(migrateEvent)
 }
 
-/** The fertilizer list itself goes; places and mediums are untouched. */
+/** The fertilizer list itself goes; places and mediums keep their names, minus
+ *  any spaces around them. */
 export function migrateVocab(vocab: readonly VocabItem[]): VocabItem[] {
-  return vocab.filter((item) => item.kind === 'location' || item.kind === 'medium')
+  return vocab
+    .filter((item) => item.kind === 'location' || item.kind === 'medium')
+    .map((item) => (item.name === item.name.trim() ? item : { ...item, name: item.name.trim() }))
 }
 
 /** Whether anything in this snapshot actually needs writing back. */
 export function needsMigration(events: readonly PlantEvent[], vocab: readonly VocabItem[]): boolean {
+  const kept = migrateVocab(vocab)
   return (
-    vocab.length !== migrateVocab(vocab).length ||
+    vocab.length !== kept.length ||
+    kept.some((item) => !vocab.includes(item)) ||
     events.some((event) => migrateEvent(event) !== event)
   )
 }

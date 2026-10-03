@@ -150,6 +150,29 @@ test('a scanned sticker opens the plant with the actions already in view', async
   )
 })
 
+test('a name already in the collection is caught before it is saved twice', async ({ page }) => {
+  const code = await addPlant(page, 'Monstera deliciosa', 'Gruyère')
+
+  await page.goto('#new')
+  await page.getByLabel('Genus').fill('Alocasia')
+  const field = page.getByLabel('Name', { exact: true })
+  await field.fill(' gruyère ')
+  await expect(page.getByText(`Gruyère · ${code} already has this name`)).toBeVisible()
+  await expect(field).toHaveAttribute('aria-invalid', 'true')
+  const add = page.getByRole('button', { name: 'Add to the collection' })
+  await expect(add).toBeDisabled()
+
+  await field.fill('Zebra')
+  await expect(page.getByText('already has this name')).toHaveCount(0)
+  await expect(add).toBeEnabled()
+
+  // Editing a plant never trips over its own name.
+  await page.goto(`#edit/${code}`)
+  await expect(page.getByLabel('Name', { exact: true })).toHaveValue('Gruyère')
+  await expect(page.getByText('already has this name')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Save' })).toBeEnabled()
+})
+
 test('an unknown code gets a real page, not an empty list', async ({ page }) => {
   await page.goto('#p=ZZZ-0000')
   await expect(page.getByText('ZZZ-0000')).toBeVisible()
