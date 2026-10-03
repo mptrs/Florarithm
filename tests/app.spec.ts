@@ -287,7 +287,8 @@ test('picking the parent fills in what the parent already knows', async ({ page 
 
   await page.goto('#new')
   await page.getByLabel('Cultivar').fill('Thai Constellation')
-  await page.getByLabel('Propagated from').selectOption(parent)
+  await page.getByLabel('Propagated from').click()
+  await page.getByRole('option', { name: /Fluweel/ }).click()
 
   // What it is and the next name in the line — no dice needed.
   await expect(page.getByLabel('Genus')).toHaveValue('Monstera')
@@ -303,7 +304,8 @@ test('picking the parent fills in what the parent already knows', async ({ page 
   await expect(page.getByLabel('Cultivar')).toHaveValue('Thai Constellation')
 
   // Changing your mind takes back only what the parent put there.
-  await page.getByLabel('Propagated from').selectOption('')
+  await page.getByLabel('Propagated from').click()
+  await page.getByRole('option', { name: 'Not propagated from one of yours' }).click()
   await expect(page.getByLabel('Genus')).toHaveValue('')
   await expect(page.getByLabel('Name', { exact: true })).toHaveValue('')
   await expect(page.getByLabel('Cultivar')).toHaveValue('Thai Constellation')
@@ -340,12 +342,16 @@ test('genus, species and cultivar are offered back off the collection', async ({
   await addPlant(page, 'Alocasia zebrina', 'Streep')
 
   await page.goto('#new')
-  const offered = (field: string) =>
-    page
-      .getByLabel(field, { exact: true })
-      .evaluate((input: HTMLInputElement) =>
-        Array.from(input.list?.options ?? []).map((option) => option.value),
-      )
+  /** What the field's list opens on, by the serif line of each row. */
+  const offered = async (field: string) => {
+    await page.getByLabel(field, { exact: true }).focus()
+    const options = page.getByRole('listbox', { name: 'Suggestions' }).getByRole('option')
+    const names = await options.evaluateAll((rows) =>
+      rows.map((row) => row.querySelector('span > span')?.textContent ?? ''),
+    )
+    await page.keyboard.press('Escape')
+    return names
+  }
 
   expect(await offered('Genus')).toEqual(['Alocasia', 'Monstera'])
   // Nothing to narrow to yet, so no species are offered at random.
@@ -353,6 +359,7 @@ test('genus, species and cultivar are offered back off the collection', async ({
 
   // Typed in lower case, it still finds the genus's own species.
   await page.getByLabel('Genus').fill('monstera')
+  await page.keyboard.press('Escape')
   expect(await offered('Species')).toEqual(['deliciosa'])
 })
 
@@ -430,10 +437,55 @@ test('promoting a wish keeps its code and its history', async ({ page }) => {
 test('a place typed once is offered the next time', async ({ page }) => {
   await addPlant(page, 'Monstera deliciosa', 'Kolos', 'Hallway · floor')
 
+  // The whole list opens on focus — you need not remember how it starts.
   await page.goto('#new')
-  const options = page.locator('datalist option')
-  await expect(options.filter({ has: page.locator('[value="Hallway · floor"]') })).toHaveCount(0)
-  expect(await page.locator('datalist option[value="Hallway · floor"]').count()).toBe(1)
+  await page.getByLabel('Place').click()
+  const offered = page.getByRole('option', { name: /Hallway · floor/ })
+  await expect(offered).toHaveCount(1)
+  await offered.click()
+  await expect(page.getByLabel('Place')).toHaveValue('Hallway · floor')
+
+  // Something new is offered as new, rather than silently matching nothing.
+  await page.getByLabel('Place').fill('Balkon')
+  await expect(page.getByRole('option', { name: /Add as a new place/ })).toBeVisible()
+})
+
+test('a plant you have fills in what it is, and only that', async ({ page }) => {
+  await addPlant(page, 'Monstera deliciosa', 'Gruyère', 'Kitchen')
+
+  await page.goto('#new')
+  await page.getByLabel('Genus').fill('Mon')
+  await page.getByRole('option', { name: /Gruyère/ }).click()
+
+  await expect(page.getByLabel('Genus')).toHaveValue('Monstera')
+  await expect(page.getByLabel('Species', { exact: true })).toHaveValue('deliciosa')
+  // Where it lives is the new plant's own, and so is its name.
+  await expect(page.getByLabel('Place')).toHaveValue('')
+  await expect(page.getByLabel('Name', { exact: true })).toHaveValue('')
+
+  await page.getByRole('button', { name: 'Undo' }).click()
+  await expect(page.getByLabel('Genus')).toHaveValue('Mon')
+  await expect(page.getByLabel('Species', { exact: true })).toHaveValue('')
+})
+
+test('a place picked from the search becomes a filter', async ({ page }) => {
+  await addPlant(page, 'Monstera deliciosa', 'Gruyère', 'Kitchen')
+  await addPlant(page, 'Alocasia zebrina', 'Kitchenette', 'Bedroom')
+
+  await page.goto('#collection')
+  const search = page.getByLabel('Search the collection')
+  // Typed, "Kitch" finds both: one stands there, one is called that.
+  await search.fill('Kitch')
+  await expect(main(page).getByRole('link', { name: /Kitchenette/ })).toBeVisible()
+
+  // Picked, it means the room.
+  await page.getByRole('option', { name: /Kitchen\s*Place/ }).click()
+  await expect(search).toHaveValue('')
+  await expect(main(page).getByRole('link', { name: /Gruyère/ })).toBeVisible()
+  await expect(main(page).getByRole('link', { name: /Kitchenette/ })).toBeHidden()
+
+  await page.getByRole('button', { name: 'Stop showing only Kitchen' }).click()
+  await expect(main(page).getByRole('link', { name: /Kitchenette/ })).toBeVisible()
 })
 
 test('the collection searches on name, species, code and place', async ({ page }) => {
@@ -547,7 +599,7 @@ test('a sort chosen on a list is still chosen after opening a plant', async ({ p
   // The collection keeps its sort and its search across a visit to a plant.
   await page.goto('#collection')
   await page.getByRole('button', { name: 'By genus' }).click()
-  await page.getByRole('searchbox', { name: 'Search the collection' }).fill('Gruy')
+  await page.getByRole('combobox', { name: 'Search the collection' }).fill('Gruy')
   await main(page).getByRole('link', { name: /Gruy\u00e8re/ }).click()
   await page.goBack()
 
@@ -555,7 +607,7 @@ test('a sort chosen on a list is still chosen after opening a plant', async ({ p
     'aria-pressed',
     'true',
   )
-  await expect(page.getByRole('searchbox', { name: 'Search the collection' })).toHaveValue(
+  await expect(page.getByRole('combobox', { name: 'Search the collection' })).toHaveValue(
     'Gruy',
   )
 

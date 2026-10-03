@@ -75,6 +75,70 @@ export function vocabOf(state: State, kind: VocabKind): VocabItem[] {
     .sort((a, b) => a.name.localeCompare(b.name))
 }
 
+/**
+ * A list to pick from, with how many plants each entry holds and the couple
+ * you used last — the newest plants' own, since adding a plant is when you
+ * reach for a place.
+ */
+export function vocabUsage(
+  state: State,
+  kind: VocabKind,
+): { all: { name: string; count: number }[]; recent: string[] } {
+  const idOf = (plant: Plant) => (kind === 'location' ? plant.locationId : plant.mediumId)
+  const owned = livePlants(state).filter((plant) => !plant.wish && !isArchived(plant))
+  const counts = new Map<Id, number>()
+  for (const plant of owned) {
+    const id = idOf(plant)
+    if (id) counts.set(id, (counts.get(id) ?? 0) + 1)
+  }
+
+  const items = vocabOf(state, kind)
+  const recent: string[] = []
+  for (const plant of [...owned].sort((a, b) => b.createdAt.localeCompare(a.createdAt))) {
+    const name = vocabById(state).get(idOf(plant) ?? '')
+    if (name && !name.archived && !recent.includes(name.name)) recent.push(name.name)
+    if (recent.length === 2) break
+  }
+
+  return {
+    all: items.map((item) => ({ name: item.name, count: counts.get(item.id) ?? 0 })),
+    recent,
+  }
+}
+
+/**
+ * Everyone a plant has come from, spelled the way you spelled it most, with
+ * the kind of source it was most often — so picking a nursery can say it is
+ * one. Archived plants count: the shop is still the shop.
+ */
+export function originSources(
+  state: State,
+): { name: string; count: number; type: Plant['origin']['type'] }[] {
+  const seen = new Map<string, { names: Map<string, number>; types: Map<string, number> }>()
+  for (const plant of livePlants(state)) {
+    const name = plant.origin.from.trim()
+    if (!name) continue
+    const key = name.toLowerCase()
+    const entry = seen.get(key) ?? { names: new Map(), types: new Map() }
+    entry.names.set(name, (entry.names.get(name) ?? 0) + 1)
+    if (plant.origin.type) {
+      entry.types.set(plant.origin.type, (entry.types.get(plant.origin.type) ?? 0) + 1)
+    }
+    seen.set(key, entry)
+  }
+
+  const most = (counts: Map<string, number>) =>
+    [...counts].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null
+
+  return [...seen.values()]
+    .map(({ names, types }) => ({
+      name: most(names) ?? '',
+      count: [...names.values()].reduce((sum, n) => sum + n, 0),
+      type: most(types) as Plant['origin']['type'],
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name))
+}
+
 export function allVocabOf(state: State, kind: VocabKind): VocabItem[] {
   return state.vocab
     .filter((item) => item.kind === kind)

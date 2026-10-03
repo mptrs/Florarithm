@@ -54,3 +54,19 @@ export function useTyped(key: string): [string, (value: string) => void] {
   }
   return [value, remember]
 }
+
+/**
+ * `useTyped` for something that is not a string: the filters picked out of a
+ * search field's suggestions, which should outlive a visit to a plant exactly
+ * as the words typed beside them do.
+ */
+const held = new Map<string, unknown>()
+
+export function useHeld<T>(key: string, fallback: T): [T, (value: T) => void] {
+  const [value, setValue] = useState<T>(() => (held.has(key) ? (held.get(key) as T) : fallback))
+  function remember(next: T) {
+    held.set(key, next)
+    setValue(next)
+  }
+  return [value, remember]
+}

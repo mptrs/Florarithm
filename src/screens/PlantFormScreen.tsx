@@ -21,10 +21,11 @@ import {
   childrenOf,
   descendantCodes,
   findPlant,
+  originSources,
   ownedPlants,
   photoEventsFor,
   vocabName,
-  vocabOf,
+  vocabUsage,
 } from '~/data/selectors'
 import {
   deletePlantForever,
@@ -70,12 +71,13 @@ import {
   NumberField,
   SegmentedField,
   SelectField,
-  SuggestField,
   TextAreaField,
   TextField,
   ToggleField,
 } from '~/ui/fields'
 import { Icon } from '~/ui/Icon'
+import { PlantThumb } from '~/ui/plantPicture'
+import { plants as plantCount, SuggestField, usageGroups, type Usage } from '~/ui/suggest'
 import { GroupLabel } from '~/ui/Card'
 import { CodeBadge, Section } from '~/ui/primitives'
 
@@ -94,8 +96,9 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
   const state = useStore()
   const existing = code ? findPlant(state, code) : undefined
 
-  const locations = vocabOf(state, 'location')
-  const mediums = vocabOf(state, 'medium')
+  const locations = vocabUsage(state, 'location')
+  const mediums = vocabUsage(state, 'medium')
+  const sources = originSources(state)
   // Not itself, and nothing already below it: a plant that descends from its
   // own cutting is a loop, and a loop is a family tree that never ends.
   const offspring = code ? descendantCodes(state, code) : null
@@ -137,6 +140,9 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
   /** What the chosen parent filled in, so choosing another knows which
    *  fields are still the parent's and which are yours. */
   const [inherited, setInherited] = useState<Inherited>(NOTHING_INHERITED)
+  /** The plant "What it is" was just copied from, and what the fields held
+   *  before, so the copy can be taken back in one tap. */
+  const [copied, setCopied] = useState<{ from: string; was: WhatItIs } | null>(null)
   const routeParent = parentCode ? findPlant(state, parentCode) : undefined
   const { confirm, dialog: confirmDialog } = useConfirm()
 
@@ -222,6 +228,34 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
     take('variegation', variegation, setVariegation)
     take('name', name, setName)
     setInherited(next)
+  }
+
+  /**
+   * Take over what another plant is — genus to variegation — and nothing
+   * else. A second Thai Constellation is the same plant on paper, but it has
+   * its own name, and where it stands and what it grows in are decided when
+   * it arrives, not by the one you already have.
+   */
+  function copyWhatItIs(source: Plant) {
+    setCopied({ from: source.name, was: { genus, species, cross, hybrid, cultivar, variegation } })
+    setGenus(source.genus)
+    setSpecies(source.species)
+    setCross(source.cross)
+    setHybrid(source.cross !== '')
+    setCultivar(source.cultivar)
+    setVariegation(source.variegation)
+  }
+
+  function undoCopy() {
+    if (!copied) return
+    const { was } = copied
+    setGenus(was.genus)
+    setSpecies(was.species)
+    setCross(was.cross)
+    setHybrid(was.hybrid)
+    setCultivar(was.cultivar)
+    setVariegation(was.variegation)
+    setCopied(null)
   }
 
   const rollName = async () => {
@@ -412,6 +446,20 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
       <div className="flex flex-col gap-8 lg:flex-row">
         <div className="flex flex-col gap-8 lg:w-[32rem] lg:shrink-0">
           <Section icon="tag" title="What it is">
+            {copied ? (
+              <div className="flex items-center gap-3 rounded-lg bg-leaf-tint py-1 pr-1 pl-4">
+                <Icon name="copy" size={18} className="shrink-0 text-leaf" />
+                <p className="flex-1 py-2 text-[0.875rem] leading-5 text-pretty">
+                  What it is, from{' '}
+                  <span className="font-display text-[1rem] font-medium">{copied.from}</span>.
+                  Change anything that differs.
+                </p>
+                <Button variant="quiet" size="sm" onClick={undoCopy} className="shrink-0">
+                  Undo
+                </Button>
+              </div>
+            ) : null}
+
             <div className="flex gap-3">
               {/* Offered back off the collection, wishes included: a second
                   Monstera should not mean typing "deliciosa" a second time,
@@ -419,19 +467,50 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
                   it, so the species on offer are that genus's own. */}
               <SuggestField
                 label="Genus"
-                options={known.genera}
                 value={genus}
-                onChange={(event) => setGenus(event.target.value)}
+                onChange={setGenus}
+                groups={[
+                  {
+                    label: 'Genus · fills in the genus',
+                    items: known.genera.map((usage) => nameRow(usage, genus, true)),
+                  },
+                  // Only once you type: a list of every plant you have is not
+                  // something to look down, it is the collection. Matched on
+                  // its name too, because "the one like Gruyère" is how you
+                  // think of it.
+                  {
+                    label: 'A plant you have · fills in what it is',
+                    whileTyping: true,
+                    items: ownedPlants(state)
+                      .filter((plant) => plant.code !== code && plant.genus)
+                      .map((plant) => ({
+                        key: plant.code,
+                        value: plant.name,
+                        detail: formatSpecies(plant),
+                        detailItalic: true,
+                        meta: plant.code,
+                        leading: <PlantThumb plant={plant} />,
+                        search: `${formatSpecies(plant)} ${plant.code}`,
+                        onPick: () => copyWhatItIs(plant),
+                      })),
+                  },
+                ]}
                 placeholder="Monstera"
                 fieldClassName="flex-1"
               />
               <SuggestField
                 label="Species"
-                options={known.species}
                 value={species}
-                onChange={(event) => setSpecies(event.target.value)}
+                onChange={setSpecies}
+                groups={[
+                  {
+                    label: genus.trim() ? `Of ${genus.trim()}` : 'Species',
+                    items: known.species.map((usage) => nameRow(usage, species, true)),
+                  },
+                ]}
                 placeholder="deliciosa"
                 fieldClassName="flex-1"
+                align="end"
                 disabled={hybrid}
               />
             </div>
@@ -439,9 +518,14 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
             <div className="flex gap-3">
               <SuggestField
                 label="Cultivar"
-                options={known.cultivars}
                 value={cultivar}
-                onChange={(event) => setCultivar(event.target.value)}
+                onChange={setCultivar}
+                groups={[
+                  {
+                    label: 'Cultivar',
+                    items: known.cultivars.map((usage) => nameRow(usage, cultivar, false)),
+                  },
+                ]}
                 placeholder="Ninja"
                 fieldClassName="flex-1"
               />
@@ -546,9 +630,10 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
               <Section icon="place" title="Where it lives">
                 <SuggestField
                   label="Place"
-                  options={locations.map((item) => item.name)}
                   value={place}
-                  onChange={(event) => setPlace(event.target.value)}
+                  onChange={setPlace}
+                  groups={usageGroups(locations.all, locations.recent, place, 'All places')}
+                  addLabel="Add as a new place"
                   placeholder="Pick one, or type a new place"
                 />
 
@@ -570,11 +655,13 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
                   />
                   <SuggestField
                     label="Medium"
-                    options={mediums.map((item) => item.name)}
                     value={medium}
-                    onChange={(event) => setMedium(event.target.value)}
+                    onChange={setMedium}
+                    groups={usageGroups(mediums.all, mediums.recent, medium, 'All mediums')}
+                    addLabel="Add as a new medium"
                     placeholder="Pick one, or type a new medium"
                     fieldClassName="flex-1"
+                    align="end"
                   />
                 </div>
               </Section>
@@ -584,18 +671,45 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
                   there is a second plant for it to have come off. */}
               {candidates.length === 0 && !parentPlant ? null : (
                 <Section icon="scissors" title="Family">
-                    <SelectField
+                    {/* Pick only: typing searches your plants, and a parent
+                        is never a name you can make up. */}
+                    <SuggestField
                       label="Propagated from"
-                      value={parent}
-                      onChange={(event) => adoptParent(event.target.value)}
-                    >
-                      <option value="">Not propagated from one of yours</option>
-                      {candidates.map((candidate) => (
-                        <option key={candidate.code} value={candidate.code}>
-                          {candidate.name} · {candidate.code}
-                        </option>
-                      ))}
-                    </SelectField>
+                      value={parentPlant?.name ?? ''}
+                      groups={[
+                        {
+                          label: 'Plants you have',
+                          items: candidates.map((candidate) => ({
+                            key: candidate.code,
+                            value: candidate.name,
+                            detail: formatSpecies(candidate),
+                            detailItalic: true,
+                            meta: candidate.code,
+                            leading: <PlantThumb plant={candidate} />,
+                            search: `${formatSpecies(candidate)} ${candidate.code}`,
+                            selected: candidate.code === parent,
+                            onPick: () => adoptParent(candidate.code),
+                          })),
+                        },
+                        ...(parent
+                          ? [
+                              {
+                                label: '',
+                                untilTyping: true,
+                                items: [
+                                  {
+                                    key: 'none',
+                                    value: 'Not propagated from one of yours',
+                                    muted: true,
+                                    onPick: () => adoptParent(''),
+                                  },
+                                ],
+                              },
+                            ]
+                          : []),
+                      ]}
+                      placeholder="Not propagated from one of yours"
+                    />
 
                     {parentPlant ? <Lineage state={state} parent={parentPlant} /> : null}
 
@@ -671,10 +785,29 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
               </div>
 
               <div className="flex gap-3">
-                <TextField
+                <SuggestField
                   label="From whom"
                   value={originFrom}
-                  onChange={(event) => setOriginFrom(event.target.value)}
+                  onChange={setOriginFrom}
+                  groups={[
+                    {
+                      label: 'Had plants from before',
+                      items: sources.map((source) => ({
+                        key: source.name,
+                        value: source.name,
+                        detail: source.type ? label(source.type) : undefined,
+                        meta: plantCount(source.count),
+                        selected: source.name.toLowerCase() === originFrom.trim().toLowerCase(),
+                        // Picking the nursery says it is a nursery, unless
+                        // you have already said what this one was.
+                        onPick: () => {
+                          setOriginFrom(source.name)
+                          if (!originType && source.type) setOriginType(source.type)
+                        },
+                      })),
+                    },
+                  ]}
+                  addLabel="Use as a new name"
                   placeholder="Plantje.nl"
                   fieldClassName="flex-1"
                 />
@@ -804,17 +937,46 @@ function DeleteRow({ onDelete, wish }: { onDelete: () => void; wish?: boolean })
  */
 function knownNames(plants: readonly Plant[], genus: string, species: string) {
   const same = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase()
-  const sorted = (values: string[]) =>
-    [...new Set(values.filter(Boolean))].sort((a, b) => a.localeCompare(b))
+  const counted = (values: string[]): Usage[] => {
+    const counts = new Map<string, number>()
+    for (const value of values.map((v) => v.trim()).filter(Boolean)) {
+      counts.set(value, (counts.get(value) ?? 0) + 1)
+    }
+    return [...counts]
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => a.name.localeCompare(b.name))
+  }
 
-  const ofGenus = genus.trim() ? plants.filter((p) => same(p.genus, genus)) : []
+  const live = plants.filter((p) => !p.deleted)
+  const ofGenus = genus.trim() ? live.filter((p) => same(p.genus, genus)) : []
   const ofSpecies = species.trim() ? ofGenus.filter((p) => same(p.species, species)) : ofGenus
 
   return {
-    genera: sorted(plants.map((p) => p.genus)),
-    species: sorted(ofGenus.map((p) => p.species)),
-    cultivars: sorted(ofSpecies.map((p) => p.cultivar)),
+    genera: counted(live.map((p) => p.genus)),
+    species: counted(ofGenus.map((p) => p.species)),
+    cultivars: counted(ofSpecies.map((p) => p.cultivar)),
   }
+}
+
+/** A genus, species or cultivar on the list, with how many plants carry it. */
+function nameRow(usage: Usage, current: string, italic: boolean) {
+  return {
+    key: usage.name,
+    value: usage.name,
+    italic,
+    meta: plantCount(usage.count),
+    selected: usage.name.toLowerCase() === current.trim().toLowerCase(),
+  }
+}
+
+/** What "What it is" holds, for taking a copy back. */
+type WhatItIs = {
+  genus: string
+  species: string
+  cross: string
+  hybrid: boolean
+  cultivar: string
+  variegation: string
 }
 
 /** The fields a parent can fill in for the plant that came off it. */
