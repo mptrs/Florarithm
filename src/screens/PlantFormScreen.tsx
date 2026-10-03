@@ -123,6 +123,10 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
   const [originFrom, setOriginFrom] = useState('')
   const [originPrice, setOriginPrice] = useState('')
   const [originDate, setOriginDate] = useState(todayInputValue())
+  /** False for a plant whose arrival was never written down: the field shows
+   *  the day its record was made, and saving leaves the record without one
+   *  rather than stamping the day of the edit as the day it arrived. */
+  const [originDateKnown, setOriginDateKnown] = useState(true)
   const [wishNote, setWishNote] = useState('')
   const [status, setStatus] = useState<PlantStatus>('active')
   /** Empty string is "whichever is newest" — see `Plant.photoEventId`. */
@@ -157,7 +161,14 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
       setOriginType(existing.origin.type)
       setOriginFrom(existing.origin.from)
       setOriginPrice(existing.origin.price === null ? '' : String(existing.origin.price))
-      setOriginDate(existing.origin.date ? isoToInputValue(existing.origin.date) : todayInputValue())
+      setOriginDate(
+        existing.origin.date
+          ? isoToInputValue(existing.origin.date)
+          : promote
+            ? todayInputValue()
+            : isoToInputValue(existing.createdAt),
+      )
+      setOriginDateKnown(existing.origin.date !== null)
       setWishNote(existing.wishNote)
       setStatus(existing.status)
       setPhotoEventId(existing.photoEventId ?? '')
@@ -274,7 +285,8 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
         origin: {
           type: originType,
           from: originFrom.trim(),
-          date: inputValueToISO(originDate),
+          // Promoting a wish is the day it arrives, so that one is always said.
+          date: originDateKnown || promote ? inputValueToISO(originDate) : null,
           price: originPrice ? Number(originPrice) : null,
         },
         parent: parentPlant ? { code: parentPlant.code, method } : null,
@@ -685,7 +697,10 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
               <DatePickerField
                 label="In the collection since"
                 value={originDate}
-                onChange={setOriginDate}
+                onChange={(value) => {
+                  setOriginDate(value)
+                  setOriginDateKnown(true)
+                }}
                 fieldClassName="w-56"
               />
             </Section>
