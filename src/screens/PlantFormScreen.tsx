@@ -56,7 +56,7 @@ import {
   nowISO,
   todayInputValue,
 } from '~/lib/date'
-import { formatSpecies, label, normalizeCross, plural } from '~/lib/format'
+import { formatSpecies, label, normalizeCross, parseDecimal, plural, priceInputValue } from '~/lib/format'
 import { suggestNameAI } from '~/lib/aiNameGenerator'
 import { nextInLine } from '~/lib/nameGenerator'
 import { cn } from '~/lib/cn'
@@ -126,6 +126,10 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
   const [originFrom, setOriginFrom] = useState('')
   const [originPrice, setOriginPrice] = useState('')
   const [originDate, setOriginDate] = useState(todayInputValue())
+  /** False for a plant whose arrival was never written down: the field shows
+   *  the day its record was made, and saving leaves the record without one
+   *  rather than stamping the day of the edit as the day it arrived. */
+  const [originDateKnown, setOriginDateKnown] = useState(true)
   const [wishNote, setWishNote] = useState('')
   const [status, setStatus] = useState<PlantStatus>('active')
   /** Empty string is "whichever is newest" — see `Plant.photoEventId`. */
@@ -162,8 +166,15 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
       setMedium(vocabName(state, existing.mediumId).replace('—', ''))
       setOriginType(existing.origin.type)
       setOriginFrom(existing.origin.from)
-      setOriginPrice(existing.origin.price === null ? '' : String(existing.origin.price))
-      setOriginDate(existing.origin.date ? isoToInputValue(existing.origin.date) : todayInputValue())
+      setOriginPrice(priceInputValue(existing.origin.price))
+      setOriginDate(
+        existing.origin.date
+          ? isoToInputValue(existing.origin.date)
+          : promote
+            ? todayInputValue()
+            : isoToInputValue(existing.createdAt),
+      )
+      setOriginDateKnown(existing.origin.date !== null)
       setWishNote(existing.wishNote)
       setStatus(existing.status)
       setPhotoEventId(existing.photoEventId ?? '')
@@ -182,11 +193,12 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
   /**
    * Pick the plant this one came off, and take over what it already knows.
    *
-   * A cutting is the same plant as its parent in everything but its pot, so
-   * what it is, its next name in the line, where it stands and how it is
-   * grown are all already on record — typing them again, or rolling the dice
-   * for a name the line has already decided, was asking for what the app
-   * knew. Only fields still holding what the last parent put there move:
+   * A cutting is the same plant as its parent, so what it is and its next
+   * name in the line are already on record — typing them again, or rolling
+   * the dice for a name the line has already decided, was asking for what
+   * the app knew. Where it stands and how it is grown are not: a fresh
+   * cutting roots somewhere else, in something else, than the plant it came
+   * off, so those are left for you. Only fields still holding what the last parent put there move:
    * anything you typed yourself stays yours, whichever parent you pick after.
    * Only while adding — re-parenting a plant you have is fixing the tree, not
    * describing a new plant.
@@ -215,9 +227,6 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
     take('cultivar', cultivar, setCultivar)
     take('variegation', variegation, setVariegation)
     take('name', name, setName)
-    take('place', place, setPlace)
-    take('system', system, setSystem)
-    take('medium', medium, setMedium)
     setInherited(next)
   }
 
@@ -303,13 +312,14 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
         variegation: variegationTrimmed,
         locationId,
         system,
-        potSize: potSize ? Number(potSize) : null,
+        potSize: parseDecimal(potSize),
         mediumId,
         origin: {
           type: originType,
           from: originFrom.trim(),
-          date: inputValueToISO(originDate),
-          price: originPrice ? Number(originPrice) : null,
+          // Promoting a wish is the day it arrives, so that one is always said.
+          date: originDateKnown || promote ? inputValueToISO(originDate) : null,
+          price: parseDecimal(originPrice),
         },
         parent: parentPlant ? { code: parentPlant.code, method } : null,
         status,
@@ -818,7 +828,10 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
               <DatePickerField
                 label="In the collection since"
                 value={originDate}
-                onChange={setOriginDate}
+                onChange={(value) => {
+                  setOriginDate(value)
+                  setOriginDateKnown(true)
+                }}
                 fieldClassName="w-56"
               />
             </Section>
@@ -974,9 +987,6 @@ type Inherited = {
   cultivar: string
   variegation: string
   name: string
-  place: string
-  system: System
-  medium: string
 }
 
 /** The blank form, which is also what "no parent" hands back. */
@@ -987,16 +997,14 @@ const NOTHING_INHERITED: Inherited = {
   cultivar: '',
   variegation: '',
   name: '',
-  place: '',
-  system: 'hydro',
-  medium: '',
 }
 
 /**
  * What a cutting already is, the moment it comes off `parent`.
  *
- * Not the pot size, the price or the seller: a cutting starts in a smaller
- * pot than the one it came off, and where it came from is the family itself.
+ * Only what the What it is section asks: not its place, system, medium or
+ * pot, since a cutting starts out somewhere other than its parent, and not
+ * the price or the seller, since where it came from is the family itself.
  */
 function inheritFrom(state: State, parent: Plant, self?: string): Inherited {
   const taken = new Set(state.plants.filter((p) => p.code !== self).map((p) => p.name))
@@ -1007,9 +1015,6 @@ function inheritFrom(state: State, parent: Plant, self?: string): Inherited {
     cultivar: parent.cultivar,
     variegation: parent.variegation,
     name: nextInLine(parent.name, taken),
-    place: vocabName(state, parent.locationId).replace('—', ''),
-    system: parent.system,
-    medium: vocabName(state, parent.mediumId).replace('—', ''),
   }
 }
 

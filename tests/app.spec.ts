@@ -290,11 +290,12 @@ test('picking the parent fills in what the parent already knows', async ({ page 
   await page.getByLabel('Propagated from').click()
   await page.getByRole('option', { name: /Fluweel/ }).click()
 
-  // What it is, its place, and the next name in the line — no dice needed.
+  // What it is and the next name in the line — no dice needed.
   await expect(page.getByLabel('Genus')).toHaveValue('Monstera')
   await expect(page.getByLabel('Species', { exact: true })).toHaveValue('deliciosa')
   await expect(page.getByLabel('Name', { exact: true })).toHaveValue('Fluweel II')
-  await expect(page.getByLabel('Place')).toHaveValue('Kitchen')
+  // Where it lives is not the parent's: a cutting roots somewhere of its own.
+  await expect(page.getByLabel('Place')).toHaveValue('')
   // Off one of your own, there is no shop, seller or price to ask about.
   await expect(page.getByRole('button', { name: 'Nursery' })).toBeHidden()
   await expect(page.getByLabel('Price')).toBeHidden()

@@ -21,6 +21,7 @@ import { newId } from '~/lib/id'
 import { Button } from '~/ui/Button'
 import { Icon, type IconName } from '~/ui/Icon'
 import { DateChip, DatePicker } from '~/ui/DatePicker'
+import { parseDecimal } from '~/lib/format'
 import { NumberField, TextAreaField, TextField } from '~/ui/fields'
 import { SuggestField, usageGroups } from '~/ui/suggest'
 import { Sheet } from '~/ui/Sheet'
@@ -494,7 +495,7 @@ function RepotForm({
   const save = async () => {
     const mediumId = await ensureVocabItem('medium', medium)
     const fields = {
-      toSize: toSize ? Number(toSize) : null,
+      toSize: parseDecimal(toSize),
       mediumId: mediumId ?? plant.mediumId,
       reason: reason.trim(),
       date,

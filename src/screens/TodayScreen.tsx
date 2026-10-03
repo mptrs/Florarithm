@@ -42,6 +42,7 @@ import { useSyncStatus } from '~/data/sync'
 import { daysSince, formatDayMonth } from '~/lib/date'
 import { formatSpecies, plural } from '~/lib/format'
 import { useRemembered } from '~/lib/remembered'
+import { useToday } from '~/lib/today'
 import { navigate, routes } from '~/lib/router'
 import { Banner } from '~/ui/Banner'
 import { EmptyPotsReminder } from '~/ui/EmptyPots'
@@ -65,6 +66,8 @@ const SORTS = [
 
 export function TodayScreen() {
   const state = useStore()
+  // Everything below counts days from now; this redraws it when now is a new day.
+  useToday()
   const plants = todayList(state)
   const syncStatus = useSyncStatus()
   const [sort, setSort] = useRemembered<Sort>(
