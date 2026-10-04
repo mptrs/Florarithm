@@ -156,13 +156,15 @@ export function WaterFigure({
       title={watered ? 'Watered today. Press to take it back' : 'Watered'}
       className={cn(
         'warm relative flex min-h-14 shrink-0 items-center justify-end gap-2 rounded-md py-2 pr-3 pl-2',
-        'hover:bg-sunk active:bg-line',
+        // The row's hover shades the whole line; the control steps one shade
+        // darker under the pointer, so it still reads as the part that presses.
+        'group/water hover:bg-line active:opacity-70',
         'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-leaf',
         className,
       )}
     >
       {watered ? null : (
-        <Icon name="droplet" size={14} className="shrink-0 text-ink-faint opacity-70" />
+        <Icon name="droplet" size={14} className="shrink-0 text-ink-faint opacity-70 transition-opacity group-hover/water:text-ink-muted group-hover/water:opacity-100" />
       )}
       <DaysSinceWater days={watered ? 0 : days} thirsty={thirsty} />
       {/* One ring, centred on the check: the pour on a plant's page, at the

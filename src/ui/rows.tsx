@@ -18,8 +18,9 @@ import { cn } from '~/lib/cn'
  * The shell: a whole-row link, always at least a thumb tall.
  *
  * `trailing` is a control at the row's end that is not part of the link — a
- * button cannot sit inside an anchor. The two then answer the pointer
- * separately, so a press on either one shows which of the two it was.
+ * button cannot sit inside an anchor. The row is shaded as one piece under
+ * the pointer, the control included, so the hover runs the whole line; a
+ * press still lands on one of the two alone, and only that one darkens.
  */
 export function RowLink({
   href,
@@ -38,7 +39,8 @@ export function RowLink({
       className={cn(
         'flex min-h-touch items-center gap-3 px-3 py-3',
         trailing ? 'min-w-0 flex-1' : 'border-b border-line',
-        'warm active:bg-sunk hover:bg-sunk',
+        'warm active:bg-sunk',
+        trailing ? '' : 'hover:bg-sunk',
         className,
       )}
     >
@@ -49,7 +51,7 @@ export function RowLink({
   if (!trailing) return link
 
   return (
-    <div className="flex items-center border-b border-line">
+    <div className="warm flex items-center border-b border-line hover:bg-sunk">
       {link}
       {trailing}
     </div>
