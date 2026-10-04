@@ -145,14 +145,17 @@ export function TodayScreen() {
         <div>
           {/* The table header only exists once there are columns to head, and
               Place is a column only while nothing above the row is saying it. */}
-          <div className="hidden items-center gap-3 border-b border-line-strong px-3 pb-2 lg:flex">
+          <div className="hidden items-center gap-3 border-b border-line-strong pb-2 pl-3 lg:flex">
             <span className="w-10 shrink-0" />
             <ColumnHeader className="flex-1">Plant</ColumnHeader>
-            <div className="flex items-center gap-8">
+            {/* Built the way a row is: the cells sit inside the link and its
+                padding, and the figure's column stands outside it with no gap, so each
+                head is over what it names. */}
+            <div className="flex items-center gap-8 pr-3">
               {byPlace ? null : <ColumnHeader className="w-44">Place</ColumnHeader>}
               <ColumnHeader className="w-24">Last water</ColumnHeader>
-              <ColumnHeader className="w-24 pr-3 text-right">Days</ColumnHeader>
             </div>
+            <ColumnHeader className="-ml-3 w-32 pr-3 text-right">Days</ColumnHeader>
           </div>
 
           {runs.map(([place, members], index) => (
@@ -213,16 +216,20 @@ function TodayRow({ plant, showPlace }: { plant: Plant; showPlace: boolean }) {
     <RowLink
       href={routes.plant(plant.code)}
       trailing={
-        <WaterFigure
-          name={plant.name}
-          days={days}
-          thirsty={isThirsty(days)}
-          watered={today !== null}
-          // Always fed, as on the plant's page.
-          onWater={() => void logEvent({ type: 'water', plantCode: plant.code, fertilized: true })}
-          onTakeBack={takeBack}
-          className="min-w-18 lg:w-24"
-        />
+        // The column keeps its width; the button in it is only as wide as its
+        // drop and figure, so what presses is what is drawn.
+        <div className="flex shrink-0 justify-end lg:w-32">
+          <WaterFigure
+            name={plant.name}
+            days={days}
+            thirsty={isThirsty(days)}
+            watered={today !== null}
+            // Always fed, as on the plant's page.
+            onWater={() => void logEvent({ type: 'water', plantCode: plant.code, fertilized: true })}
+            onTakeBack={takeBack}
+            className="min-w-18 lg:min-w-0"
+          />
+        </div>
       }
     >
       <PlantThumb plant={plant} />
