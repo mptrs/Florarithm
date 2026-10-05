@@ -28,12 +28,23 @@ async function addPlant(page: Page, species: string, name: string, place = 'Livi
 }
 
 /**
- * Water the plant. One press on either shape: the drop on a phone, the Water
- * button on a desktop. Both carry the same name, and the one this viewport
- * does not show is `display: none`, so the role query only ever finds one.
+ * One of the plant page's actions, ready to press. A phone shows them as they
+ * are — the drop, the tab bar's Log; from `md` they are items in the menu on
+ * the photograph, so this opens it first. The copy this viewport does not
+ * show is `display: none`, so each role query only ever finds one.
  */
+async function plantAction(page: Page, name: 'Water' | 'Log activity'): Promise<Locator> {
+  const more = page.getByRole('button', { name: 'More for this plant' })
+  if (await more.isVisible()) {
+    await more.click()
+    return page.getByRole('menuitem', { name, exact: true })
+  }
+  return page.getByRole('button', { name, exact: true })
+}
+
+/** Water the plant: one press of the drop, or one choice from the menu. */
 async function water(page: Page) {
-  await page.getByRole('button', { name: 'Water', exact: true }).click()
+  await (await plantAction(page, 'Water')).click()
 }
 
 /**
@@ -50,7 +61,7 @@ async function pressTwiceAtOnce(button: Locator) {
 
 /** The sheet of everything that is not a plain watering. */
 async function openLogSheet(page: Page) {
-  await page.getByRole('button', { name: 'Log activity' }).click()
+  await (await plantAction(page, 'Log activity')).click()
 }
 
 /** Attach a picture and file it as an entry of its own. */
@@ -152,8 +163,9 @@ test('a scanned sticker opens the plant with the actions already in view', async
   // Exactly what an NFC tag carries: a cold load straight at the hash.
   await page.goto(`#p=${code}`)
 
-  // The drop on a phone, the Water button on a desktop — same name either way.
-  const action = page.getByRole('button', { name: 'Water', exact: true })
+  // The drop on a phone; from `md`, the menu on the photograph that holds it.
+  const phone = page.getByRole('button', { name: 'Water', exact: true })
+  const action = (await phone.isVisible()) ? phone : page.getByRole('button', { name: 'More for this plant' })
   await expect(action).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Gruyère' })).toBeVisible()
 
@@ -215,7 +227,7 @@ test('a plant takes water once a day, and a second press folds into the first', 
 
   // The first two before the first is written: each once looked, found no
   // watering yet, and logged one of its own.
-  await pressTwiceAtOnce(page.getByRole('button', { name: 'Water', exact: true }))
+  await pressTwiceAtOnce(await plantAction(page, 'Water'))
   await water(page)
 
   // Watering something twice in one day is still one watering.

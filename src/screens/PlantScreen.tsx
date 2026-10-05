@@ -13,7 +13,7 @@
  * Water and Log activity sit on the title row as two plain buttons instead.
  */
 
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react'
 import { usePhoto } from '~/data/photos'
 import {
   childrenOf,
@@ -46,7 +46,7 @@ import { Chip } from '~/ui/Chip'
 import { Icon, type IconName } from '~/ui/Icon'
 import { showToast } from '~/ui/toast'
 import { onLogRequest } from '~/ui/logRequest'
-import { WaterButton, WaterDrop } from '~/ui/Water'
+import { WaterDrop } from '~/ui/Water'
 import { Plate } from '~/ui/Plate'
 import { EmptyState } from '~/ui/primitives'
 import { QrCodeBox } from '~/ui/QrCode'
@@ -100,6 +100,22 @@ export function PlantScreen({ code }: { code: string }) {
     }
   }
 
+  /* From `md` everything this page does sits behind the one control on the
+     photograph — see `PlantMenu`. A wish has none of it but Edit. */
+  const menu = plant.wish ? null : (
+    <PlantMenu
+      plant={plant}
+      onWater={() => {
+        // No pour plays in a menu, so here the words are the whole answer.
+        void logEvent({ type: 'water', plantCode: plant.code, fertilized: true })
+        showToast(`${plant.name} watered`)
+      }}
+      onLog={() => setIntent({ kind: 'new' })}
+      onShowQr={() => setShowQr(true)}
+      onCopyLink={() => void copyLink()}
+    />
+  )
+
   return (
     <div className="relative -mx-4 -mt-6 md:mx-0 md:mt-0">
       {/* `contents`, not a box: the frame inside is sticky, and sticky only
@@ -113,6 +129,7 @@ export function PlantScreen({ code }: { code: string }) {
           onShowQr={() => setShowQr(true)}
           onHideQr={() => setShowQr(false)}
           onAddPhoto={() => setIntent({ kind: 'new' })}
+          menu={menu}
         />
       </div>
 
@@ -156,21 +173,19 @@ export function PlantScreen({ code }: { code: string }) {
               <BackButton variant="bare" />
             </div>
 
-            {/* The link is the everyday half of the tag, so it rides the name's own
-                line at the far edge of it. The QR is the other half and lives down
-                on the photograph, next to the place. */}
-            {/* From `md` a name and three buttons share a column that is
-                narrow at both ends of its range — beside the sidebar, and
-                from `lg` beside the photograph too. Where they no longer fit
-                on one line the buttons wrap under the name, a row step down,
-                rather than running over it. */}
-            <div className="flex items-start justify-between gap-3 md:flex-wrap">
+            {/* On a phone the link is the everyday half of the tag, so it rides
+                the name's own line at the far edge of it; the QR is the other
+                half and lives down on the photograph, next to the place. From
+                `md` both go into the menu on the photograph, with Water and Log:
+                buttons beside a name were pushed a line down by a long one, and
+                a name is typed, not chosen. */}
+            <div className="flex items-start justify-between gap-3">
               {/* Name and species share this box so the gap between them is
                   fixed to the name's own line, not to whatever height the
-                  buttons beside them happen to be — a wish, with no buttons
-                  row at all, would otherwise read with different spacing than
-                  an owned plant. */}
-              <div className="min-w-0">
+                  button beside them happens to be — a wish, with no link at
+                  all, would otherwise read with different spacing than an
+                  owned plant. */}
+              <div className="min-w-0 flex-1">
                 {/* `break-words`: a name is typed, not chosen, and one long word
                     with nowhere to break ran straight off the screen. */}
                 <h1 className="font-display text-[2.5rem] leading-[2.6875rem] font-medium tracking-[-0.025em] break-words">
@@ -186,29 +201,17 @@ export function PlantScreen({ code }: { code: string }) {
                 ) : null}
               </div>
               {plant.wish ? null : (
-                <div className="flex shrink-0 items-center gap-2">
-                  <IconButton
-                    icon="link"
-                    label="Copy the tag link"
-                    variant="quiet"
-                    onClick={() => void copyLink()}
-                  />
-                  {/* A desktop spells both actions out here. A phone waters from
-                      the drop and logs from the tab bar's centre button, which
-                      turns into Log on this page — see `AppShell`. `md:contents`
-                      un-boxes the wrapper from `md` up, so the two buttons become
-                      direct flex items of the row. */}
-                  <div className="hidden md:contents">
-                    <WaterButton onWater={water} />
-                    <Button icon="plus" onClick={() => setIntent({ kind: 'new' })}>
-                      Log activity
-                    </Button>
-                  </div>
-                </div>
+                <IconButton
+                  icon="link"
+                  label="Copy the tag link"
+                  variant="quiet"
+                  className="md:hidden"
+                  onClick={() => void copyLink()}
+                />
               )}
             </div>
 
-            {plant.wish ? null : <TagLine plant={plant} onShowQr={() => setShowQr(true)} />}
+            {plant.wish ? null : <TagLine plant={plant} />}
           </div>
 
           {plant.wish ? (
@@ -240,6 +243,7 @@ export function PlantScreen({ code }: { code: string }) {
                     showQr={showQr}
                     onHideQr={() => setShowQr(false)}
                     onAddPhoto={() => setIntent({ kind: 'new' })}
+                    menu={menu}
                   />
                 </div>
                 <Care plant={plant} />
@@ -358,12 +362,15 @@ function Hero({
   onShowQr,
   onHideQr,
   onAddPhoto,
+  menu,
 }: {
   plant: Plant
   showQr: boolean
   onShowQr: () => void
   onHideQr: () => void
   onAddPhoto: () => void
+  /** From `md`, in Edit's place: see `PlantMenu`. */
+  menu: ReactNode
 }) {
   const state = useStore()
   const photoEvent = currentPhotoEvent(state, plant.code)
@@ -459,13 +466,30 @@ function Hero({
 
       {/* Above the sheet rather than under it, so the overflow menu can open
           over the record instead of being clipped by the photograph's edge.
-          Transparent, so only the controls themselves take a tap. */}
-      <div style={band} className={cn('pointer-events-none absolute inset-x-0 top-0 z-20', box)}>
+          Transparent, so only the controls themselves take a tap. The sheet
+          is `z-30`; while the menu is open this layer steps over it, or a
+          short band would end the menu at the sheet's edge. */}
+      <div
+        style={band}
+        className={cn(
+          'pointer-events-none absolute inset-x-0 top-0 z-20 has-[[aria-expanded=true]]:z-40',
+          box,
+        )}
+      >
         <div className="pointer-events-auto absolute inset-x-4 top-4 flex items-start justify-between">
         <BackButton />
 
         <div className="relative flex items-center gap-2">
-          <EditLink plant={plant} />
+          {menu ? (
+            <>
+              <div className="md:hidden">
+                <EditLink plant={plant} />
+              </div>
+              <div className="hidden md:block">{menu}</div>
+            </>
+          ) : (
+            <EditLink plant={plant} />
+          )}
         </div>
       </div>
 
@@ -487,7 +511,8 @@ function Hero({
             type="button"
             onClick={onShowQr}
             aria-label="Show the QR code"
-            className="lift flex size-10 shrink-0 items-center justify-center rounded-full bg-floating text-ink shadow-md active:opacity-70 hover:bg-surface hover:shadow-lg"
+            // From `md` the QR is in the menu at the top of the photograph.
+            className="lift flex size-10 shrink-0 md:hidden items-center justify-center rounded-full bg-floating text-ink shadow-md active:opacity-70 hover:bg-surface hover:shadow-lg"
           >
             <Icon name="qr" size={19} />
           </button>
@@ -550,11 +575,14 @@ function Specimen({
   showQr,
   onHideQr,
   onAddPhoto,
+  menu = null,
 }: {
   plant: Plant
   showQr: boolean
   onHideQr: () => void
   onAddPhoto: () => void
+  /** In Edit's place on an owned plant: see `PlantMenu`. */
+  menu?: ReactNode
 }) {
   const state = useStore()
   const photoEvent = currentPhotoEvent(state, plant.code)
@@ -564,7 +592,7 @@ function Specimen({
   const shownPhoto = photoEvent ? photo : null
 
   return (
-    <figure>
+    <figure className="relative">
       <div
         className="relative overflow-hidden rounded-xl bg-sunk"
         style={{ aspectRatio: frameRatio(photoEvent?.photo) }}
@@ -584,14 +612,14 @@ function Specimen({
           </>
         )}
 
-        {/* Laid over the photograph, so one inset from its edge — the same 16
-            the band's own controls sit at. */}
-        <div className="absolute top-4 right-4">
-          <EditLink plant={plant} />
-        </div>
-
         {showQr ? <QrVeil plant={plant} onHide={onHideQr} /> : null}
       </div>
+
+      {/* Laid over the photograph, so one inset from its edge — the same 16
+          the band's own controls sit at. Outside the frame rather than in
+          it: the frame clips, and a menu opening from here would be cut off
+          at the bottom of a landscape photograph. */}
+      <div className="absolute top-4 right-4 z-10">{menu ?? <EditLink plant={plant} />}</div>
 
       {shownPhoto ? (
         <figcaption className="mt-2 flex items-center justify-between gap-3 text-[0.8125rem] leading-[1.125rem] text-ink-muted">
@@ -609,11 +637,12 @@ function Specimen({
  * The tag, under the name, from `lg`.
  *
  * On a phone the place and the QR ride the foot of the photograph. Beside the
- * record the photograph is its own picture with nothing laid over it but the
- * way to edit, so the two come down to the name — they are facts about where
- * this plant is, and that is the line they belong on.
+ * record the photograph is its own picture with nothing laid over it but its
+ * menu, so the place and the code come down to the name — they are facts
+ * about where this plant is, and that is the line they belong on. Showing the
+ * QR is in the menu, with everything else this page does.
  */
-function TagLine({ plant, onShowQr }: { plant: Plant; onShowQr: () => void }) {
+function TagLine({ plant }: { plant: Plant }) {
   const state = useStore()
   const place = vocabName(state, plant.locationId)
 
@@ -625,17 +654,10 @@ function TagLine({ plant, onShowQr }: { plant: Plant; onShowQr: () => void }) {
           {place}
         </span>
       ) : null}
-      {/* Outdented by its own padding, so its text is the row step from the
-          place rather than two of them. */}
-      <button
-        type="button"
-        onClick={onShowQr}
-        aria-label="Show the QR code"
-        className="warm -ml-3 inline-flex h-8 items-center gap-1 rounded-md px-3 font-semibold text-leaf hover:bg-sunk active:opacity-70"
-      >
+      <span className="inline-flex items-center gap-1 font-semibold text-leaf">
         <Icon name="qr" size={16} />
         <span className="font-mono tracking-[0.08em]">{plant.code}</span>
-      </button>
+      </span>
     </div>
   )
 }
@@ -667,6 +689,149 @@ function EditLink({ plant }: { plant: Plant }) {
     >
       <Icon name="edit" size={19} />
     </a>
+  )
+}
+
+/**
+ * Everything this page does, from `md`, in one place on the photograph.
+ *
+ * Water, Log, Edit, the QR and the link used to be spread over the title row
+ * and the photograph, and the buttons beside the name were pushed a line down
+ * whenever the name was long. So they all moved here, behind a chip of the
+ * same size and shape as every other control on the photograph — this one
+ * stands where Edit stood. A phone keeps its own: the drop, the tab bar's Log,
+ * Edit on the photograph and the link beside the name.
+ *
+ * The panel is a card like the ones under it: each row leads with the same
+ * tinted chip as Last watered and the history, and the two groups carry the
+ * small capitals of Details and Family — care first, then the plant itself.
+ * It hangs under the chip, right-aligned to it, opening from that corner.
+ */
+function PlantMenu({
+  plant,
+  onWater,
+  onLog,
+  onShowQr,
+  onCopyLink,
+}: {
+  plant: Plant
+  onWater: () => void
+  onLog: () => void
+  onShowQr: () => void
+  onCopyLink: () => void
+}) {
+  const [open, setOpen] = useState(false)
+  const trigger = useRef<HTMLButtonElement>(null)
+  const panel = useRef<HTMLDivElement>(null)
+
+  const close = () => {
+    setOpen(false)
+    trigger.current?.focus()
+  }
+  const choose = (action: () => void) => () => {
+    setOpen(false)
+    action()
+  }
+
+  // Opened from the keyboard or not, the first item takes focus, so the
+  // arrows have somewhere to start from.
+  useEffect(() => {
+    if (open) panel.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus()
+  }, [open])
+
+  const onKeyDown = (event: KeyboardEvent) => {
+    const items = [...(panel.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? [])]
+    const at = items.indexOf(document.activeElement as HTMLElement)
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      close()
+    } else if (event.key === 'ArrowDown') {
+      event.preventDefault()
+      items[(at + 1) % items.length]?.focus()
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault()
+      items[(at - 1 + items.length) % items.length]?.focus()
+    } else if (event.key === 'Tab') {
+      setOpen(false)
+    }
+  }
+
+  // A row of the card below it, pressable: the same tinted chip leads it.
+  const item = 'warm flex min-h-touch w-full items-center gap-3 px-4 py-1 text-left text-[0.9375rem] font-medium text-ink hover:bg-sunk focus-visible:bg-sunk focus-visible:outline-none active:opacity-70'
+
+  return (
+    <div className="relative">
+      <button
+        ref={trigger}
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label="More for this plant"
+        title="More for this plant"
+        onClick={() => setOpen((was) => !was)}
+        className={cn(
+          'lift flex size-10 items-center justify-center rounded-full text-ink shadow-md active:opacity-70 hover:bg-surface hover:shadow-lg',
+          'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-leaf',
+          open ? 'bg-surface' : 'bg-floating',
+        )}
+      >
+        <Icon name="more" size={19} />
+      </button>
+
+      {open ? (
+        <>
+          <button
+            type="button"
+            aria-label="Close menu"
+            tabIndex={-1}
+            onClick={() => setOpen(false)}
+            className="fixed inset-0 z-40 cursor-default"
+          />
+          <div
+            ref={panel}
+            role="menu"
+            aria-label="More for this plant"
+            onKeyDown={onKeyDown}
+            className={cn(
+              'absolute top-full right-0 z-50 mt-2 w-60 overflow-hidden pb-2',
+              'rounded-xl border border-line bg-surface shadow-xl',
+              'origin-top-right animate-panel-in motion-reduce:animate-none',
+            )}
+          >
+            <div role="group" aria-label="Care">
+              <div aria-hidden className="px-4 pt-3 pb-1">
+                <GroupLabel>Care</GroupLabel>
+              </div>
+              <button type="button" role="menuitem" onClick={choose(onWater)} className={item}>
+                <IconChip icon="droplet" tone="water" />
+                Water
+              </button>
+              <button type="button" role="menuitem" onClick={choose(onLog)} className={item}>
+                <IconChip icon="plus" tone="leaf" />
+                Log activity
+              </button>
+            </div>
+            <div role="group" aria-label="The plant" className="mt-2 border-t border-line">
+              <div aria-hidden className="px-4 pt-3 pb-1">
+                <GroupLabel>The plant</GroupLabel>
+              </div>
+              <a href={routes.edit(plant.code)} role="menuitem" className={item}>
+                <IconChip icon="edit" tone="ink" />
+                Edit
+              </a>
+              <button type="button" role="menuitem" onClick={choose(onShowQr)} className={item}>
+                <IconChip icon="qr" tone="ink" />
+                Show QR code
+              </button>
+              <button type="button" role="menuitem" onClick={choose(onCopyLink)} className={item}>
+                <IconChip icon="link" tone="ink" />
+                Copy tag link
+              </button>
+            </div>
+          </div>
+        </>
+      ) : null}
+    </div>
   )
 }
 
