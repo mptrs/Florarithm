@@ -38,8 +38,9 @@ async function addPlantWithPhoto(page: Page): Promise<string> {
   await expect(page.getByRole('heading', { name: 'Gruyère' })).toBeVisible()
 
   // Photographing is one of the things the log sheet does. This project runs
-  // Desktop Chrome, where Log activity is a button on the title row.
-  await page.getByRole('button', { name: 'Log activity' }).click()
+  // Desktop Chrome, where Log activity is in the menu on the photograph.
+  await page.getByRole('button', { name: 'More for this plant' }).click()
+  await page.getByRole('menuitem', { name: 'Log activity' }).click()
   const chooser = page.waitForEvent('filechooser')
   await page.getByRole('button', { name: 'Take a photo' }).click()
   await (await chooser).setFiles({ name: 'g.png', mimeType: 'image/png', buffer: png(1200, 1600) })

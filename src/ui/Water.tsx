@@ -4,13 +4,13 @@
  * Fertiliser always goes in with the water, so there is only one kind of
  * watering left to choose — and a fan or a caret with one thing behind it is
  * a question with one answer. The drop waters on a tap; everything else is
- * the "Log activity" button beside the plant's name.
+ * Log, in the tab bar's centre.
  *
  * `WaterDrop` is the phone's: fixed in the corner a thumb rests in, above the
- * tab bar. `WaterButton` is the desktop's, on the title row, where a corner
- * button would drift away from the record as the window widens. Both answer a
- * press with the same splash, and both flip to the check for as long as it
- * lasts, so a second press reads as a second press rather than as nothing.
+ * tab bar. It answers a press with a splash and flips to the check for as
+ * long as that lasts, so a second press reads as a second press rather than as
+ * nothing. From `md` a plant is watered from the menu on its photograph
+ * instead — see `PlantMenu`.
  *
  * There is no undo. A watering pressed by mistake is swiped out of the history,
  * and pressing again the same day folds into the entry already there — see
@@ -75,30 +75,6 @@ export function WaterDrop({ onWater }: { onWater: () => void }) {
         {splash ? <SplashMark splash={splash} ring="size-full" /> : null}
       </button>
     </div>
-  )
-}
-
-export function WaterButton({ onWater }: { onWater: () => void }) {
-  const [splash, press] = useSplash(onWater)
-
-  return (
-    <button
-      type="button"
-      onClick={press}
-      className={cn(
-        'relative inline-flex h-control shrink-0 items-center justify-center gap-2 rounded-md px-4 font-ui',
-        'lift text-body font-medium text-on-accent shadow-md active:opacity-70',
-        'transition-[background-color] duration-200 ease-grow',
-        splash ? 'bg-leaf' : 'bg-water hover:bg-water-deep',
-        'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-leaf',
-      )}
-    >
-      <Icon name={splash ? 'check' : 'droplet'} size={20} />
-      Water
-      {/* A circle sized to the button's height rather than stretched to its
-          width, which would draw an ellipse. */}
-      {splash ? <SplashMark splash={splash} ring="size-12" /> : null}
-    </button>
   )
 }
 
