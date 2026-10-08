@@ -390,6 +390,22 @@ test('a plant page propagates from the log sheet and from its family', async ({ 
   await expect(page.getByLabel('Name', { exact: true })).toHaveValue('Marla III')
 })
 
+test('a repot can move the plant into another system', async ({ page }) => {
+  const code = await addPlant(page, 'Philodendron gloriosum', 'Glory')
+
+  await openLogSheet(page)
+  await page.getByRole('button', { name: 'Repot' }).click()
+  await page.getByRole('radio', { name: 'Soil' }).click()
+  await page.getByRole('button', { name: 'Log repot' }).click()
+
+  await openHistory(page)
+  await expect(main(page).getByText('Hydro → Soil').first()).toBeVisible()
+
+  // The plant itself is in soil now, not just the entry that says so.
+  await page.goto(`#edit/${code}`)
+  await expect(page.getByRole('radio', { name: 'Soil' })).toBeChecked()
+})
+
 test('genus, species and cultivar are offered back off the collection', async ({ page }) => {
   await addPlant(page, 'Monstera deliciosa', 'Fluweel')
   await addPlant(page, 'Alocasia zebrina', 'Streep')

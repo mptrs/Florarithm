@@ -1261,9 +1261,14 @@ export function detailOf(event: PlantEvent, state: ReturnType<typeof useStore>):
       // Fertiliser is in every watering, so saying so on every row says nothing.
       return ''
     case 'repot': {
+      // Only a move between systems is news; staying in soil says nothing.
+      const system =
+        event.toSystem && event.fromSystem && event.toSystem !== event.fromSystem
+          ? `${label(event.fromSystem)} → ${label(event.toSystem)}`
+          : ''
       const size = event.toSize ? `${event.fromSize ?? '?'} → ${event.toSize} cm` : ''
       const medium = event.mediumId ? vocabName(state, event.mediumId) : ''
-      return [size, medium, event.reason].filter(Boolean).join(' · ')
+      return [system, size, medium, event.reason].filter(Boolean).join(' · ')
     }
     case 'note':
       if (event.fromWishlist === undefined) return event.text
