@@ -199,6 +199,11 @@ export type RepotEvent = EventBase & {
   fromSize: number | null
   toSize: number | null
   mediumId: Id | null
+  /** Moving a plant from soil into pon happens at a repot, so the system
+   *  changes the way the pot and the medium do. Absent on entries logged
+   *  before the repot asked. */
+  fromSystem?: System
+  toSystem?: System
   reason: string
 }
 
