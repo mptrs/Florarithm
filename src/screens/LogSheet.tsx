@@ -23,14 +23,22 @@ import {
   useStore,
   type EventDraft,
 } from '~/data/store'
-import type { EventPhoto, NoteEvent, Plant, PlantEvent, RepotEvent } from '~/data/types'
+import {
+  SYSTEMS,
+  type EventPhoto,
+  type NoteEvent,
+  type Plant,
+  type PlantEvent,
+  type RepotEvent,
+  type System,
+} from '~/data/types'
 import { nowISO } from '~/lib/date'
 import { newId } from '~/lib/id'
 import { Button } from '~/ui/Button'
 import { Icon, type IconName } from '~/ui/Icon'
 import { DateChip, DatePicker } from '~/ui/DatePicker'
-import { parseDecimal } from '~/lib/format'
-import { CheckField, NumberField, TextAreaField, TextField } from '~/ui/fields'
+import { label, parseDecimal } from '~/lib/format'
+import { CheckField, NumberField, SegmentedField, TextAreaField, TextField } from '~/ui/fields'
 import { SuggestField, usageGroups } from '~/ui/suggest'
 import { Sheet } from '~/ui/Sheet'
 import { type ChipTone } from '~/ui/Card'
@@ -495,6 +503,7 @@ function RepotForm({
     String(editing?.toSize ?? (plant.potSize ? plant.potSize + 3 : '')),
   )
   const [medium, setMedium] = useState(currentMedium?.name ?? '')
+  const [system, setSystem] = useState<System>(editing?.toSystem ?? plant.system)
   const [reason, setReason] = useState(editing?.reason ?? '')
   const [intoPon, setIntoPon] = useState(false)
 
@@ -511,6 +520,7 @@ function RepotForm({
     const fields = {
       toSize: parseDecimal(toSize),
       mediumId: mediumId ?? plant.mediumId,
+      toSystem: system,
       reason: reason.trim(),
       date,
     }
@@ -521,6 +531,7 @@ function RepotForm({
         type: 'repot',
         plantCode: plant.code,
         fromSize: plant.potSize,
+        fromSystem: plant.system,
         ...fields,
         ...(await pending?.claim()),
       })
@@ -534,9 +545,16 @@ function RepotForm({
       {onPickDate ? <DateChip value={date} onClick={onPickDate} /> : null}
 
       <p className="text-[0.875rem] text-ink-muted text-pretty">
-        Repotting changes the plant itself, not just the log — the pot size and medium below become
-        the plant&rsquo;s.
+        Repotting changes the plant itself, not just the log — the system, pot size and medium below
+        become the plant&rsquo;s.
       </p>
+
+      <SegmentedField
+        label="System"
+        options={SYSTEMS.map((value) => ({ value, label: label(value) }))}
+        value={system}
+        onChange={setSystem}
+      />
 
       <div className="flex gap-3">
         <NumberField

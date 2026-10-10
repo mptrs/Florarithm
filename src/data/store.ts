@@ -412,6 +412,7 @@ async function writeEvent(draft: EventDraft): Promise<PlantEvent> {
       await patchPlant(event.plantCode, {
         potSize: event.toSize ?? before.potSize,
         mediumId: event.mediumId ?? before.mediumId,
+        system: event.toSystem ?? before.system,
       })
     }
   }
@@ -447,6 +448,7 @@ export async function updateEvent(id: string, patch: Partial<PlantEvent>): Promi
       await patchPlant(next.plantCode, {
         potSize: next.toSize ?? before.potSize,
         mediumId: next.mediumId ?? before.mediumId,
+        system: next.toSystem ?? before.system,
       })
     }
   }
