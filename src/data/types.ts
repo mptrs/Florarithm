@@ -134,6 +134,17 @@ export type Plant = {
    * entry it names is deleted, the newest picture quietly takes over again.
    */
   photoEventId?: Id | null
+  /**
+   * Came out of a lab jar rather than off another plant. A fact about where it
+   * came from, true for good — like variegation, not a stage it passes
+   * through. What it does change is that the plant has to get used to the air
+   * once it is growing, which is `SettleEvent` with kind `harden`; ticking
+   * this starts nothing by itself.
+   *
+   * Optional, and absent means no: every plant written before it existed is
+   * simply not from tissue culture, so there is nothing to migrate.
+   */
+  tissueCulture?: boolean
   /** On the wishlist, not in your possession yet. A flag rather than a separate
    *  table, so "I have this now" is one field change and the record keeps its
    *  code, its name and its history. */
@@ -147,7 +158,16 @@ export type Plant = {
   deleted?: boolean
 }
 
-export type EventType = 'water' | 'repot' | 'leaf' | 'bloom' | 'note' | 'photo' | 'drain'
+export type EventType =
+  | 'water'
+  | 'repot'
+  | 'leaf'
+  | 'bloom'
+  | 'note'
+  | 'photo'
+  | 'drain'
+  | 'settle'
+  | 'aired'
 export const EVENT_TYPES: readonly EventType[] = [
   'water',
   'repot',
@@ -156,6 +176,8 @@ export const EVENT_TYPES: readonly EventType[] = [
   'note',
   'photo',
   'drain',
+  'settle',
+  'aired',
 ]
 
 /**
@@ -244,6 +266,36 @@ export type PhotoEvent = EventBase & { type: 'photo' }
  */
 export type DrainEvent = EventBase & { type: 'drain' }
 
+/**
+ * The few weeks a plant needs looking after differently: getting used to the
+ * air after the lab, watered from the top after the move from soil to pon,
+ * kept apart in a quarantine.
+ *
+ * Only the moments are written. How long each one lasts and what it asks for
+ * on a given day is fixed in `settling.ts` and read off the date, the same
+ * way days-since-water is — so there is no "week 2" stored anywhere to fall
+ * out of step with the calendar, and nothing to clear when it is over.
+ *
+ * `start` begins one. `longer` adds two weeks, for a plant that is not ready
+ * yet. `skip` says a plant from tissue culture never needs it — bought already
+ * used to the air — so it stops being offered.
+ */
+export type SettleKind = 'harden' | 'pon' | 'quarantine'
+export const SETTLE_KINDS: readonly SettleKind[] = ['harden', 'pon', 'quarantine']
+
+export type SettleEvent = EventBase & {
+  type: 'settle'
+  kind: SettleKind
+  step: 'start' | 'longer' | 'skip'
+}
+
+/**
+ * The lid was off today, while hardening off. Nothing but the moment, and a
+ * chore rather than something that happened to the plant, so it stays out of
+ * the history the way an emptied cachepot does.
+ */
+export type AiredEvent = EventBase & { type: 'aired' }
+
 export type PlantEvent =
   | WaterEvent
   | RepotEvent
@@ -252,6 +304,8 @@ export type PlantEvent =
   | NoteEvent
   | PhotoEvent
   | DrainEvent
+  | SettleEvent
+  | AiredEvent
 
 /**
  * The sachets of predatory mites hanging in the collection.
@@ -288,6 +342,15 @@ export type VocabItem = {
   kind: VocabKind
   name: string
   archived: boolean
+  /**
+   * A place that is a quarantine, and how many weeks a newcomer stays there.
+   * Places only. Absent or `null` means an ordinary place — which is every
+   * place written before this existed.
+   *
+   * On the place rather than on the plant: "in quarantine" is where a plant
+   * stands, not something it is, so moving it out is all it takes to end it.
+   */
+  quarantineWeeks?: number | null
   createdAt: string
   /** Bumped on every write. Sync uses it to pick a winner between two devices. */
   updatedAt: string

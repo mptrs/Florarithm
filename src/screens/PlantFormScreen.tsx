@@ -68,6 +68,7 @@ import { useConfirm } from '~/ui/ConfirmDialog'
 import { showToast } from '~/ui/toast'
 import { DatePickerField } from '~/ui/DatePicker'
 import {
+  CheckField,
   Field,
   NumberField,
   SegmentedField,
@@ -132,6 +133,7 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
    *  rather than stamping the day of the edit as the day it arrived. */
   const [originDateKnown, setOriginDateKnown] = useState(true)
   const [wishNote, setWishNote] = useState('')
+  const [tissueCulture, setTissueCulture] = useState(false)
   const [status, setStatus] = useState<PlantStatus>('active')
   /** Empty string is "whichever is newest" — see `Plant.photoEventId`. */
   const [photoEventId, setPhotoEventId] = useState('')
@@ -177,6 +179,7 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
       )
       setOriginDateKnown(existing.origin.date !== null)
       setWishNote(existing.wishNote)
+      setTissueCulture(existing.tissueCulture === true)
       setStatus(existing.status)
       setPhotoEventId(existing.photoEventId ?? '')
     } else {
@@ -334,6 +337,9 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
         parent: parentPlant ? { code: parentPlant.code, method } : null,
         status,
         photoEventId: photoEventId || null,
+        // Only ever written as true: a plant that is not from tissue culture
+        // says so by not carrying the field, as every older record does.
+        tissueCulture: tissueCulture ? true : undefined,
         wish,
         // Promoting empties it: the note moves into the log below rather than
         // staying in a field that nothing renders once the plant is yours.
@@ -917,6 +923,15 @@ export function PlantFormScreen({ code, startAsWish, parentCode, promote }: Prop
                   setOriginDateKnown(true)
                 }}
                 fieldClassName="w-56"
+              />
+
+              {/* A fact about where it came from, so it sits with the rest of
+                  them. It starts nothing: hardening off begins with a press on
+                  the plant page, once there is a first leaf or good roots. */}
+              <CheckField
+                label="From tissue culture"
+                checked={tissueCulture}
+                onChange={setTissueCulture}
               />
             </Section>
 

@@ -54,6 +54,19 @@ step without either of those things.
   no shipping at the weekend and no post on Sunday — and turns to the alarm
   colour once they have. Hanging the next batch overwrites the record, because
   nothing is ever asked of the batch that came down.
+- **Settling in.** A few weeks of different care, on a fixed schedule, with
+  "two weeks longer" for a plant that is not ready. Three kinds. *Hardening
+  off* a plant from tissue culture: four weeks of the lid off a little longer
+  each week (an hour, three hours, by day, for good), started with one press
+  at its first leaf or good roots; Today asks six weeks after it arrived if
+  nobody has. *Into pon*, ticked on the repot sheet: six weeks of water from
+  the top every third day with the reservoir empty, the drop doing the
+  watering. *Quarantine*: a place ticked as one in Settings, with its number of
+  weeks; a plant standing there is counted from the day it came in, Today says
+  when it can come down, and moving it ends it. Only the start, any extra
+  weeks and the ticks are stored — the week, the day and what it asks for are
+  read off the date. "From tissue culture" itself is a fact on the plant, not
+  a stage.
 - **Backup.** One JSON file with everything, through the iOS share sheet into
   Files and so into iCloud Drive.
 - **QR fallback.** Every plant page carries a QR code alongside its written

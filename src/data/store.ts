@@ -28,6 +28,7 @@ import type {
   PlantEvent,
   PlantStatus,
   Sachets,
+  SettleKind,
   System,
   VocabItem,
   VocabKind,
@@ -172,6 +173,7 @@ export type PlantDraft = {
   parent: Parent | null
   status: PlantStatus
   photoEventId?: Id | null
+  tissueCulture?: boolean
   wish: boolean
   wishNote: string
 }
@@ -205,7 +207,30 @@ export async function savePlant(typed: PlantDraft): Promise<Plant> {
       : [...state.plants, plant],
   })
 
+  // Into a quarantine, the count starts — the day it arrived for a plant that
+  // is new, today for one carried up there. Moving it out needs nothing
+  // written: it is no longer standing in a quarantine, and that is the end.
+  if (
+    !plant.wish &&
+    plant.locationId !== null &&
+    plant.locationId !== existing?.locationId &&
+    isQuarantinePlace(plant.locationId)
+  ) {
+    await logEvent({
+      type: 'settle',
+      kind: 'quarantine',
+      step: 'start',
+      plantCode: code,
+      date: existing ? nowISO() : (plant.origin.date ?? nowISO()),
+    })
+  }
+
   return plant
+}
+
+function isQuarantinePlace(id: Id): boolean {
+  const place = state.vocab.find((item) => item.id === id)
+  return place !== undefined && !place.archived && (place.quarantineWeeks ?? 0) > 0
 }
 
 /**
@@ -488,6 +513,83 @@ export async function emptyPots(plantCodes: readonly string[]): Promise<void> {
   }
 }
 
+// --- settling in ------------------------------------------------------------
+
+/**
+ * Begin one of the few weeks of different care — see `settling.ts`. Dated the
+ * way any entry is, so the repot sheet can start pon on the day of the repot.
+ */
+export function startSettling(plantCode: string, kind: SettleKind, date?: string): Promise<PlantEvent> {
+  return logEvent({ type: 'settle', kind, step: 'start', plantCode, date })
+}
+
+/** Two weeks more, for a plant that is not ready when its weeks are up. */
+export function settleLonger(plantCode: string, kind: SettleKind): Promise<PlantEvent> {
+  return logEvent({ type: 'settle', kind, step: 'longer', plantCode })
+}
+
+/** A plant from tissue culture that came already used to the air: stop
+ *  offering to harden it off. */
+export function skipHardening(plantCode: string): Promise<PlantEvent> {
+  return logEvent({ type: 'settle', kind: 'harden', step: 'skip', plantCode })
+}
+
+/**
+ * The lid was off today. Once a day, like emptying a cachepot: a second press
+ * is the row's own undo, which takes this entry back out with `removeEvent`.
+ */
+const airing = new Set<string>()
+
+export async function airPlants(plantCodes: readonly string[]): Promise<void> {
+  const today = isoToInputValue(nowISO())
+  const codes = plantCodes.filter(
+    (code) =>
+      !airing.has(code) &&
+      !state.events.some(
+        (event) =>
+          event.type === 'aired' &&
+          !event.deleted &&
+          event.plantCode === code &&
+          isoToInputValue(event.date) === today,
+      ),
+  )
+  if (codes.length === 0) return
+  for (const code of codes) airing.add(code)
+
+  try {
+    const date = nowISO()
+    const written: PlantEvent[] = codes.map((plantCode) => ({
+      id: newId(),
+      type: 'aired',
+      plantCode,
+      date,
+    }))
+    await Promise.all(written.map((event) => db.putEvent(event)))
+    commit({ events: [...state.events, ...written] })
+  } finally {
+    for (const code of codes) airing.delete(code)
+  }
+}
+
+/**
+ * Which place is the quarantine, and for how many weeks — or `null` for none.
+ * There is one: marking a place clears whichever was marked before, so two
+ * attics can never disagree about how long a newcomer stays.
+ */
+export async function setQuarantinePlace(id: Id | null, weeks: number): Promise<void> {
+  for (const item of state.vocab) {
+    if (item.kind !== 'location') continue
+    const next = item.id === id ? weeks : null
+    if ((item.quarantineWeeks ?? null) !== next) await patchVocabItem(item.id, { quarantineWeeks: next })
+  }
+}
+
+const SETTLE_NAMES: Record<SettleKind, string> = {
+  harden: 'Hardening off',
+  pon: 'Into pon',
+  quarantine: 'Into quarantine',
+}
+
 /** One sentence describing what happened, without the plant's name. */
 export function describeEvent(event: PlantEvent): string {
   switch (event.type) {
@@ -505,6 +607,12 @@ export function describeEvent(event: PlantEvent): string {
       return 'Photo'
     case 'drain':
       return 'Pot emptied'
+    case 'settle':
+      if (event.step === 'skip') return 'Already used to the air'
+      if (event.step === 'longer') return `${SETTLE_NAMES[event.kind]}: two weeks longer`
+      return SETTLE_NAMES[event.kind]
+    case 'aired':
+      return 'Lid off'
   }
 }
 

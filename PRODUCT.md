@@ -30,6 +30,7 @@ Most plant-care apps push notifications and try to predict when a plant needs wa
 ## Capabilities and Constraints
 
 - Logs watering, fertilizing, repotting (updates the plant's pot/medium), new leaves, blooming, and free-form notes.
+- Settling in: fixed few-week schedules with a due list on Today — hardening off a plant from tissue culture, watering from the top after a move into pon, and a quarantine that is a place rather than a status.
 - Wishlist entries live in the same table as owned plants; "I have this now" flips a flag and preserves code/name/date.
 - Family lineage: cuttings and corms point at a parent plant; a name generator continues the line (Fluweel, Fluweel II, Fluweel III) so the family tree reads without a diagram.
 - Events are append-only (soft-deleted via a `deleted` flag, never removed) so multi-device sync can merge by union safely.

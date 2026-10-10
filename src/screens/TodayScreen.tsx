@@ -59,6 +59,7 @@ import { PlantThumb } from '~/ui/plantPicture'
 import { EmptyState, Rows, ScreenHeader } from '~/ui/primitives'
 import { Cell, ColumnHeader, DrawerLabel, RowLink } from '~/ui/rows'
 import { SachetReminder } from '~/ui/Sachets'
+import { SettlingReminder } from '~/ui/Settling'
 import { SyncStatusPill } from '~/ui/SyncStatusPill'
 import { WaterFigure } from '~/ui/Water'
 
@@ -130,6 +131,11 @@ export function TodayScreen() {
       {/* Under the sachets and above the ledger: a chore owed from yesterday's
           round, done before today's starts. */}
       <EmptyPotsReminder />
+
+      {/* The few weeks of different care: the lid off, a watering from the
+          top, a plant that can come down from quarantine. Beside the
+          cachepots because it is the same kind of round. */}
+      <SettlingReminder />
 
       {plants.length === 0 ? (
         <EmptyState
