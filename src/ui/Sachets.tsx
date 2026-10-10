@@ -58,26 +58,46 @@ function runOutPhrase(sachets: Sachets): string {
 }
 
 /**
- * The line on Today, in whichever of its three readings applies — and nothing
- * at all when none hang. A reminder about something you do not do is the
- * fastest way to stop reading reminders.
- *
- * - **Hanging:** a quiet fact — which week, how long left.
- * - **Order:** the neutral banner, from the last day an order still arrives
- *   in time. It asks for something to be done, but nothing has gone wrong yet,
- *   so it does not borrow the alarm colour.
- * - **Spent:** the ember banner. They have stopped working.
- *
- * Both banners carry the reset, because new sachets can arrive — and go up —
- * before the old ones run out.
+ * The quiet line on Today while the sachets are simply hanging — which week,
+ * how long left. Nothing is owed, so it is a fact under the title rather than
+ * a tile; nothing at all when none hang. Once they need ordering they are a
+ * chore, and say so in `SachetsDue` instead.
  */
 export function SachetReminder() {
   const { sachets } = useStore()
-  const [open, setOpen] = useState(false)
+  if (!sachets || sachetPhase(sachets) !== 'hanging') return null
 
+  return (
+    <p className="flex min-h-[1.875rem] items-center gap-2 text-[0.8125rem] text-ink-muted">
+      <Icon name="pest" size={15} className="shrink-0 text-ink-faint" />
+      <span>
+        Sachets from week <span className="font-mono">{sachets.week}</span> ·{' '}
+        {daysLeftLabel(sachetDaysLeft(sachets))}
+      </span>
+    </p>
+  )
+}
+
+/** Whether the sachets are owed something today: ordering, or replacing. */
+export function sachetsDue(sachets: Sachets | null): 'order' | 'spent' | null {
   if (!sachets) return null
-
   const phase = sachetPhase(sachets)
+  return phase === 'hanging' ? null : phase
+}
+
+/**
+ * What is owed, said in full: order the next ones, or they have run out. The
+ * neutral banner for ordering — nothing has gone wrong yet — and the ember
+ * one once they have stopped working.
+ *
+ * Both carry the reset, because new sachets can arrive — and go up — before
+ * the old ones run out.
+ */
+export function SachetsDue() {
+  const { sachets } = useStore()
+  const [open, setOpen] = useState(false)
+  const due = sachetsDue(sachets)
+  if (!sachets || !due) return null
 
   // A glyph rather than a word: "Hung" and "Replaced" both read oddly on a
   // line that has just said what to do. The label carries it for a screen
@@ -86,29 +106,21 @@ export function SachetReminder() {
     <IconButton
       icon="replace"
       label="New sachets hung"
-      variant={phase === 'spent' ? 'danger' : 'outline'}
+      variant={due === 'spent' ? 'danger' : 'outline'}
       onClick={() => setOpen(true)}
     />
   )
 
   return (
     <>
-      {phase === 'spent' ? (
+      {due === 'spent' ? (
         <Banner tone="warning" icon="pest" action={reset}>
           {`The sachets from week ${sachets.week} ${runOutPhrase(sachets)}. Hang the next ones.`}
         </Banner>
-      ) : phase === 'order' ? (
+      ) : (
         <Banner tone="info" icon="pest" action={reset}>
           {`Order new sachets: the ones from week ${sachets.week} ${runOutPhrase(sachets)}.`}
         </Banner>
-      ) : (
-        <p className="flex min-h-[1.875rem] items-center gap-2 text-[0.8125rem] text-ink-muted">
-          <Icon name="pest" size={15} className="shrink-0 text-ink-faint" />
-          <span>
-            Sachets from week <span className="font-mono">{sachets.week}</span> ·{' '}
-            {daysLeftLabel(sachetDaysLeft(sachets))}
-          </span>
-        </p>
       )}
 
       {/* From here it is always a new batch: the fields start on this week

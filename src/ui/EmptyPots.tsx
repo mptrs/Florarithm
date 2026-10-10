@@ -16,7 +16,6 @@
  * would read as one fact in two places. The glyph is a pot tipped over.
  */
 
-import { useState } from 'react'
 import { emptyPots, removeEvent, useStore, type State } from '~/data/store'
 import {
   groupByPlace,
@@ -31,7 +30,7 @@ import { Button } from './Button'
 import { Icon } from './Icon'
 import { PlantThumb } from './plantPicture'
 import { Rows } from './primitives'
-import { ColumnHeader, DrawerLabel } from './rows'
+import { DrawerLabel } from './rows'
 
 /**
  * The pots cut into rooms by the ledger's own `groupByPlace` — because emptying
@@ -47,67 +46,18 @@ function potsByPlace(state: State, pots: readonly PotToEmpty[]): [string, PotToE
 }
 
 /**
- * The block on Today, and nothing at all when no pot is owed — the same rule as
- * the sachets: a reminder that is always there is a reminder nobody reads.
- *
- * Once every pot on it is emptied it folds to a single quiet line, which opens
- * again for as long as the day lasts, in case one of those ticks was a mis-tap.
+ * The pots still to empty, cut into rooms — the rows only. Where they sit is
+ * Today's business: a sheet behind a tile on a phone, a section in the column
+ * beside the water on a desktop. See `Chores`.
  */
-export function EmptyPotsReminder() {
+export function CachepotRows() {
   const state = useStore()
   const pots = potsToEmpty(state)
-  const [opened, setOpened] = useState(false)
-
-  if (pots.length === 0) return null
-
-  const waiting = pots.filter((pot) => pot.emptied === null)
-
-  if (waiting.length === 0 && !opened) {
-    return (
-      <button
-        type="button"
-        onClick={() => setOpened(true)}
-        className="flex min-h-[1.875rem] items-center gap-2 self-start text-[0.8125rem] text-ink-muted hover:text-ink"
-      >
-        <Icon name="drain" size={15} className="shrink-0 text-ink-faint" />
-        <span>
-          {pots.length === 1 ? 'Cachepot emptied' : `${plural(pots.length, 'cachepot')} emptied`}
-        </span>
-      </button>
-    )
-  }
 
   return (
-    <section className="flex flex-col gap-2">
-      <div className="flex min-h-touch items-center justify-between gap-3 border-b border-line pb-2">
-        <div className="flex items-center gap-2">
-          <Icon name="drain" size={19} className="text-ink-faint" />
-          <h2 className="font-display text-[1.3125rem] leading-7 font-medium">Empty the cachepots</h2>
-        </div>
-        {/* Only when there is more than one left: for a single pot it is the
-            same press as the row's own, said twice. */}
-        {waiting.length > 1 ? (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => void emptyPots(waiting.map((pot) => pot.plant.code))}
-          >
-            All emptied
-          </Button>
-        ) : null}
-      </div>
-
-      {/* The same table head as the ledger below, so the two lists read as one
-          kind of list. Only from `lg`, where there are columns to head. */}
-      <div className="hidden items-center gap-3 border-b border-line-strong px-3 pb-2 lg:flex">
-        <span className="w-10 shrink-0" />
-        <ColumnHeader className="flex-1">Plant</ColumnHeader>
-        <ColumnHeader className="w-28 text-right">Watered</ColumnHeader>
-        <span className="w-touch shrink-0" />
-      </div>
-
+    <>
       {potsByPlace(state, pots).map(([place, members]) => (
-        <div key={place} className="mt-4 first:mt-2 lg:first:mt-4">
+        <div key={place} className="mt-4 first:mt-2">
           <DrawerLabel name={place} count={members.length} />
           <Rows className="border-t-0">
             {members.map((pot) => (
@@ -116,7 +66,25 @@ export function EmptyPotsReminder() {
           </Rows>
         </div>
       ))}
-    </section>
+    </>
+  )
+}
+
+/** Every pot still owed, in one press — only when there is more than one,
+ *  since for a single pot it is the same press as the row's own. */
+export function AllEmptied() {
+  const state = useStore()
+  const waiting = potsToEmpty(state).filter((pot) => pot.emptied === null)
+  if (waiting.length < 2) return null
+
+  return (
+    <Button
+      size="sm"
+      variant="outline"
+      onClick={() => void emptyPots(waiting.map((pot) => pot.plant.code))}
+    >
+      All emptied
+    </Button>
   )
 }
 
@@ -156,7 +124,7 @@ function PotRow({ pot }: { pot: PotToEmpty }) {
           put off. A column from `lg`, under the head that names it. */}
       <span
         className={cn(
-          'shrink-0 text-right text-[0.8125rem] whitespace-nowrap lg:w-28 lg:text-[0.875rem]',
+          'shrink-0 text-right text-[0.8125rem] whitespace-nowrap',
           emptied ? 'text-ink-faint' : late ? 'font-semibold text-ember' : 'text-ink-muted',
         )}
       >

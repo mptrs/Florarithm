@@ -714,7 +714,7 @@ test('watering from Today is a press on the figure, and another takes it back', 
 
   const figures = main(page).getByRole('button', { name: /: watered today$/ })
   const gruyere = main(page).getByRole('button', { name: 'Gruy\u00e8re: watered today' })
-  const round = main(page).getByText(/of 3 watered today/)
+  const round = main(page).getByText(/of 3 watered$/)
 
   // None logged, so the three tie and stand by name.
   await expect(figures.first()).toHaveAccessibleName('Gruy\u00e8re: watered today')
@@ -722,7 +722,7 @@ test('watering from Today is a press on the figure, and another takes it back', 
 
   await gruyere.click()
   await expect(gruyere).toHaveAttribute('aria-pressed', 'true')
-  await expect(round).toHaveText('1 of 3 watered today')
+  await expect(round).toHaveText('1 of 3 watered')
   // Watered, it would rank last; while the screen is up it stays where it was.
   await expect(figures.first()).toHaveAccessibleName('Gruy\u00e8re: watered today')
 
@@ -1146,15 +1146,20 @@ test('the sachets count down on Today, ask to be replaced, and reset in one shee
   }
 
   // A day before they run out is always inside the order window, whatever
-  // weekday the test happens to run on.
+  // weekday the test happens to run on. Owed something now, they are a chore:
+  // a tile on a phone, a section beside the water on a desktop.
   await hungDaysAgo(27)
+  await openChore(page, 'Sachets')
   await expect(
-    page.getByText('Order new sachets: the ones from week 34 run out tomorrow.'),
+    page.getByText('Order new sachets: the ones from week 34 run out tomorrow.').filter({ visible: true }),
   ).toBeVisible()
 
   await hungDaysAgo(31)
+  await openChore(page, 'Sachets')
   await expect(
-    page.getByText('The sachets from week 34 ran out 3 days ago. Hang the next ones.'),
+    page
+      .getByText('The sachets from week 34 ran out 3 days ago. Hang the next ones.')
+      .filter({ visible: true }),
   ).toBeVisible()
 
   // The reset opens on this week and today, not on what is hanging — the old
@@ -1175,6 +1180,16 @@ test('the sachets count down on Today, ask to be replaced, and reset in one shee
   await page.goto('#today')
   await expect(page.getByText(/28 days left/)).toBeHidden()
 })
+
+/**
+ * Open a chore on Today. On a phone it is a tile that opens its rows in a
+ * sheet; on a desktop the rows are already open beside the water, and there
+ * is no tile to press.
+ */
+async function openChore(page: Page, title: string) {
+  const tile = page.getByRole('button', { name: new RegExp(`^${title}: `) })
+  if (await tile.isVisible()) await tile.click()
+}
 
 /**
  * The cachepots, emptied from Today the day after the round.
@@ -1217,7 +1232,7 @@ test('the cachepots are owed the day after, ticked off on Today, and taken back 
   })
   await page.reload()
 
-  await expect(page.getByRole('heading', { name: 'Empty the cachepots' })).toBeVisible()
+  await openChore(page, 'Empty the cachepots')
   const gruyere = page.getByRole('button', { name: 'Gruyère: cachepot emptied' })
   await expect(gruyere).toHaveAttribute('aria-pressed', 'false')
   await expect(page.getByRole('button', { name: 'Emmentaler: cachepot emptied' })).toBeVisible()
@@ -1228,15 +1243,18 @@ test('the cachepots are owed the day after, ticked off on Today, and taken back 
   await gruyere.click()
   await expect(gruyere).toHaveAttribute('aria-pressed', 'true')
   await page.reload()
+  await openChore(page, 'Empty the cachepots')
   await expect(gruyere).toHaveAttribute('aria-pressed', 'true')
 
   // Pressed again, it is taken back.
   await gruyere.click()
   await expect(gruyere).toHaveAttribute('aria-pressed', 'false')
 
+  // All of them in one press; done, the chore folds to a line that says so.
   await page.getByRole('button', { name: 'All emptied' }).click()
-  await expect(page.getByRole('button', { name: '2 cachepots emptied' })).toBeVisible()
-  await expect(page.getByRole('heading', { name: 'Empty the cachepots' })).toBeHidden()
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('button', { name: 'Cachepots done for today' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Gruyère: cachepot emptied' })).toBeHidden()
 
   // The emptying is a chore, not a moment in the plant's life.
   await page.goto('#p=MON-0001')

@@ -20,8 +20,8 @@
  * so the days figure on each row is a button: pressed, it turns to the check
  * that already meant "watered today", and pressed again it takes the day's
  * watering back. By place, a room with more than one plant still to go can be
- * done in one press. The cachepots the day after are the same kind of round;
- * see `EmptyPotsReminder`.
+ * done in one press. The cachepots the day after, and the rest of what is
+ * owed today, stay out of the water's way — see `Chores`.
  *
  * While you are on the screen the rows hold the order they opened in. Sorted by
  * thirst, a plant you have just watered would otherwise drop to the foot of
@@ -52,14 +52,14 @@ import { useRemembered } from '~/lib/remembered'
 import { useToday } from '~/lib/today'
 import { navigate, routes } from '~/lib/router'
 import { Banner } from '~/ui/Banner'
-import { EmptyPotsReminder } from '~/ui/EmptyPots'
 import { Button } from '~/ui/Button'
+import { ChoresColumn, ChoresStrip } from '~/ui/Chores'
+import { Icon } from '~/ui/Icon'
 import { SortSwitch, type SortOption } from '~/ui/Chip'
 import { PlantThumb } from '~/ui/plantPicture'
 import { EmptyState, Rows, ScreenHeader } from '~/ui/primitives'
 import { Cell, ColumnHeader, DrawerLabel, RowLink } from '~/ui/rows'
 import { SachetReminder } from '~/ui/Sachets'
-import { SettlingReminder } from '~/ui/Settling'
 import { SyncStatusPill } from '~/ui/SyncStatusPill'
 import { WaterFigure } from '~/ui/Water'
 
@@ -107,88 +107,102 @@ export function TodayScreen() {
             ) : null
           }
         />
-        {/* How far the round has got. Only once it has started: "0 of 17" on a
-            morning nobody is watering is a nag. */}
-        {watered > 0 ? (
-          <p className="text-[0.8125rem] leading-[1.125rem] text-ink-muted">
-            <span className="font-mono font-medium text-ink">{watered}</span> of{' '}
-            <span className="font-mono">{plants.length}</span> watered today
-          </p>
-        ) : null}
+        {/* The sachets while they are only hanging: a fact about the room
+            the plants stand in, owed nothing, so a line under the title
+            rather than a tile. Ordering them is a chore, and is one below. */}
+        <SachetReminder />
       </div>
 
+      {/* The only thing here about losing data, so it stays a banner. */}
       <BackupReminder
         lastBackupAt={state.lastBackupAt}
         hasPlants={livePlants(state).length > 0}
         synced={syncStatus.kind !== 'unconfigured'}
       />
 
-      {/* Above the ledger, because it is about the room the plants stand in
-          rather than about any plant in it — and below the backup warning,
-          which is the only thing here about losing data. */}
-      <SachetReminder />
+      {/* Whatever else is owed today, as tiles that open their rows — out of
+          the water's way. A desktop has room for the rows, so there the same
+          chores sit open in a column beside it. */}
+      <ChoresStrip className="lg:hidden" />
 
-      {/* Under the sachets and above the ledger: a chore owed from yesterday's
-          round, done before today's starts. */}
-      <EmptyPotsReminder />
-
-      {/* The few weeks of different care: the lid off, a watering from the
-          top, a plant that can come down from quarantine. Beside the
-          cachepots because it is the same kind of round. */}
-      <SettlingReminder />
-
-      {plants.length === 0 ? (
-        <EmptyState
-          title="Nothing here yet"
-          description="Add your first plant and it will show up here, sorted by how long it has been since it last had water."
-          action={
-            <Button variant="accent" onClick={() => navigate(routes.new())}>
-              Add a plant
-            </Button>
-          }
-        />
-      ) : (
-        <div>
-          {/* The table header only exists once there are columns to head, and
-              Place is a column only while nothing above the row is saying it. */}
-          <div className="hidden items-center gap-3 border-b border-line-strong pb-2 pl-3 lg:flex">
-            <span className="w-10 shrink-0" />
-            <ColumnHeader className="flex-1">Plant</ColumnHeader>
-            {/* Built the way a row is: the cells sit inside the link and its
-                padding, and the figure's column stands outside it with no gap, so each
-                head is over what it names. */}
-            <div className="flex items-center gap-8 pr-3">
-              {byPlace ? null : <ColumnHeader className="w-44">Place</ColumnHeader>}
-              <ColumnHeader className="w-24">Last water</ColumnHeader>
-            </div>
-            <ColumnHeader className="-ml-3 w-32 pr-3 text-right">Days</ColumnHeader>
+      {/* Water, and on a desktop the chores open beside it. */}
+      <div className="flex items-start gap-8">
+        {plants.length === 0 ? (
+          <div className="min-w-0 flex-1">
+            <EmptyState
+              title="Nothing here yet"
+              description="Add your first plant and it will show up here, sorted by how long it has been since it last had water."
+              action={
+                <Button variant="accent" onClick={() => navigate(routes.new())}>
+                  Add a plant
+                </Button>
+              }
+            />
           </div>
+        ) : (
+          <section className="min-w-0 flex-1">
+            {/* What Today is opened for, under a heading of its own: it used to
+                start straight after the last chore with nothing to say what it
+                was. How far the round has got only once it has started — "0 of
+                17" on a morning nobody is watering is a nag. */}
+            <div className="flex items-baseline justify-between gap-3 pb-2">
+              <h2 className="flex items-center gap-2 font-display text-[1.3125rem] leading-7 font-medium">
+                <Icon name="droplet" size={19} className="text-water" />
+                Water
+              </h2>
+              <p className="text-[0.8125rem] leading-[1.125rem] text-ink-muted">
+                {watered > 0 ? (
+                  <>
+                    <span className="font-mono font-medium text-ink">{watered}</span> of{' '}
+                    <span className="font-mono">{plants.length}</span> watered
+                  </>
+                ) : (
+                  plural(plants.length, 'plant')
+                )}
+              </p>
+            </div>
 
-          {runs.map(([place, members], index) => (
-            // Groups are a block step apart. The first has nothing above it on a
-            // phone — the page's own gap already put it there — and on a desktop
-            // sits under the table header: a block step when a label opens it,
-            // flush when the rows answer the header directly.
-            <section key={place || 'all'} className={index > 0 ? 'mt-6' : place ? 'lg:mt-6' : undefined}>
-              {place ? (
-                <DrawerLabel
-                  name={place}
-                  count={members.length}
-                  action={<WaterRoom plants={members} />}
-                />
-              ) : null}
+            {/* The table header only exists once there are columns to head, and
+                Place is a column only while nothing above the row is saying it. */}
+            <div className="hidden items-center gap-3 border-b border-line-strong pb-2 pl-3 lg:flex">
+              <span className="w-10 shrink-0" />
+              <ColumnHeader className="flex-1">Plant</ColumnHeader>
+              {/* Built the way a row is: the cells sit inside the link and its
+                  padding, and the figure's column stands outside it with no gap, so each
+                  head is over what it names. */}
+              <div className="flex items-center gap-8 pr-3">
+                {byPlace ? null : <ColumnHeader className="w-44">Place</ColumnHeader>}
+                <ColumnHeader className="w-24">Last water</ColumnHeader>
+              </div>
+              <ColumnHeader className="-ml-3 w-32 pr-3 text-right">Days</ColumnHeader>
+            </div>
 
-              {/* Ungrouped there is no label to close the top of the list, so
-                  the stack draws its own — except on a table, which has one. */}
-              <Rows className={place ? 'border-t-0' : 'lg:border-t-0'}>
-                {members.map((plant) => (
-                  <TodayRow key={plant.code} plant={plant} showPlace={!byPlace} />
-                ))}
-              </Rows>
-            </section>
-          ))}
-        </div>
-      )}
+            {runs.map(([place, members], index) => (
+              // Groups are a block step apart; the first sits under the heading
+              // on a phone, and under the table header on a desktop.
+              <section key={place || 'all'} className={index > 0 ? 'mt-6' : place ? 'mt-2 lg:mt-6' : undefined}>
+                {place ? (
+                  <DrawerLabel
+                    name={place}
+                    count={members.length}
+                    action={<WaterRoom plants={members} />}
+                  />
+                ) : null}
+
+                {/* Ungrouped there is no label to close the top of the list, so
+                    the stack draws its own — except on a table, which has one. */}
+                <Rows className={place ? 'border-t-0' : 'lg:border-t-0'}>
+                  {members.map((plant) => (
+                    <TodayRow key={plant.code} plant={plant} showPlace={!byPlace} />
+                  ))}
+                </Rows>
+              </section>
+            ))}
+          </section>
+        )}
+
+        <ChoresColumn className="hidden w-80 shrink-0 lg:flex" />
+      </div>
     </div>
   )
 }

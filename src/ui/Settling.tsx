@@ -4,14 +4,12 @@
  * asks for something today. What each kind is and how long it runs is in
  * `settling.ts`; this is only how it reads.
  *
- * The Today block is cut from the same cloth as Empty the cachepots: there
- * only while something is owed, one round button per row, and a second press
- * on a row takes back the first. Its glyph is the thing being done — the lid
+ * On Today it is a list cut from the same cloth as the cachepots: one round
+ * button per row, and a second press on a row takes back the first. Its glyph is the thing being done — the lid
  * off is wind, a watering from the top is the drop — never the check, which on
  * Today already means watered.
  */
 
-import { useState } from 'react'
 import {
   HARDEN_WEEKS,
   LONGER_DAYS,
@@ -297,7 +295,7 @@ async function longer(item: IntoPon | Quarantine, kind: 'pon' | 'quarantine'): P
 // --- Today ------------------------------------------------------------------
 
 /** The rows on Today that a single press ticks off, for All done. */
-function tickable(item: Settling): boolean {
+export function tickable(item: Settling): boolean {
   return (item.kind === 'harden' && item.phase === 'running') || item.kind === 'pon'
 }
 
@@ -313,58 +311,33 @@ function tick(item: Settling): Promise<unknown> {
   return Promise.resolve()
 }
 
-/**
- * Settling in, on Today. Nothing at all when nothing is owed, and folded to
- * one quiet line once every tick on it is in — opening again for the rest of
- * the day, in case one of them was a mis-tap.
- */
-export function SettlingReminder() {
+/** Whatever of settling in asks for something today — the rows only; see
+ *  `Chores` for where they sit. */
+export function SettlingRows() {
   const state = useStore()
-  const items = settlingToday(state)
-  const [opened, setOpened] = useState(false)
+  return (
+    <Rows className="border-t-0">
+      {settlingToday(state).map((item) => (
+        <SettlingRow key={`${item.kind}-${item.plant.code}`} item={item} />
+      ))}
+    </Rows>
+  )
+}
 
-  if (items.length === 0) return null
-
-  const waiting = items.filter((item) => tickable(item) && !doneToday(item))
-  const open = items.filter((item) => !tickable(item) || !doneToday(item))
-
-  if (open.length === 0 && !opened) {
-    return (
-      <button
-        type="button"
-        onClick={() => setOpened(true)}
-        className="flex min-h-[1.875rem] items-center gap-2 self-start text-[0.8125rem] text-ink-muted hover:text-ink"
-      >
-        <Icon name="settle" size={15} className="shrink-0 text-ink-faint" />
-        <span>Settling in: done for today</span>
-      </button>
-    )
-  }
+/** Every tick still owed, in one press — only when there is more than one. */
+export function AllSettled() {
+  const state = useStore()
+  const waiting = settlingToday(state).filter((item) => tickable(item) && !doneToday(item))
+  if (waiting.length < 2) return null
 
   return (
-    <section className="flex flex-col gap-2">
-      <div className="flex min-h-touch items-center justify-between gap-3 border-b border-line pb-2">
-        <div className="flex items-center gap-2">
-          <Icon name="settle" size={19} className="text-ink-faint" />
-          <h2 className="font-display text-[1.3125rem] leading-7 font-medium">Settling in</h2>
-        </div>
-        {waiting.length > 1 ? (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => void Promise.all(waiting.map((item) => tick(item)))}
-          >
-            All done
-          </Button>
-        ) : null}
-      </div>
-
-      <Rows className="border-t-0">
-        {items.map((item) => (
-          <SettlingRow key={`${item.kind}-${item.plant.code}`} item={item} />
-        ))}
-      </Rows>
-    </section>
+    <Button
+      size="sm"
+      variant="outline"
+      onClick={() => void Promise.all(waiting.map((item) => tick(item)))}
+    >
+      All done
+    </Button>
   )
 }
 
