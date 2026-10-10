@@ -31,7 +31,15 @@ import {
   yearsInReview,
 } from '../src/data/selectors'
 import type { State } from '../src/data/store'
-import type { Plant, PlantEvent, Sachets } from '../src/data/types'
+import type { Plant, PlantEvent, Sachets, SettleKind, VocabItem } from '../src/data/types'
+import {
+  doneToday,
+  hardeningOf,
+  intoPonOf,
+  quarantineOf,
+  settlingOf,
+  settlingToday,
+} from '../src/data/settling'
 import { sachetOrderBy, sachetPhase, sachetRunOut } from '../src/data/sachets'
 
 test.describe('plant codes', () => {
@@ -1157,5 +1165,226 @@ test.describe('names', () => {
       ['crystallinum', 2],
     ])
     expect(anthurium.unnamed).toBe(1)
+  })
+})
+
+test.describe('settling in', () => {
+  const plant = (code: string, extra: Partial<Plant> = {}): Plant => ({
+    code,
+    name: code,
+    genus: 'Anthurium',
+    species: '',
+    cross: '',
+    cultivar: '',
+    variegation: '',
+    locationId: null,
+    system: 'soil',
+    potSize: null,
+    mediumId: null,
+    origin: { type: null, from: '', date: null, price: null },
+    parent: null,
+    status: 'active',
+    wish: false,
+    wishNote: '',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+    ...extra,
+  })
+
+  const daysAgo = (back: number): string => {
+    const date = new Date()
+    date.setDate(date.getDate() - back)
+    date.setHours(12, 0, 0, 0)
+    return date.toISOString()
+  }
+
+  let next = 0
+  const id = () => `s${(next += 1)}`
+  const settle = (
+    plantCode: string,
+    kind: SettleKind,
+    step: 'start' | 'longer' | 'skip',
+    date: string,
+  ): PlantEvent => ({ id: id(), type: 'settle', plantCode, kind, step, date })
+  const water = (plantCode: string, date: string, extra = {}): PlantEvent =>
+    ({ id: id(), type: 'water', plantCode, date, fertilized: true, ...extra }) as PlantEvent
+  const aired = (plantCode: string, date: string): PlantEvent => ({ id: id(), type: 'aired', plantCode, date })
+
+  const attic: VocabItem = {
+    id: 'attic',
+    kind: 'location',
+    name: 'Attic',
+    archived: false,
+    quarantineWeeks: 4,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  }
+
+  const stateOf = (plants: Plant[], events: PlantEvent[], vocab: VocabItem[] = []): State => ({
+    status: 'ready',
+    plants,
+    events,
+    vocab,
+    sachets: null,
+    lastBackupAt: null,
+  })
+
+  const today = (state: State) => settlingToday(state).map((item) => `${item.plant.code}:${item.kind}`)
+
+  test('the tissue-culture tick starts nothing; Today asks six weeks after it arrived', () => {
+    const fresh = plant('NEW', { tissueCulture: true, origin: { type: null, from: '', date: daysAgo(10), price: null } })
+    const old = plant('OLD', { tissueCulture: true, origin: { type: null, from: '', date: daysAgo(42), price: null } })
+    const state = stateOf([fresh, old, plant('PLAIN')], [])
+
+    expect(settlingOf(state, 'NEW')).toMatchObject([{ kind: 'harden', phase: 'waiting' }])
+    expect(settlingOf(state, 'PLAIN')).toEqual([])
+    expect(today(state)).toEqual(['OLD:harden'])
+  })
+
+  test('already used to the air stops it being offered', () => {
+    const tc = plant('A', { tissueCulture: true, origin: { type: null, from: '', date: daysAgo(60), price: null } })
+    const state = stateOf([tc], [settle('A', 'harden', 'skip', daysAgo(1))])
+    expect(settlingOf(state, 'A')).toEqual([])
+    expect(today(state)).toEqual([])
+  })
+
+  test('hardening off runs four weeks by the calendar, on Today every day of the first three', () => {
+    const at = (day: number) => stateOf([plant('A', { tissueCulture: true })], [settle('A', 'harden', 'start', daysAgo(day))])
+
+    expect(hardeningOf(at(0), at(0).plants[0]!)).toMatchObject({ phase: 'running', week: 0, day: 0 })
+    expect(hardeningOf(at(9), at(9).plants[0]!)).toMatchObject({ week: 1 })
+    expect(today(at(20))).toEqual(['A:harden'])
+    // The fourth week asks once, on its first day, and then leaves the lid off.
+    expect(today(at(21))).toEqual(['A:harden'])
+    expect(today(at(22))).toEqual([])
+    expect(settlingOf(at(28), 'A')).toEqual([])
+  })
+
+  test('a tick is for today only, and is done for today', () => {
+    const state = stateOf(
+      [plant('A')],
+      [settle('A', 'harden', 'start', daysAgo(3)), aired('A', daysAgo(1)), aired('A', daysAgo(0))],
+    )
+    const [item] = settlingToday(state)
+    expect(item && doneToday(item)).toBe(true)
+
+    const yesterdayOnly = stateOf([plant('A')], [settle('A', 'harden', 'start', daysAgo(3)), aired('A', daysAgo(1))])
+    const [open] = settlingToday(yesterdayOnly)
+    expect(open && doneToday(open)).toBe(false)
+  })
+
+  test('into pon is due every third day, and stays on Today, ticked, once watered', () => {
+    const started = settle('A', 'pon', 'start', daysAgo(7))
+    const due = stateOf([plant('A')], [started, water('A', daysAgo(3))])
+    expect(intoPonOf(due, due.plants[0]!)).toMatchObject({ due: true, nextIn: 0 })
+
+    const notYet = stateOf([plant('A')], [started, water('A', daysAgo(2))])
+    expect(intoPonOf(notYet, notYet.plants[0]!)).toMatchObject({ due: false, nextIn: 1 })
+    expect(today(notYet)).toEqual([])
+
+    const done = stateOf([plant('A')], [started, water('A', daysAgo(3)), water('A', daysAgo(0))])
+    const [item] = settlingToday(done)
+    expect(item?.kind).toBe('pon')
+    expect(item && doneToday(item)).toBe(true)
+  })
+
+  test('the day of the repot is not a day behind', () => {
+    const state = stateOf([plant('A')], [settle('A', 'pon', 'start', daysAgo(0))])
+    expect(intoPonOf(state, state.plants[0]!)).toMatchObject({ due: false, nextIn: 3 })
+  })
+
+  test('two weeks longer moves the end, and the end is a milestone', () => {
+    const ended = stateOf([plant('A')], [settle('A', 'pon', 'start', daysAgo(43))])
+    expect(intoPonOf(ended, ended.plants[0]!)).toBeNull()
+    expect(milestonesOf(ended, 'A').map((line) => line.title)).toContain('Settled into pon')
+
+    const longer = stateOf(
+      [plant('A')],
+      [settle('A', 'pon', 'start', daysAgo(43)), settle('A', 'pon', 'longer', daysAgo(2))],
+    )
+    expect(intoPonOf(longer, longer.plants[0]!)).toMatchObject({ length: 56 })
+    expect(milestonesOf(longer, 'A').map((line) => line.title)).not.toContain('Settled into pon')
+  })
+
+  test('quarantine is the place: it counts from arriving, says when, and ends by moving', () => {
+    const arrived = (back: number) => ({ type: null, from: '', date: daysAgo(back), price: null })
+    const up = plant('UP', { locationId: 'attic', origin: arrived(30) })
+    const recent = plant('RECENT', { locationId: 'attic', origin: arrived(5) })
+    const down = plant('DOWN', { locationId: null, origin: arrived(30) })
+    const state = stateOf([up, recent, down], [], [attic])
+
+    expect(quarantineOf(state, up)).toMatchObject({ day: 30, length: 28 })
+    expect(quarantineOf(state, down)).toBeNull()
+    expect(today(state)).toEqual(['UP:quarantine'])
+  })
+
+  test('carried up later, it counts from the day it went up; two weeks longer pushes it back', () => {
+    const old = plant('A', { locationId: 'attic', origin: { type: null, from: '', date: daysAgo(400), price: null } })
+    const movedUp = stateOf([old], [settle('A', 'quarantine', 'start', daysAgo(10))], [attic])
+    expect(quarantineOf(movedUp, old)).toMatchObject({ day: 10 })
+    expect(today(movedUp)).toEqual([])
+
+    const longer = stateOf(
+      [old],
+      [settle('A', 'quarantine', 'start', daysAgo(30)), settle('A', 'quarantine', 'longer', daysAgo(1))],
+      [attic],
+    )
+    expect(quarantineOf(longer, old)).toMatchObject({ length: 42 })
+    expect(today(longer)).toEqual([])
+  })
+
+  test('two weeks longer counts for a plant that was standing there before it was a quarantine', () => {
+    const before = plant('A', { locationId: 'attic', origin: { type: null, from: '', date: daysAgo(30), price: null } })
+    const state = stateOf([before], [settle('A', 'quarantine', 'longer', daysAgo(0))], [attic])
+    expect(quarantineOf(state, before)).toMatchObject({ day: 30, length: 42 })
+    expect(today(state)).toEqual([])
+  })
+
+  test('two weeks longer is not offered again until those two weeks are up', () => {
+    const up = plant('A', { locationId: 'attic', origin: { type: null, from: '', date: daysAgo(30), price: null } })
+    const running = stateOf([up], [settle('A', 'quarantine', 'longer', daysAgo(1))], [attic])
+    expect(quarantineOf(running, up)).toMatchObject({ extended: true })
+
+    const over = stateOf([up], [settle('A', 'quarantine', 'longer', daysAgo(20))], [attic])
+    const after = { ...up, origin: { ...up.origin, date: daysAgo(45) } }
+    expect(quarantineOf(stateOf([after], [...over.events], [attic]), after)).toMatchObject({ extended: false, length: 42 })
+
+    const pon = stateOf([plant('B')], [settle('B', 'pon', 'start', daysAgo(40)), settle('B', 'pon', 'longer', daysAgo(1))])
+    expect(intoPonOf(pon, pon.plants[0]!)).toMatchObject({ extended: true, length: 56 })
+  })
+
+  test('a place that is no longer a quarantine holds nobody', () => {
+    const state = stateOf(
+      [plant('A', { locationId: 'attic' })],
+      [],
+      [{ ...attic, quarantineWeeks: null }],
+    )
+    expect(settlingOf(state, 'A')).toEqual([])
+  })
+})
+
+test.describe('cachepots and the lid', () => {
+  test('a plant under its lid has no cachepot to empty', () => {
+    const at = '2026-01-01T00:00:00.000Z'
+    const yesterday = new Date()
+    yesterday.setDate(yesterday.getDate() - 1)
+    yesterday.setHours(12, 0, 0, 0)
+    const plant = (code: string, extra: Partial<Plant> = {}): Plant => ({
+      code, name: code, genus: 'Anthurium', species: '', cross: '', cultivar: '', variegation: '',
+      locationId: null, system: 'soil', potSize: null, mediumId: null,
+      origin: { type: null, from: '', date: null, price: null }, parent: null,
+      status: 'active', wish: false, wishNote: '', createdAt: at, updatedAt: at, ...extra,
+    })
+    const state: State = {
+      status: 'ready',
+      plants: [plant('TC', { tissueCulture: true }), plant('PLAIN')],
+      events: ['TC', 'PLAIN'].map((code, index) => ({
+        id: `w${index}`, type: 'water', plantCode: code, date: yesterday.toISOString(), fertilized: true,
+      })),
+      vocab: [],
+      sachets: null,
+      lastBackupAt: null,
+    }
+    expect(potsToEmpty(state).map((pot) => pot.plant.code)).toEqual(['PLAIN'])
   })
 })

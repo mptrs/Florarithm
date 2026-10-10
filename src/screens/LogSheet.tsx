@@ -14,15 +14,31 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { preparePhoto, storePhoto, type PreparedPhoto } from '~/data/photos'
 import { vocabOf, vocabUsage } from '~/data/selectors'
-import { ensureVocabItem, logEvent, updateEvent, useStore, type EventDraft } from '~/data/store'
-import { SYSTEMS, type EventPhoto, type NoteEvent, type Plant, type PlantEvent, type RepotEvent, type System } from '~/data/types'
+import { PON_DAYS, PON_EVERY_DAYS } from '~/data/settling'
+import {
+  ensureVocabItem,
+  logEvent,
+  startSettling,
+  updateEvent,
+  useStore,
+  type EventDraft,
+} from '~/data/store'
+import {
+  SYSTEMS,
+  type EventPhoto,
+  type NoteEvent,
+  type Plant,
+  type PlantEvent,
+  type RepotEvent,
+  type System,
+} from '~/data/types'
 import { nowISO } from '~/lib/date'
 import { newId } from '~/lib/id'
 import { Button } from '~/ui/Button'
 import { Icon, type IconName } from '~/ui/Icon'
 import { DateChip, DatePicker } from '~/ui/DatePicker'
 import { label, parseDecimal } from '~/lib/format'
-import { NumberField, SegmentedField, TextAreaField, TextField } from '~/ui/fields'
+import { CheckField, NumberField, SegmentedField, TextAreaField, TextField } from '~/ui/fields'
 import { SuggestField, usageGroups } from '~/ui/suggest'
 import { Sheet } from '~/ui/Sheet'
 import { type ChipTone } from '~/ui/Card'
@@ -489,6 +505,7 @@ function RepotForm({
   const [medium, setMedium] = useState(currentMedium?.name ?? '')
   const [system, setSystem] = useState<System>(editing?.toSystem ?? plant.system)
   const [reason, setReason] = useState(editing?.reason ?? '')
+  const [intoPon, setIntoPon] = useState(false)
 
   // Opened under the grid, the form starts below the fold of a short phone.
   // A note gets there by focusing its box; a repot has nothing to focus first.
@@ -518,6 +535,7 @@ function RepotForm({
         ...fields,
         ...(await pending?.claim()),
       })
+      if (intoPon) await startSettling(plant.code, 'pon', date)
     }
     onDone()
   })
@@ -535,7 +553,13 @@ function RepotForm({
         label="System"
         options={SYSTEMS.map((value) => ({ value, label: label(value) }))}
         value={system}
-        onChange={setSystem}
+        onChange={(next) => {
+          setSystem(next)
+          // Off soil into semi-hydro is the move into pon, so the weeks of
+          // water from the top are ticked for you — and unticked if the
+          // system goes back. The box is still yours to change after.
+          if (!editing) setIntoPon(plant.system === 'soil' && next === 'semi-hydro')
+        }}
       />
 
       <div className="flex gap-3">
@@ -571,6 +595,20 @@ function RepotForm({
         onChange={(event) => setReason(event.target.value)}
         placeholder="Roots through the bottom"
       />
+
+      {/* Ticked by the system going from soil to semi-hydro; otherwise off,
+          because the medium is a name typed by hand and the app cannot tell
+          that "Pon" means pon. Only on a new repot — correcting an old one is
+          not the day it moved. */}
+      {editing ? null : (
+        <div className="-mt-2 border-t border-line pt-2">
+          <CheckField label="Settle into pon" checked={intoPon} onChange={setIntoPon} />
+          <p className="-mt-1 text-[0.8125rem] leading-5 text-ink-faint text-pretty">
+            Water from the top every {PON_EVERY_DAYS} days for {PON_DAYS / 7} weeks, the
+            reservoir empty till then.
+          </p>
+        </div>
+      )}
 
       <Button variant="solid" block onClick={() => void save()}>
         {editing ? 'Save changes' : 'Log repot'}

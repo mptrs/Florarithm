@@ -18,11 +18,13 @@ import {
   renameName,
   renameVocabItem,
   replaceEverything,
+  setQuarantinePlace,
   setVocabArchived,
   useStore,
 } from '~/data/store'
 import { configureSync, getSyncConfig, syncNow, useSyncStatus } from '~/data/sync'
 import { ORDER_WORKDAYS } from '~/data/sachets'
+import { DEFAULT_QUARANTINE_WEEKS } from '~/data/settling'
 import { SACHET_DAYS, VOCAB_KINDS, type Plant, type VocabKind } from '~/data/types'
 import { cn } from '~/lib/cn'
 import { daysSince, formatDate } from '~/lib/date'
@@ -797,6 +799,65 @@ function SachetsSection() {
 
 // --- growing lists ----------------------------------------------------------
 
+/**
+ * The one place that is a quarantine, and how many weeks a newcomer stays
+ * there. A place, because quarantine is where a plant stands rather than
+ * something it is: carry it down and that is the end of it. See `settling.ts`.
+ */
+function QuarantinePlace() {
+  const state = useStore()
+  const places = allVocabOf(state, 'location').filter((item) => !item.archived)
+  const chosen = places.find((item) => (item.quarantineWeeks ?? 0) > 0) ?? null
+  const weeks = chosen?.quarantineWeeks ?? DEFAULT_QUARANTINE_WEEKS
+  const select =
+    'warm h-touch rounded-md border border-line-strong bg-surface px-3 text-body text-ink hover:border-ink-faint focus:border-leaf focus:outline-none'
+
+  if (places.length === 0) return null
+
+  return (
+    <div className="flex flex-col gap-2 pt-2">
+      <Label>Quarantine</Label>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-[0.9375rem] text-ink-muted">
+        <select
+          aria-label="Quarantine place"
+          value={chosen?.id ?? ''}
+          onChange={(event) => void setQuarantinePlace(event.target.value || null, weeks)}
+          className={cn(select, 'min-w-40')}
+        >
+          <option value="">None</option>
+          {places.map((item) => (
+            <option key={item.id} value={item.id}>
+              {item.name}
+            </option>
+          ))}
+        </select>
+        {chosen ? (
+          <>
+            <span>for</span>
+            <select
+              aria-label="Weeks in quarantine"
+              value={weeks}
+              onChange={(event) => void setQuarantinePlace(chosen.id, Number(event.target.value))}
+              className={cn(select, 'font-mono')}
+            >
+              {[1, 2, 3, 4, 5, 6, 8].map((count) => (
+                <option key={count} value={count}>
+                  {count}
+                </option>
+              ))}
+            </select>
+            <span>{weeks === 1 ? 'week' : 'weeks'}</span>
+          </>
+        ) : null}
+      </div>
+      <p className="max-w-prose text-[0.8125rem] leading-5 text-ink-faint text-pretty">
+        A plant standing there is counted from the day it came in, and Today says when it can come
+        down.
+      </p>
+    </div>
+  )
+}
+
 function ListsSection() {
   return (
     <Section icon="rows" title="Lists" gap="groups">
@@ -876,6 +937,8 @@ function VocabList({ kind }: { kind: VocabKind }) {
           ))}
         </Rows>
       )}
+
+      {kind === 'location' ? <QuarantinePlace /> : null}
     </div>
   )
 }

@@ -13,6 +13,7 @@
 import { daysBetween, daysSince, isoToInputValue, todayInputValue, yearOf } from '~/lib/date'
 import { formatEpithet, formatSpecies, normalizeCross, plural } from '~/lib/format'
 import type { CollectionFilter } from '~/lib/router'
+import { hardeningOf, settledMilestones } from './settling'
 import type { State } from './store'
 import type {
   DrainEvent,
@@ -170,10 +171,11 @@ export function eventsFor(state: State, code: string): PlantEvent[] {
 }
 
 /** What a plant's history shows, newest first: the log without the emptied
- *  cachepots, which are a chore that follows a watering rather than something
- *  that happened to the plant — see `DrainEvent`. */
+ *  cachepots and the days the lid was off, which are chores that follow from
+ *  something else rather than things that happened to the plant — see
+ *  `DrainEvent` and `AiredEvent`. */
 export function historyFor(state: State, code: string): PlantEvent[] {
-  return eventsFor(state, code).filter((event) => event.type !== 'drain')
+  return eventsFor(state, code).filter((event) => event.type !== 'drain' && event.type !== 'aired')
 }
 
 /** Every entry with a picture, newest first — the timeline, which is just the
@@ -294,7 +296,12 @@ export function milestonesOf(
     dated.push({
       date: arrival,
       title: 'Arrived',
-      detail: days === undefined ? null : `after ${plural(days, 'day')} on the wishlist`,
+      detail:
+        days !== undefined
+          ? `after ${plural(days, 'day')} on the wishlist`
+          : plant?.tissueCulture
+            ? 'from tissue culture'
+            : null,
     })
   }
 
@@ -340,6 +347,8 @@ export function milestonesOf(
 
   const pot = latestPot(events)
   if (pot) dated.push(pot)
+
+  dated.push(...settledMilestones(events))
 
   return dated.sort((a, b) => a.date.localeCompare(b.date))
 }
@@ -819,6 +828,9 @@ export function potsToEmpty(state: State): PotToEmpty[] {
 
   for (const plant of livePlants(state)) {
     if (plant.wish || plant.status !== 'active' || plant.system !== 'soil') continue
+    // Still under its lid — fresh from tissue culture, or hardening off — it
+    // stands in a box, not a cachepot.
+    if (hardeningOf(state, plant)) continue
     const wateredAt = lastWaterAt(state, plant.code)
     if (wateredAt === null || daysSince(wateredAt) < 1) continue
 

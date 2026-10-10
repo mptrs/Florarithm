@@ -52,6 +52,7 @@ import { EmptyState } from '~/ui/primitives'
 import { QrCodeBox } from '~/ui/QrCode'
 import { RowActions, SwipeRow } from '~/ui/SwipeRow'
 import { MilestoneCard } from '~/ui/MilestoneCard'
+import { SettlingCards } from '~/ui/Settling'
 import { LogSheet, type LogIntent } from './LogSheet'
 
 type Tab = 'care' | 'history'
@@ -247,6 +248,7 @@ export function PlantScreen({ code }: { code: string }) {
                   />
                 </div>
                 <Care plant={plant} />
+                <SettlingCards code={plant.code} />
                 <Details plant={plant} />
                 <Family plant={plant} />
                 <Milestones plant={plant} />
@@ -994,6 +996,8 @@ function Details({ plant }: { plant: Plant }) {
         .join(' · '),
     })
   }
+  // The flask is lucide's own, which is what a lab jar is drawn as.
+  if (plant.tissueCulture) rows.push({ icon: 'fertilizer', value: 'From tissue culture' })
   // The arrival date used to sit here. It is the first line of Milestones now,
   // where it is the start of something rather than a fact on its own.
 
@@ -1063,6 +1067,8 @@ export const TONE: Record<PlantEvent['type'], ChipTone> = {
   note: 'ink',
   photo: 'ink',
   drain: 'water',
+  settle: 'leaf',
+  aired: 'leaf',
 }
 
 export const GLYPH: Record<PlantEvent['type'], IconName> = {
@@ -1073,6 +1079,8 @@ export const GLYPH: Record<PlantEvent['type'], IconName> = {
   note: 'note',
   photo: 'image',
   drain: 'drain',
+  settle: 'settle',
+  aired: 'air',
 }
 
 function History({ plant, onEdit }: { plant: Plant; onEdit: (event: PlantEvent) => void }) {
