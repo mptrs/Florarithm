@@ -553,7 +553,13 @@ function RepotForm({
         label="System"
         options={SYSTEMS.map((value) => ({ value, label: label(value) }))}
         value={system}
-        onChange={setSystem}
+        onChange={(next) => {
+          setSystem(next)
+          // Off soil into semi-hydro is the move into pon, so the weeks of
+          // water from the top are ticked for you — and unticked if the
+          // system goes back. The box is still yours to change after.
+          if (!editing) setIntoPon(plant.system === 'soil' && next === 'semi-hydro')
+        }}
       />
 
       <div className="flex gap-3">
@@ -590,9 +596,10 @@ function RepotForm({
         placeholder="Roots through the bottom"
       />
 
-      {/* Off by default and asked here, not guessed: the medium is a name
-          typed by hand, so the app cannot tell that "Pon" means pon. Only on
-          a new repot — correcting an old one is not the day it moved. */}
+      {/* Ticked by the system going from soil to semi-hydro; otherwise off,
+          because the medium is a name typed by hand and the app cannot tell
+          that "Pon" means pon. Only on a new repot — correcting an old one is
+          not the day it moved. */}
       {editing ? null : (
         <div className="-mt-2 border-t border-line pt-2">
           <CheckField label="Settle into pon" checked={intoPon} onChange={setIntoPon} />

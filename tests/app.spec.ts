@@ -406,6 +406,34 @@ test('a repot can move the plant into another system', async ({ page }) => {
   await expect(page.getByRole('radio', { name: 'Soil' })).toBeChecked()
 })
 
+test('off soil into semi-hydro, the weeks of water from the top are ticked for you', async ({
+  page,
+}) => {
+  const code = await addPlant(page, 'Philodendron gloriosum', 'Glory')
+
+  // Into soil first: from hydro, nothing to settle into.
+  await openLogSheet(page)
+  await page.getByRole('button', { name: 'Repot', exact: true }).click()
+  const intoPon = page.getByRole('checkbox', { name: 'Settle into pon' })
+  await page.getByRole('radio', { name: 'Soil' }).click()
+  await expect(intoPon).toHaveAttribute('aria-checked', 'false')
+  await page.getByRole('button', { name: 'Log repot' }).click()
+
+  // Then off soil into semi-hydro: ticked, and unticked again if it goes back.
+  await page.goto(`#p=${code}`)
+  await openLogSheet(page)
+  await page.getByRole('button', { name: 'Repot', exact: true }).click()
+  await page.getByRole('radio', { name: 'Semi-hydro' }).click()
+  await expect(intoPon).toHaveAttribute('aria-checked', 'true')
+  await page.getByRole('radio', { name: 'Soil' }).click()
+  await expect(intoPon).toHaveAttribute('aria-checked', 'false')
+  await page.getByRole('radio', { name: 'Semi-hydro' }).click()
+  await page.getByRole('button', { name: 'Log repot' }).click()
+
+  await page.goto(`#p=${code}`)
+  await expect(main(page).getByText('Water from the top')).toBeVisible()
+})
+
 test('genus, species and cultivar are offered back off the collection', async ({ page }) => {
   await addPlant(page, 'Monstera deliciosa', 'Fluweel')
   await addPlant(page, 'Alocasia zebrina', 'Streep')
