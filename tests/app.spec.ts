@@ -1232,6 +1232,10 @@ test('the sachets count down on Today, ask to be replaced, and reset in one shee
  */
 async function openChore(page: Page, title: string) {
   const tile = page.getByRole('button', { name: new RegExp(`^${title}: `) })
+  const section = page.getByRole('heading', { name: new RegExp(`^${title}`) })
+  // Waited for in either layout first: straight after a reload the store is
+  // still loading, and a tile looked for too soon is simply not there yet.
+  await expect(tile.or(section).first()).toBeVisible()
   if (await tile.isVisible()) await tile.click()
 }
 
