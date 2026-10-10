@@ -92,6 +92,8 @@ export type IntoPon = {
   wateredToday: WaterEvent | null
   /** Days until the next one; 0 when it is today. */
   nextIn: number
+  /** Given two weeks longer — offered once, and not again while that runs. */
+  extended: boolean
 }
 
 export type Quarantine = {
@@ -102,6 +104,8 @@ export type Quarantine = {
   since: string
   day: number
   length: number
+  /** Given two weeks longer, and those two weeks are not up yet. */
+  extended: boolean
 }
 
 export type Settling = Hardening | IntoPon | Quarantine
@@ -218,6 +222,7 @@ export function intoPonOf(state: State, plant: Plant): IntoPon | null {
     due: since >= PON_EVERY_DAYS,
     wateredToday,
     nextIn: Math.max(0, PON_EVERY_DAYS - daysSince(last)),
+    extended: extra > 0,
   }
 }
 
@@ -232,14 +237,9 @@ export function quarantineOf(state: State, plant: Plant): Quarantine | null {
   const { anchor, extra } = current(state, plant.code, 'quarantine', arrived)
   const since = anchor?.step === 'start' ? anchor.date : arrived
 
-  return {
-    kind: 'quarantine',
-    plant,
-    place,
-    since,
-    day: Math.max(0, daysSince(since)),
-    length: (place.quarantineWeeks ?? DEFAULT_QUARANTINE_WEEKS) * 7 + extra,
-  }
+  const day = Math.max(0, daysSince(since))
+  const length = (place.quarantineWeeks ?? DEFAULT_QUARANTINE_WEEKS) * 7 + extra
+  return { kind: 'quarantine', plant, place, since, day, length, extended: extra > 0 && day < length }
 }
 
 /** Everything a plant is settling into right now, for its own page. */

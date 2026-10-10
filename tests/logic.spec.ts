@@ -1340,6 +1340,19 @@ test.describe('settling in', () => {
     expect(today(state)).toEqual([])
   })
 
+  test('two weeks longer is not offered again until those two weeks are up', () => {
+    const up = plant('A', { locationId: 'attic', origin: { type: null, from: '', date: daysAgo(30), price: null } })
+    const running = stateOf([up], [settle('A', 'quarantine', 'longer', daysAgo(1))], [attic])
+    expect(quarantineOf(running, up)).toMatchObject({ extended: true })
+
+    const over = stateOf([up], [settle('A', 'quarantine', 'longer', daysAgo(20))], [attic])
+    const after = { ...up, origin: { ...up.origin, date: daysAgo(45) } }
+    expect(quarantineOf(stateOf([after], [...over.events], [attic]), after)).toMatchObject({ extended: false, length: 42 })
+
+    const pon = stateOf([plant('B')], [settle('B', 'pon', 'start', daysAgo(40)), settle('B', 'pon', 'longer', daysAgo(1))])
+    expect(intoPonOf(pon, pon.plants[0]!)).toMatchObject({ extended: true, length: 56 })
+  })
+
   test('a place that is no longer a quarantine holds nobody', () => {
     const state = stateOf(
       [plant('A', { locationId: 'attic' })],

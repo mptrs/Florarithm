@@ -231,9 +231,7 @@ function PonCard({ item }: { item: IntoPon }) {
               ? item.waterings.map((event) => formatDayMonth(event.date)).join(' · ')
               : `since ${formatDayMonth(item.start.date)}`}
           </span>
-          <QuietLink onClick={() => void longer(item, 'pon')}>
-            2 weeks longer
-          </QuietLink>
+          <Longer item={item} kind="pon" />
         </div>
       </Card>
     </section>
@@ -265,13 +263,27 @@ function QuarantineCard({ item }: { item: Quarantine }) {
           </div>
         </div>
         <div className="flex items-center justify-end gap-3 border-t border-line py-1">
-          <QuietLink onClick={() => void longer(item, 'quarantine')}>
-            2 weeks longer
-          </QuietLink>
+          <Longer item={item} kind="quarantine" />
         </div>
       </Card>
     </section>
   )
+}
+
+/**
+ * Offered until it is pressed, and then not again while those two weeks run:
+ * a second press on top of the first is more likely a mis-tap than a plan.
+ * What stands in its place says it was done.
+ */
+function Longer({ item, kind }: { item: IntoPon | Quarantine; kind: 'pon' | 'quarantine' }) {
+  if (item.extended) {
+    return (
+      <span className="flex min-h-touch shrink-0 items-center text-[0.8125rem] text-ink-faint">
+        two weeks longer
+      </span>
+    )
+  }
+  return <QuietLink onClick={() => void longer(item, kind)}>2 weeks longer</QuietLink>
 }
 
 /** Two weeks more, said back with the new last day: the card only changes a
