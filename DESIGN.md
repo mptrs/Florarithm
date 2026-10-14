@@ -311,7 +311,7 @@ wrong layout, and the two cannot drift apart.
 
 - Navigation is a bottom tab bar below `md`, a `5rem` rail down the left from
   `md` — the tab bar stood upright.
-- Content sits in a `max-w-5xl` centred column (Today, a table that wants the
+- Content sits in a `max-w-7xl` centred column on every screen (forms and
   window, takes `max-w-7xl`): `px-4 pt-6 pb-under-bar` on
   phone (the foot clears the fixed tab bar, then leaves a screen-part step),
   `px-12 pt-8 pb-12` from `md`.
