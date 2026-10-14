@@ -311,8 +311,8 @@ wrong layout, and the two cannot drift apart.
 
 - Navigation is a bottom tab bar below `md`, a `5rem` rail down the left from
   `md` — the tab bar stood upright.
-- Content sits in a `max-w-5xl` centred column (Today, a table that wants the
-  window, takes `max-w-7xl`): `px-4 pt-6 pb-under-bar` on
+- Content sits in a `max-w-7xl` centred column on every screen (forms and
+  prose keep their own measure inside it): `px-4 pt-6 pb-under-bar` on
   phone (the foot clears the fixed tab bar, then leaves a screen-part step),
   `px-12 pt-8 pb-12` from `md`.
 - Lists are hairline-divided row stacks on phone and gain real table columns
@@ -517,9 +517,9 @@ Fully round, two kinds whose difference is stakes, not decoration:
 - **`choice`** (44px) picks a value that gets written down, so it obeys the
   floor. Selected is solid `water` on `on-accent`.
 
-`ChipStrip` scrolls rather than wraps, so the list below never jumps a row.
-`SortSwitch` is the shared sort control — Collection and Today sort the same
-plants, and a switch that looked different on the two would read as two controls.
+There is no sort control anywhere. Today is room by room in order of need,
+Collection is by genus, and Collection's search is its only control: a place,
+a genus or a system picked from its suggestions sits in the field as a tag.
 
 ### Cards and containers
 - **`Card`** — `rounded-xl`, `surface`, `line` border, no shadow. The plant page

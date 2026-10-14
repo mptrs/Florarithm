@@ -78,16 +78,17 @@ export function activeNavKey(route: Route): NavKey | null {
 
 export function AppShell({ route, children }: { route: Route; children: ReactNode }) {
   const active = activeNavKey(route)
-  // Today is a table, and the one screen that wants the whole window; the
-  // rest are a record or a form, and read better at a column's width.
-  const wide = route.name === 'today'
 
   return (
     <div className="min-h-dvh md:flex">
       <Sidebar active={active} />
 
       <main className="min-w-0 flex-1 px-4 pt-6 pb-under-bar md:px-12 md:pt-8 md:pb-12">
-        <div className={cn('mx-auto w-full', wide ? 'max-w-7xl' : 'max-w-5xl')}>{children}</div>
+        {/* One width for every screen. The rail gave a 14-inch window its width
+            back, and a page at a narrower column than the one beside it in
+            the rail's own tab read as a different app. A form or a run of
+            prose keeps its own measure inside it. */}
+        <div className="mx-auto w-full max-w-7xl">{children}</div>
       </main>
 
       <BottomNav route={route} active={active} />

@@ -26,10 +26,10 @@ step without either of those things.
 - **A wrong entry is dragged away.** Pull a row left to delete it, right to
   edit it. There is no undo bar: the record is right there, so a correction
   happens where you can see it.
-- **Three ways to read the collection.** By place, by genus, or A–Z. Whatever
-  the list is grouped by never repeats itself inside a row: grouped by place
-  the table drops its Place column, grouped by genus the second line drops the
-  genus and reads `papillilaminum × crystallinum` the way the bench label does.
+- **The collection reads by genus.** The search is the only control: a name
+  is typed, and a place, a genus or a system is picked from its suggestions and
+  sits in the field as a tag. Whatever the list is grouped by never repeats
+  itself inside a row: the second line drops the genus and reads `papillilaminum × crystallinum` the way the bench label does.
   Inside a genus the epithet leads rather than the name you gave the plant, so
   a cross and the cultivar selected out of it land next to each other. Two of a
   genus is a run; everything you own one of goes into a single drawer at the

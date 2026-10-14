@@ -6,13 +6,18 @@
  * you recognise its name; a desktop gets the ledger, because that is where the
  * columns have room to line up.
  *
- * One rule runs through both: whatever the list is grouped by never repeats
- * itself inside a row. Grouped by place, the drawer label says the room, so the
- * table drops its Place column; sorted A–Z there is no label, so the place
- * moves back into the column. Grouped by genus the same rule runs the other
- * way — the label says the genus, so the second line drops it and reads as the
- * bench label does, `papillilaminum × crystallinum`, while the Place column
- * comes back because nothing above the row is saying where the plant stands.
+ * Always by genus — what you have, the way a herbarium files it — and the
+ * search is the only control. There used to be a switch to read it by place or
+ * A–Z, and a row of chips for the system: eight things to choose between
+ * before looking. Today already reads the collection room by room, a name is
+ * found faster by typing it than by scrolling an alphabet, and a room, a genus
+ * or a system is one pick in the search's suggestions, where it sits in the
+ * field as a tag.
+ *
+ * Whatever the list is grouped by never repeats itself inside a row: the label
+ * says the genus, so the second line drops it and reads as the bench label
+ * does, `papillilaminum × crystallinum`, and the Place column says where the
+ * plant stands because nothing above the row is saying it.
  *
  * Which is also the whole of the trailing "One of each" drawer: it is not a
  * genus, so the rows under it put their genus back without being told to.
@@ -35,7 +40,6 @@ import {
   daysSinceWater,
   filterCollection,
   groupByGenus,
-  groupByPlace,
   isArchiveQuery,
   isThirsty,
   ownedPlants,
@@ -44,61 +48,39 @@ import {
   vocabUsage,
 } from '~/data/selectors'
 import { useStore } from '~/data/store'
-import type { Plant } from '~/data/types'
+import { SYSTEMS, type Plant, type System } from '~/data/types'
 import { cn } from '~/lib/cn'
 import { formatEpithet, formatSpecies, label } from '~/lib/format'
-import { useHeld, useRemembered, useTyped } from '~/lib/remembered'
-import { COLLECTION_FILTERS, navigate, routes, type CollectionFilter } from '~/lib/router'
+import { useHeld, useTyped } from '~/lib/remembered'
+import { navigate, routes, type CollectionFilter } from '~/lib/router'
 import { Button } from '~/ui/Button'
-import { Chip, ChipStrip, SortSwitch, type SortOption } from '~/ui/Chip'
 import { Dozing } from '~/ui/Dozing'
-import { Icon } from '~/ui/Icon'
+import { Icon, type IconName } from '~/ui/Icon'
 import { plants as plantCount, SuggestField, type SuggestGroup } from '~/ui/suggest'
 import { PlantThumb, PlantTile } from '~/ui/plantPicture'
 import { EmptyState, ScreenHeader } from '~/ui/primitives'
 import { ColumnHeader, DrawerLabel, RowLink } from '~/ui/rows'
 
-/** The systems, and nothing else: the wishlist has its own page now, and the
- *  archive is a word you type rather than a tab stop you pass every day. */
-const SYSTEM_FILTERS = COLLECTION_FILTERS.filter(
-  (filter) => filter !== 'wishlist' && filter !== 'archive',
-)
-
-const FILTER_LABELS: Record<CollectionFilter, string> = {
-  all: 'All',
-  hydro: 'Hydro',
-  'semi-hydro': 'Semi-hydro',
-  soil: 'Soil',
-  wishlist: 'Wishlist',
-  archive: 'Archive',
-}
-
-type Sort = 'place' | 'genus' | 'name'
-
 /**
- * A place or a genus picked out of the search's suggestions: a filter that
- * sits in the field as a tag, rather than words that happen to match. "Plant
- * cabinet" typed also finds a plant named Cabinet; picked, it means the room.
- * One of each at most — a plant stands in one place and is one genus, so two
- * of a kind would only ever show nothing.
+ * A place, a genus or a system picked out of the search's suggestions: a
+ * filter that sits in the field as a tag, rather than words that happen to
+ * match. "Plant cabinet" typed also finds a plant named Cabinet; picked, it
+ * means the room. One of each at most — a plant stands in one place, is one
+ * genus and grows in one system, so two of a kind would only ever show nothing.
  */
-type Scope = { kind: 'place' | 'genus'; value: string; label: string }
+type Scope = { kind: 'place' | 'genus' | 'system'; value: string; label: string }
 
 function inScope(plant: Plant, scope: readonly Scope[]): boolean {
   return scope.every((part) =>
     part.kind === 'place'
       ? plant.locationId === part.value
-      : plant.genus.trim().toLowerCase() === part.value.toLowerCase(),
+      : part.kind === 'system'
+        ? plant.system === part.value
+        : plant.genus.trim().toLowerCase() === part.value.toLowerCase(),
   )
 }
 
-/** By place is where a plant is, by genus is what it is, and A–Z is the list
- *  with nothing done to it — which is why it goes last. */
-const SORTS = [
-  { value: 'place', label: 'By place' },
-  { value: 'genus', label: 'By genus' },
-  { value: 'name', label: 'A–Z' },
-] as const satisfies readonly SortOption<Sort>[]
+const SCOPE_ICONS: Record<Scope['kind'], IconName> = { place: 'place', genus: 'leaf', system: 'medium' }
 
 /**
  * What a row says under the name.
@@ -117,11 +99,6 @@ export function CollectionScreen({ filter }: { filter: CollectionFilter }) {
   const counts = collectionCounts(state)
   const [query, setQuery] = useTyped('collection')
   const [scope, setScope] = useHeld<Scope[]>('collection-scope', [])
-  const [sort, setSort] = useRemembered<Sort>(
-    'collection-sort',
-    'place',
-    SORTS.map((option) => option.value),
-  )
 
   const plants = filterCollection(state, filter, query).filter((plant) => inScope(plant, scope))
   // An old `#collection/archive` link still works, and when it is what you are
@@ -184,27 +161,10 @@ export function CollectionScreen({ filter }: { filter: CollectionFilter }) {
           }
           onBackspaceEmpty={() => setScope(scope.slice(0, -1))}
           browse={false}
-          placeholder={scope.length > 0 ? 'Search within' : 'Name, species or place'}
+          placeholder={scope.length > 0 ? 'Search within' : 'Name, species, place or system'}
           aria-label="Search the collection"
-          fieldClassName={scope.length > 0 ? 'lg:w-104' : 'lg:w-76'}
+          fieldClassName="lg:w-120"
         />
-
-        {/* Filtering by system is a desk job: on a phone it cost a whole row
-            of chips to narrow a list you were going to look at anyway. */}
-        <ChipStrip className="hidden lg:flex">
-          {SYSTEM_FILTERS.map((candidate) => (
-            <Chip
-              key={candidate}
-              selected={candidate === filter}
-              onClick={() => navigate(routes.collection(candidate))}
-            >
-              {FILTER_LABELS[candidate]}
-            </Chip>
-          ))}
-        </ChipStrip>
-
-        <div className="hidden lg:block lg:flex-1" />
-        <SortSwitch value={sort} options={SORTS} onChange={setSort} />
       </div>
 
       {nothing ? (
@@ -226,18 +186,7 @@ export function CollectionScreen({ filter }: { filter: CollectionFilter }) {
           }
         />
       ) : plants.length > 0 ? (
-        <PlantRuns
-          runs={
-            sort === 'place'
-              ? groupByPlace(state, plants)
-              : sort === 'genus'
-                ? groupByGenus(plants)
-                : [['', plants]]
-          }
-          // The column is there whenever the drawer label is not saying the
-          // place for it, which is both of the other two sorts.
-          showPlace={sort !== 'place'}
-        />
+        <PlantRuns runs={groupByGenus(plants)} />
       ) : null}
 
       {archived.length > 0 ? <Archive plants={archived} query={query} /> : null}
@@ -275,6 +224,20 @@ function searchSuggestions(
         leading: <Mark icon="place" />,
         onPick: () => narrow({ kind: 'place', value: item.id, label: item.name }),
       }))
+  const systemCounts = new Map<System, number>()
+  for (const plant of ownedPlants(state)) {
+    systemCounts.set(plant.system, (systemCounts.get(plant.system) ?? 0) + 1)
+  }
+  const systems = taken.has('system')
+    ? []
+    : SYSTEMS.filter((system) => systemCounts.has(system)).map((system) => ({
+        key: `system-${system}`,
+        value: label(system),
+        detail: 'System',
+        meta: String(systemCounts.get(system)),
+        leading: <Mark icon="medium" />,
+        onPick: () => narrow({ kind: 'system', value: system, label: label(system) }),
+      }))
   const genera = taken.has('genus')
     ? []
     : [...generaCounts].sort(([a], [b]) => a.localeCompare(b)).map(([genus, count]) => ({
@@ -288,7 +251,7 @@ function searchSuggestions(
       }))
 
   return [
-    { label: 'Show only', whileTyping: true, items: [...places, ...genera] },
+    { label: 'Show only', whileTyping: true, items: [...systems, ...places, ...genera] },
     {
       label: 'Go to plant',
       whileTyping: true,
@@ -324,7 +287,7 @@ function searchSuggestions(
   ]
 }
 
-function Mark({ icon }: { icon: 'place' | 'leaf' }) {
+function Mark({ icon }: { icon: IconName }) {
   return (
     <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-sunk text-ink-muted">
       <Icon name={icon} size={17} />
@@ -336,7 +299,7 @@ function Mark({ icon }: { icon: 'place' | 'leaf' }) {
 function ScopeTag({ part, onRemove }: { part: Scope; onRemove: () => void }) {
   return (
     <span className="flex h-8 max-w-[10rem] shrink-0 items-center gap-2 rounded-md bg-leaf-tint pl-3 text-[0.875rem] text-ink">
-      <Icon name={part.kind === 'place' ? 'place' : 'leaf'} size={14} className="shrink-0 text-leaf" />
+      <Icon name={SCOPE_ICONS[part.kind]} size={14} className="shrink-0 text-leaf" />
       <span className={cn('truncate', part.kind === 'genus' && 'font-display text-[0.9375rem] italic')}>
         {part.label}
       </span>
@@ -362,13 +325,7 @@ function ScopeTag({ part, onRemove }: { part: Scope; onRemove: () => void }) {
  * breakpoint rather than chosen in JavaScript — so the two can never disagree
  * about what is in the collection, and there is no flash of the wrong one.
  */
-function PlantRuns({
-  runs,
-  showPlace,
-}: {
-  runs: readonly (readonly [string, readonly Plant[]])[]
-  showPlace: boolean
-}) {
+function PlantRuns({ runs }: { runs: readonly (readonly [string, readonly Plant[]])[] }) {
   return (
     <div>
       {/* The table header exists only where there are columns to head. */}
@@ -376,7 +333,7 @@ function PlantRuns({
         <span className="w-10 shrink-0" />
         <ColumnHeader className="flex-1">Plant</ColumnHeader>
         <div className="flex items-center gap-8">
-          {showPlace ? <ColumnHeader className="w-32">Place</ColumnHeader> : null}
+          <ColumnHeader className="w-52">Place</ColumnHeader>
           <ColumnHeader className="w-26">System</ColumnHeader>
           <ColumnHeader className="w-11 text-right">Pot</ColumnHeader>
           <ColumnHeader className="w-16 text-right">Days</ColumnHeader>
@@ -403,7 +360,6 @@ function PlantRuns({
                 key={plant.code}
                 plant={plant}
                 secondary={secondaryOf(plant, place)}
-                showPlace={showPlace}
               />
             ))}
           </div>
@@ -415,15 +371,7 @@ function PlantRuns({
 
 /** The tile unrolled. Name over species, because the two are one fact — you
  *  never scan a column of species looking for one. */
-function PlantRow({
-  plant,
-  secondary,
-  showPlace,
-}: {
-  plant: Plant
-  secondary: string
-  showPlace: boolean
-}) {
+function PlantRow({ plant, secondary }: { plant: Plant; secondary: string }) {
   const state = useStore()
   const days = daysSinceWater(state, plant.code)
   const dormant = plant.status === 'dormant'
@@ -447,11 +395,9 @@ function PlantRow({
       </div>
 
       <div className="flex shrink-0 items-center gap-8">
-        {showPlace ? (
-          <span className="w-32 shrink-0 truncate text-[0.875rem] text-ink-muted">
-            {vocabName(state, plant.locationId)}
-          </span>
-        ) : null}
+        <span className="w-52 shrink-0 truncate text-[0.875rem] text-ink-muted">
+          {vocabName(state, plant.locationId)}
+        </span>
         <span className="w-26 shrink-0 truncate text-[0.875rem] text-ink-muted">
           {label(plant.system)}
         </span>
