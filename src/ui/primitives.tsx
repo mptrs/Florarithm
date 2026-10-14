@@ -110,8 +110,11 @@ export function DaysSinceWater({
     )
   }
 
+  // A fixed width, wide enough for "usually 14": the unit under the figure
+  // is a word as often as a number, and a box only as wide as whatever it
+  // says moved the drop in front of it on every row.
   return (
-    <div className={cn('flex flex-col', align === 'end' ? 'items-end' : 'items-start')}>
+    <div className={cn('flex w-16 flex-col', align === 'end' ? 'items-end' : 'items-start')}>
       <span
         className={cn(
           'font-mono text-metric',
