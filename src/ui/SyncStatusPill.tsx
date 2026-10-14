@@ -19,10 +19,14 @@ export function SyncStatusPill({
   className,
 }: {
   status: SyncStatus
-  variant?: 'compact' | 'detailed'
+  /** `rail`: a glyph over one word, for the desktop rail; the whole line is
+   *  its tooltip. */
+  variant?: 'compact' | 'detailed' | 'rail'
   className?: string
 }) {
   if (status.kind === 'unconfigured') return null
+
+  if (variant === 'rail') return <RailStatus status={status} className={className} />
 
   if (status.kind === 'error') {
     return (
@@ -86,6 +90,49 @@ export function SyncStatusPill({
           {status.eventCount} event{status.eventCount === 1 ? '' : 's'}
         </span>
       ) : null}
+    </div>
+  )
+}
+
+/**
+ * The status in a rail's width. A failure still borrows the alarm colour and
+ * is still the way to Settings — it is the one state a person has to act on,
+ * so it stays a link and not a tooltip.
+ */
+function RailStatus({
+  status,
+  className,
+}: {
+  status: Exclude<SyncStatus, { kind: 'unconfigured' }>
+  className?: string
+}) {
+  const word = 'flex w-16 flex-col items-center gap-1 text-center text-[0.6875rem] leading-4'
+
+  if (status.kind === 'error') {
+    return (
+      <a
+        href={routes.settings()}
+        title={status.message}
+        className={cn(word, 'warm rounded-md py-2 font-semibold text-ember hover:bg-ember-tint', className)}
+      >
+        <Icon name="alert" size={18} />
+        Fix sync
+      </a>
+    )
+  }
+
+  const { icon, label, spin } = describe(status)
+  const short = { idle: 'Synced', syncing: 'Syncing', 'offline-pending': 'Offline' }[status.kind]
+
+  return (
+    <div title={label} className={cn(word, 'text-ink-faint', className)}>
+      <Icon
+        name={icon}
+        size={16}
+        className={cn(icon === 'check' ? 'text-leaf' : 'text-ink-muted', spin && 'animate-spin')}
+      />
+      <span aria-hidden>{short}</span>
+      <span className="sr-only">{label}</span>
     </div>
   )
 }

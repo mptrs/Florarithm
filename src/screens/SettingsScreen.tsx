@@ -10,7 +10,7 @@
 
 import { useEffect, useId, useRef, useState } from 'react'
 import { buildBackup, BackupParseError, readBackupFile, shareBackup } from '~/data/backup'
-import { allVocabOf, nameIndex, type GenusName } from '~/data/selectors'
+import { allVocabOf, nameIndex, RHYTHM_AFTER_WATERINGS, type GenusName } from '~/data/selectors'
 import {
   ensureVocabItem,
   hangSachets,
@@ -30,10 +30,11 @@ import { cn } from '~/lib/cn'
 import { daysSince, formatDate } from '~/lib/date'
 import { formatSpecies, label, plural } from '~/lib/format'
 import { respell } from '~/lib/taxa'
+import { TODAY_AFTER_OPTIONS, useTodayAfter, type TodayAfter } from '~/lib/todayAfter'
 import { Banner } from '~/ui/Banner'
 import { Button, IconButton } from '~/ui/Button'
 import { useConfirm } from '~/ui/ConfirmDialog'
-import { Field, Label, TextField } from '~/ui/fields'
+import { Field, Label, SelectField, TextField } from '~/ui/fields'
 import { showToast } from '~/ui/toast'
 import { Icon } from '~/ui/Icon'
 import { Rows, ScreenHeader, Section, SectionHeading } from '~/ui/primitives'
@@ -46,10 +47,42 @@ export function SettingsScreen() {
     <div className="flex flex-col gap-8">
       <ScreenHeader title="Settings" />
       <SyncSection />
+      <TodaySection />
       <SachetsSection />
       <ListsSection />
       <BackupSection />
     </div>
+  )
+}
+
+// --- today --------------------------------------------------------------
+
+/** When a plant with no rhythm of its own yet comes onto Today. See
+ *  `waterRhythm` and `todayAfter`. */
+function TodaySection() {
+  const [after, setAfter] = useTodayAfter()
+
+  return (
+    <Section icon="droplet" title="Today">
+      <p className="max-w-prose text-[0.9375rem] leading-6 text-ink-muted text-pretty">
+        Each plant comes onto Today a day before its usual gap between waterings, read from its
+        own history. Until it has had water {RHYTHM_AFTER_WATERINGS} times it has no gap of its
+        own yet, and waits for this instead.
+      </p>
+      <SelectField
+        label="A plant without a rhythm yet"
+        hint="A plant never watered is always on Today."
+        value={String(after)}
+        onChange={(event) => setAfter(event.target.value as TodayAfter)}
+        fieldClassName="max-w-sm"
+      >
+        {TODAY_AFTER_OPTIONS.map((option) => (
+          <option key={option} value={option}>
+            {option === '0' ? 'Always on Today' : `After ${option} days without water`}
+          </option>
+        ))}
+      </SelectField>
+    </Section>
   )
 }
 

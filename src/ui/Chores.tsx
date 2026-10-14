@@ -3,10 +3,12 @@
  * and the sachets once they need ordering.
  *
  * Water is what Today is opened for, so it leads, and these stay out of its
- * way. On a phone each is a tile above the water — a count and a glyph — that
- * opens its rows in a sheet. On a desktop there is room for the rows
- * themselves, so the same chores sit open in a column beside the water. One
- * list of chores, two layouts by breakpoint.
+ * way. Each is a tile — a count and a glyph — that opens its rows in a sheet:
+ * under the title on a phone, in the title's own row from `lg`. A desktop used
+ * to show the rows themselves, open in a column beside the water; with ten
+ * cachepots that column was as long as the water list and drawn the same way,
+ * and two ledgers side by side left nothing saying where to start. Work opens
+ * in a sheet everywhere else in the app, so it does here too.
  *
  * A tile is only ever something owed today. Nothing owed, no tile: the strip
  * is not a fixture, it is there on a day with work in it. Tiles share the
@@ -15,7 +17,7 @@
  * mis-tap — rows that are done stay on, ticked, until the day ends.
  */
 
-import { useState, type ReactNode } from 'react'
+import { useState, type CSSProperties, type ReactNode } from 'react'
 import { potsToEmpty } from '~/data/selectors'
 import { doneToday, settlingToday } from '~/data/settling'
 import { useStore } from '~/data/store'
@@ -123,12 +125,19 @@ export function ChoresStrip({ className }: { className?: string }) {
           <span>{doneLine(chores)}</span>
         </button>
       ) : (
+        // Equal shares of a phone's width; from `lg` a fixed width each,
+        // because a third of a desktop column is a tile nobody reads as one.
         <div
-          className="grid gap-2"
-          style={{ gridTemplateColumns: `repeat(${chores.length}, minmax(0, 1fr))` }}
+          className="grid grid-cols-[repeat(var(--tiles),minmax(0,1fr))] gap-2 lg:grid-cols-[repeat(var(--tiles),11rem)] lg:gap-3"
+          style={{ '--tiles': chores.length } as CSSProperties}
         >
           {chores.map((chore) => (
-            <Tile key={chore.key} chore={chore} onOpen={() => setOpen(chore.key)} />
+            <Tile
+              key={chore.key}
+              chore={chore}
+              open={chore.key === open}
+              onOpen={() => setOpen(chore.key)}
+            />
           ))}
         </div>
       )}
@@ -145,20 +154,24 @@ export function ChoresStrip({ className }: { className?: string }) {
   )
 }
 
-function Tile({ chore, onOpen }: { chore: Chore; onOpen: () => void }) {
+function Tile({ chore, open, onOpen }: { chore: Chore; open: boolean; onOpen: () => void }) {
   const done = chore.waiting === 0
 
   return (
     <button
       type="button"
       onClick={onOpen}
+      aria-haspopup="dialog"
+      aria-expanded={open}
       aria-label={`${chore.title}: ${done ? 'done' : chore.word ?? `${chore.waiting} to do`}`}
       className={cn(
         'lift flex min-h-18 flex-col items-start justify-between gap-1 rounded-md border px-3 py-2 text-left active:opacity-70',
         'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-leaf',
         chore.warning
           ? 'border-transparent bg-ember-tint text-ember'
-          : 'border-line bg-surface text-ink hover:border-line-strong hover:bg-sunk',
+          : open
+            ? 'border-ink bg-sunk text-ink'
+            : 'border-line bg-surface text-ink hover:border-line-strong hover:bg-sunk',
       )}
     >
       <span className="flex w-full items-center justify-between gap-2">
@@ -180,55 +193,5 @@ function Tile({ chore, onOpen }: { chore: Chore; onOpen: () => void }) {
         {chore.label}
       </span>
     </button>
-  )
-}
-
-// --- the desktop: a column beside the water ----------------------------------
-
-export function ChoresColumn({ className }: { className?: string }) {
-  const chores = useChores()
-  if (chores.length === 0) return null
-
-  return (
-    <aside className={cn('flex-col gap-8', className)}>
-      {chores.map((chore) => (
-        <ColumnSection key={chore.key} chore={chore} />
-      ))}
-    </aside>
-  )
-}
-
-/** One chore, open — until it is all done, when it folds to the same quiet
- *  line the strip does on a phone, and opens again for the rest of the day. */
-function ColumnSection({ chore }: { chore: Chore }) {
-  const [unfolded, setUnfolded] = useState(false)
-
-  if (chore.waiting === 0 && !unfolded) {
-    return (
-      <button
-        type="button"
-        onClick={() => setUnfolded(true)}
-        className="flex min-h-[1.875rem] items-center gap-2 self-start text-[0.8125rem] text-ink-muted hover:text-ink"
-      >
-        <Icon name="check" size={15} className="shrink-0 text-leaf" />
-        <span>{doneLine([chore])}</span>
-      </button>
-    )
-  }
-
-  return (
-    <section>
-      <div className="flex min-h-touch items-center justify-between gap-3 border-b border-line-strong pb-2">
-        <h2 className="flex items-center gap-2 font-display text-[1.125rem] leading-6 font-medium">
-          <Icon name={chore.icon} size={18} className="text-ink-faint" />
-          {chore.title}
-          {chore.key === 'sachets' ? null : (
-            <span className="font-mono text-[0.875rem] text-ink-muted">{chore.waiting || ''}</span>
-          )}
-        </h2>
-        {chore.action}
-      </div>
-      <div className={chore.key === 'sachets' ? 'mt-3' : ''}>{chore.rows}</div>
-    </section>
   )
 }

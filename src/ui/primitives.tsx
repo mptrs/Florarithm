@@ -78,10 +78,13 @@ export function DaysSinceWater({
   days,
   thirsty,
   align = 'end',
+  unit = 'days',
 }: {
   days: number | null
   thirsty: boolean
   align?: 'start' | 'end'
+  /** Under the figure: `days`, or on Today the plant's own rhythm. */
+  unit?: string
 }) {
   if (days === null) {
     return (
@@ -117,8 +120,13 @@ export function DaysSinceWater({
       >
         {days}
       </span>
-      <span className={cn('text-[0.6875rem] leading-3', thirsty ? 'text-ember' : 'text-ink-faint')}>
-        days
+      <span
+        className={cn(
+          'text-[0.6875rem] leading-3 whitespace-nowrap',
+          thirsty ? 'text-ember' : 'text-ink-faint',
+        )}
+      >
+        {unit}
       </span>
     </div>
   )

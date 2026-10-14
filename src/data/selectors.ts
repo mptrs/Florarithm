@@ -219,6 +219,43 @@ export function wateringToday(state: State, code: string): WaterEvent | null {
   return last && isoToInputValue(last.date) === todayInputValue() ? (last as WaterEvent) : null
 }
 
+/** How many waterings a plant needs before it has a rhythm of its own: three
+ *  gaps, so one late watering is outvoted rather than taken for the habit. */
+export const RHYTHM_AFTER_WATERINGS = 4
+
+/** How many of the latest gaps the rhythm is read from — recent enough to
+ *  follow a winter's slower habit, many enough to shrug off one holiday. */
+const RHYTHM_GAPS = 6
+
+/**
+ * A plant's own rhythm: the usual number of days between its waterings,
+ * read back out of its log.
+ *
+ * The median of its latest gaps, by calendar day. Not an average: a fortnight
+ * away pulls an average up for months, and the median is simply the gap you
+ * keep coming back to. Looking back only — this says what you have been doing
+ * for this plant, not when it will need water. Null until there are enough
+ * waterings to say anything.
+ */
+export function waterRhythm(state: State, code: string): number | null {
+  const days = [
+    ...new Set(
+      eventsFor(state, code)
+        .filter((event) => event.type === 'water')
+        .map((event) => isoToInputValue(event.date)),
+    ),
+  ].slice(0, RHYTHM_GAPS + 1)
+  if (days.length < RHYTHM_AFTER_WATERINGS) return null
+
+  const gaps = days
+    .slice(1)
+    .map((older, index) => daysBetween(`${older}T12:00:00`, `${days[index]}T12:00:00`))
+    .sort((a, b) => a - b)
+  const middle = Math.floor(gaps.length / 2)
+  const median = gaps.length % 2 ? gaps[middle]! : (gaps[middle - 1]! + gaps[middle]!) / 2
+  return Math.max(1, Math.round(median))
+}
+
 export function isThirsty(days: number | null): boolean {
   return days !== null && days >= THIRSTY_AFTER_DAYS
 }

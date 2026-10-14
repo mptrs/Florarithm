@@ -3,8 +3,11 @@
  *
  * A phone gets a tab bar at the bottom, within reach of a thumb while you are
  * standing in front of a plant holding a watering can. From `md` up that becomes
- * a sidebar, because a desktop window has no bottom edge worth reaching for and
- * the extra width is better spent on the list.
+ * a rail down the left edge, because a desktop window has no bottom edge worth
+ * reaching for. It is the tab bar stood upright — the same glyphs over the
+ * same words, New as the same green disc — rather than a list of names: the
+ * full sidebar spent 15.5rem of a 14-inch screen on five words, and Today was
+ * left a column too narrow for a species to fit in.
  *
  * Both navs are rendered and swapped by breakpoint rather than by measuring the
  * viewport in JavaScript: no flash of the wrong layout, nothing to keep in sync.
@@ -13,7 +16,7 @@
 import type { ReactNode } from 'react'
 import { cn } from '~/lib/cn'
 import { useStore } from '~/data/store'
-import { countOf, findPlant } from '~/data/selectors'
+import { findPlant } from '~/data/selectors'
 import { useSyncStatus } from '~/data/sync'
 import { routes, type Route } from '~/lib/router'
 import { Icon, type IconName } from '~/ui/Icon'
@@ -75,13 +78,16 @@ export function activeNavKey(route: Route): NavKey | null {
 
 export function AppShell({ route, children }: { route: Route; children: ReactNode }) {
   const active = activeNavKey(route)
+  // Today is a table, and the one screen that wants the whole window; the
+  // rest are a record or a form, and read better at a column's width.
+  const wide = route.name === 'today'
 
   return (
     <div className="min-h-dvh md:flex">
       <Sidebar active={active} />
 
       <main className="min-w-0 flex-1 px-4 pt-6 pb-under-bar md:px-12 md:pt-8 md:pb-12">
-        <div className="mx-auto w-full max-w-5xl">{children}</div>
+        <div className={cn('mx-auto w-full', wide ? 'max-w-7xl' : 'max-w-5xl')}>{children}</div>
       </main>
 
       <BottomNav route={route} active={active} />
@@ -91,44 +97,56 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
 }
 
 function Sidebar({ active }: { active: NavKey | null }) {
-  const state = useStore()
   const syncStatus = useSyncStatus()
 
-  const counts: Partial<Record<NavKey, number>> = {
-    collection: countOf(state, 'all'),
-    wishlist: countOf(state, 'wishlist'),
-  }
-
   return (
-    <aside className="hidden w-62 shrink-0 flex-col border-r border-line bg-surface px-4 py-6 md:flex">
-      <span className="px-3 pb-6 font-display text-[1.4375rem] font-medium tracking-[-0.01em]">
-        Florarithm
+    <aside className="sticky top-0 hidden h-dvh w-20 shrink-0 flex-col items-center border-r border-line bg-surface pt-6 pb-4 md:flex">
+      {/* The wordmark's initial: the name itself is in the window's title,
+          and a rail is no wider than a glyph and its word. */}
+      <span
+        title="Florarithm"
+        className="pb-6 font-display text-[1.625rem] leading-8 font-medium tracking-[-0.01em]"
+      >
+        F
       </span>
 
-      <nav className="flex flex-col gap-1">
+      <nav className="flex flex-col items-center gap-1">
         {NAV_ITEMS.map((item) => {
           const isActive = item.key === active
-          const count = counts[item.key]
+          const word = item.shortLabel ?? item.label
+
+          if (item.key === 'new') {
+            return (
+              <a
+                key={item.key}
+                href={item.href}
+                aria-label={item.label}
+                aria-current={isActive ? 'page' : undefined}
+                className="group my-1 flex w-16 flex-col items-center gap-1 py-1 text-[0.75rem] leading-4 font-medium text-leaf"
+              >
+                <span className="lift flex size-10 items-center justify-center rounded-full bg-leaf text-on-accent group-hover:bg-leaf-deep group-hover:shadow-sm">
+                  <Icon name="plus" size={22} />
+                </span>
+                {word}
+              </a>
+            )
+          }
 
           return (
             <a
               key={item.key}
               href={item.href}
+              aria-label={item.label}
               aria-current={isActive ? 'page' : undefined}
               className={cn(
-                'warm flex h-touch items-center gap-2 rounded-md px-3 text-[0.9375rem]',
+                'warm flex h-14 w-16 flex-col items-center justify-center gap-1 rounded-md text-[0.75rem] leading-4',
                 isActive
                   ? 'bg-leaf-tint font-semibold text-leaf'
-                  : 'font-medium text-ink-muted hover:bg-sunk hover:text-ink',
+                  : 'font-medium text-ink-faint hover:bg-sunk hover:text-ink',
               )}
             >
-              <Icon name={item.icon} size={19} />
-              <span className="flex-1">{item.label}</span>
-              {count === undefined ? null : (
-                <span className={cn('font-mono text-[0.8125rem]', isActive ? '' : 'text-ink-faint')}>
-                  {count}
-                </span>
-              )}
+              <Icon name={item.icon} size={22} />
+              {word}
             </a>
           )
         })}
@@ -138,9 +156,7 @@ function Sidebar({ active }: { active: NavKey | null }) {
       {active === 'settings' || syncStatus.kind === 'unconfigured' ? null : (
         <>
           <div className="flex-1" />
-          <div className="border-t border-line px-3 pt-3">
-            <SyncStatusPill status={syncStatus} />
-          </div>
+          <SyncStatusPill status={syncStatus} variant="rail" />
         </>
       )}
     </aside>

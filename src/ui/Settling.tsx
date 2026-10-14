@@ -41,6 +41,7 @@ import { Icon, type IconName } from './Icon'
 import { PlantThumb } from './plantPicture'
 import { showToast } from './toast'
 import { Rows } from './primitives'
+import { DrawerLabel } from './rows'
 
 // --- the plant page ---------------------------------------------------------
 
@@ -311,16 +312,42 @@ function tick(item: Settling): Promise<unknown> {
   return Promise.resolve()
 }
 
-/** Whatever of settling in asks for something today — the rows only; see
- *  `Chores` for where they sit. */
+/** What each kind is called over its rows, in the order they are shown. */
+const KIND_LABELS: readonly (readonly [Settling['kind'], string])[] = [
+  ['harden', 'Hardening off'],
+  ['pon', 'Into pon'],
+  ['quarantine', 'Quarantine'],
+]
+
+/**
+ * Whatever of settling in asks for something today — the rows only; see
+ * `Chores` for where they sit.
+ *
+ * Cut by kind under the same drawer label the cachepots use for a room: three
+ * kinds of care mixed in one list made every row say which kind it was, and
+ * the label says it once.
+ */
 export function SettlingRows() {
   const state = useStore()
+  const items = settlingToday(state)
+
   return (
-    <Rows className="border-t-0">
-      {settlingToday(state).map((item) => (
-        <SettlingRow key={`${item.kind}-${item.plant.code}`} item={item} />
-      ))}
-    </Rows>
+    <>
+      {KIND_LABELS.map(([kind, name]) => {
+        const members = items.filter((item) => item.kind === kind)
+        if (members.length === 0) return null
+        return (
+          <div key={kind} className="mt-4 first:mt-2">
+            <DrawerLabel name={name} count={members.length} />
+            <Rows className="border-t-0">
+              {members.map((item) => (
+                <SettlingRow key={`${item.kind}-${item.plant.code}`} item={item} />
+              ))}
+            </Rows>
+          </div>
+        )
+      })}
+    </>
   )
 }
 
@@ -341,14 +368,21 @@ export function AllSettled() {
   )
 }
 
+/** What today asks, and where in its weeks it is. The kind is the label over
+ *  the rows, so the row no longer says it. */
 function rowText(item: Settling): [string, string] {
   if (item.kind === 'harden') {
     if (item.phase === 'waiting') {
-      return ['harden off?', `TC · ${Math.floor(item.daysIn / 7)} wk in`]
+      return ['ready to start?', `${Math.floor(item.daysIn / 7)} wk in`]
     }
-    return [HARDEN_WEEKS[item.week]!.short, `week ${item.week + 1}`]
+    return [HARDEN_WEEKS[item.week]!.short, `week ${item.week + 1} of ${HARDEN_WEEKS.length}`]
   }
-  if (item.kind === 'pon') return ['from the top', `pon · week ${Math.floor(item.day / 7) + 1}`]
+  if (item.kind === 'pon') {
+    return [
+      'from the top',
+      `week ${Math.floor(item.day / 7) + 1} of ${Math.ceil(item.length / 7)}`,
+    ]
+  }
   return ['can come down', `${item.place.name} · ${Math.round(item.length / 7)} wk`]
 }
 
@@ -405,15 +439,22 @@ function SettlingRow({ item }: { item: Settling }) {
           Start
         </Button>
       ) : item.kind === 'quarantine' ? (
-        <Button
-          size="sm"
-          variant="outline"
+        // The same round button as the ticks beside it, so a column of them
+        // ends on one edge: a word here was wider than a glyph, and the text
+        // before it shifted on this row and no other.
+        <button
+          type="button"
           aria-label={`${name}: move out of ${item.place.name}`}
+          title="Move"
           onClick={() => navigate(routes.edit(item.plant.code))}
-          className="px-3"
+          className={cn(
+            'lift flex size-touch shrink-0 items-center justify-center rounded-full active:opacity-70',
+            'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-leaf',
+            'border border-line-strong text-ink-muted hover:border-ink-faint hover:text-ink',
+          )}
         >
-          Move
-        </Button>
+          <Icon name="place" size={20} />
+        </button>
       ) : (
         <button
           type="button"

@@ -114,12 +114,17 @@ export function LogSheet({
   intent,
   onClose,
   onLogged,
+  onShowQr,
+  onCopyLink,
 }: {
   plant: Plant
   intent: LogIntent | null
   onClose: () => void
   /** A new entry was written — not an edit, which starts from the record. */
   onLogged: () => void
+  /** The tag's two halves, offered under the grid from `md` — see `ThePlant`. */
+  onShowQr: () => void
+  onCopyLink: () => void
 }) {
   const [mode, setMode] = useState<Mode>('actions')
   const [date, setDate] = useState(nowISO)
@@ -324,7 +329,18 @@ export function LogSheet({
                 <RepotForm plant={plant} date={date} editing={null} pending={pending} onDone={logged} />
               )}
             </div>
-          ) : null}
+          ) : (
+            <ThePlant
+              onShowQr={() => {
+                onClose()
+                onShowQr()
+              }}
+              onCopyLink={() => {
+                onClose()
+                onCopyLink()
+              }}
+            />
+          )}
         </>
       ) : mode === 'date' ? (
         <DatePicker value={date} onChange={setDate} onDone={() => setMode(returnTo)} />
@@ -348,6 +364,45 @@ export function LogSheet({
         />
       )}
     </Sheet>
+  )
+}
+
+/**
+ * The plant itself, under what can be logged about it, from `md`.
+ *
+ * A phone has these on the page — the QR at the foot of the photograph, the
+ * link beside the name — and a desktop had them in a small menu on the
+ * photograph, with Water, Log and Edit. Edit stayed on the photograph and Log
+ * became the way in here, so the two halves of the tag come with it: smaller
+ * and outlined, because they write nothing down.
+ */
+function ThePlant({ onShowQr, onCopyLink }: { onShowQr: () => void; onCopyLink: () => void }) {
+  const items: { icon: IconName; label: string; onClick: () => void }[] = [
+    { icon: 'qr', label: 'QR code', onClick: onShowQr },
+    { icon: 'link', label: 'Copy tag link', onClick: onCopyLink },
+  ]
+
+  return (
+    <div role="group" aria-labelledby="the-plant" className="mt-6 hidden border-t border-line pt-4 md:block">
+      <p id="the-plant" className="text-center text-label uppercase text-ink-faint">
+        The plant
+      </p>
+      <div className="mx-auto mt-3 grid w-2/3 grid-cols-2 gap-x-3">
+        {items.map((item) => (
+          <button
+            key={item.label}
+            type="button"
+            onClick={item.onClick}
+            className="warm group mx-auto flex w-fit flex-col items-center gap-2 text-ink-muted active:opacity-70 hover:text-ink"
+          >
+            <span className="lift inline-flex size-touch items-center justify-center rounded-full border border-line-strong group-hover:border-ink-faint">
+              <Icon name={item.icon} size={20} />
+            </span>
+            <span className="text-[0.8125rem] font-medium">{item.label}</span>
+          </button>
+        ))}
+      </div>
+    </div>
   )
 }
 

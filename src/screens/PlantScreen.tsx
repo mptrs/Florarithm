@@ -9,11 +9,14 @@
  * The drop is fixed to the bottom right on a phone and never scrolls away, and
  * one tap of it waters: fertiliser always goes in with the water, so there is
  * nothing left to choose between. Everything else is "Log activity": the tab
- * bar's centre button, which says Log on this page. A desktop has no thumb to reach a floating corner with, so
- * Water and Log activity sit on the title row as two plain buttons instead.
+ * bar's centre button, which says Log on this page. A desktop has no thumb to
+ * reach a floating corner with and no tab bar, so there the photograph carries
+ * the two things this page is for: Edit in its corner, and Log as a disc hung
+ * from its foot — see `LogDisc`. Watering is in the log sheet there; a desktop
+ * waters from Today.
  */
 
-import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { usePhoto } from '~/data/photos'
 import {
   childrenOf,
@@ -101,21 +104,9 @@ export function PlantScreen({ code }: { code: string }) {
     }
   }
 
-  /* From `md` everything this page does sits behind the one control on the
-     photograph — see `PlantMenu`. A wish has none of it but Edit. */
-  const menu = plant.wish ? null : (
-    <PlantMenu
-      plant={plant}
-      onWater={() => {
-        // No pour plays in a menu, so here the words are the whole answer.
-        void logEvent({ type: 'water', plantCode: plant.code, fertilized: true })
-        showToast(`${plant.name} watered`)
-      }}
-      onLog={() => setIntent({ kind: 'new' })}
-      onShowQr={() => setShowQr(true)}
-      onCopyLink={() => void copyLink()}
-    />
-  )
+  /* From `md` the page's way into the log sheet, on the photograph. A wish
+     takes no entries, so it has none. */
+  const onLog = plant.wish ? null : () => setIntent({ kind: 'new' })
 
   return (
     <div className="relative -mx-4 -mt-6 md:mx-0 md:mt-0">
@@ -130,7 +121,7 @@ export function PlantScreen({ code }: { code: string }) {
           onShowQr={() => setShowQr(true)}
           onHideQr={() => setShowQr(false)}
           onAddPhoto={() => setIntent({ kind: 'new' })}
-          menu={menu}
+          onLog={onLog}
         />
       </div>
 
@@ -177,7 +168,7 @@ export function PlantScreen({ code }: { code: string }) {
             {/* On a phone the link is the everyday half of the tag, so it rides
                 the name's own line at the far edge of it; the QR is the other
                 half and lives down on the photograph, next to the place. From
-                `md` both go into the menu on the photograph, with Water and Log:
+                `md` both are in the log sheet, under what can be logged:
                 buttons beside a name were pushed a line down by a long one, and
                 a name is typed, not chosen. */}
             <div className="flex items-start justify-between gap-3">
@@ -244,7 +235,7 @@ export function PlantScreen({ code }: { code: string }) {
                     showQr={showQr}
                     onHideQr={() => setShowQr(false)}
                     onAddPhoto={() => setIntent({ kind: 'new' })}
-                    menu={menu}
+                    onLog={onLog}
                   />
                 </div>
                 <Care plant={plant} />
@@ -277,6 +268,8 @@ export function PlantScreen({ code }: { code: string }) {
         intent={intent}
         onClose={() => setIntent(null)}
         onLogged={() => setTab('history')}
+        onShowQr={() => setShowQr(true)}
+        onCopyLink={() => void copyLink()}
       />
     </div>
   )
@@ -364,15 +357,15 @@ function Hero({
   onShowQr,
   onHideQr,
   onAddPhoto,
-  menu,
+  onLog,
 }: {
   plant: Plant
   showQr: boolean
   onShowQr: () => void
   onHideQr: () => void
   onAddPhoto: () => void
-  /** From `md`, in Edit's place: see `PlantMenu`. */
-  menu: ReactNode
+  /** Opens the log sheet, from `md`; absent on a wish. */
+  onLog: (() => void) | null
 }) {
   const state = useStore()
   const photoEvent = currentPhotoEvent(state, plant.code)
@@ -481,17 +474,23 @@ function Hero({
         <div className="pointer-events-auto absolute inset-x-4 top-4 flex items-start justify-between">
         <BackButton />
 
+        {/* Between `md` and `lg` the band is still a band, with the record
+            right under it and no room to hang a disc from its foot — so Log is
+            a chip of the same size beside Edit, in ink to say it is the one
+            that writes. Edit keeps the corner. */}
         <div className="relative flex items-center gap-2">
-          {menu ? (
-            <>
-              <div className="md:hidden">
-                <EditLink plant={plant} />
-              </div>
-              <div className="hidden md:block">{menu}</div>
-            </>
-          ) : (
-            <EditLink plant={plant} />
-          )}
+          {onLog ? (
+            <button
+              type="button"
+              onClick={onLog}
+              aria-label="Log activity"
+              title="Log activity"
+              className="lift hidden size-10 items-center justify-center rounded-full bg-ink text-paper shadow-md active:opacity-70 hover:bg-ink-deep hover:shadow-lg md:flex"
+            >
+              <Icon name="plus" size={20} />
+            </button>
+          ) : null}
+          <EditLink plant={plant} />
         </div>
       </div>
 
@@ -513,7 +512,7 @@ function Hero({
             type="button"
             onClick={onShowQr}
             aria-label="Show the QR code"
-            // From `md` the QR is in the menu at the top of the photograph.
+            // From `md` the QR is in the log sheet, with the link.
             className="lift flex size-10 shrink-0 md:hidden items-center justify-center rounded-full bg-floating text-ink shadow-md active:opacity-70 hover:bg-surface hover:shadow-lg"
           >
             <Icon name="qr" size={19} />
@@ -577,14 +576,14 @@ function Specimen({
   showQr,
   onHideQr,
   onAddPhoto,
-  menu = null,
+  onLog = null,
 }: {
   plant: Plant
   showQr: boolean
   onHideQr: () => void
   onAddPhoto: () => void
-  /** In Edit's place on an owned plant: see `PlantMenu`. */
-  menu?: ReactNode
+  /** Opens the log sheet; absent on a wish, which takes no entries. */
+  onLog?: (() => void) | null
 }) {
   const state = useStore()
   const photoEvent = currentPhotoEvent(state, plant.code)
@@ -594,7 +593,12 @@ function Specimen({
   const shownPhoto = photoEvent ? photo : null
 
   return (
-    <figure className="relative">
+    // Room at the foot for the half of the disc that hangs below the frame,
+    // when there is no caption under it to make that room.
+    <figure className={cn('relative', onLog && !shownPhoto ? 'pb-8' : '')}>
+      {/* The frame clips; the disc hangs over its edge, so the two share a
+          box that does not. */}
+      <div className="relative">
       <div
         className="relative overflow-hidden rounded-xl bg-sunk"
         style={{ aspectRatio: frameRatio(photoEvent?.photo) }}
@@ -616,15 +620,26 @@ function Specimen({
 
         {showQr ? <QrVeil plant={plant} onHide={onHideQr} /> : null}
       </div>
+      {onLog ? <LogDisc onLog={onLog} /> : null}
+      </div>
 
       {/* Laid over the photograph, so one inset from its edge — the same 16
           the band's own controls sit at. Outside the frame rather than in
           it: the frame clips, and a menu opening from here would be cut off
           at the bottom of a landscape photograph. */}
-      <div className="absolute top-4 right-4 z-10">{menu ?? <EditLink plant={plant} />}</div>
+      <div className="absolute top-4 right-4 z-10">
+        <EditLink plant={plant} />
+      </div>
 
       {shownPhoto ? (
-        <figcaption className="mt-2 flex items-center justify-between gap-3 text-[0.8125rem] leading-[1.125rem] text-ink-muted">
+        <figcaption
+          className={cn(
+            // Under the disc's lower half rather than beside it: a long date
+            // ran into it from the left.
+            onLog ? 'mt-[calc(--spacing(8)+--spacing(2))]' : 'mt-2',
+            'flex items-center justify-between gap-3 text-[0.8125rem] leading-[1.125rem] text-ink-muted',
+          )}
+        >
           <span>Photographed {formatDate(photoEvent!.date)}</span>
           <a href={routes.photos(plant.code)} className="font-semibold text-leaf hover:text-leaf-deep">
             All photos
@@ -640,9 +655,9 @@ function Specimen({
  *
  * On a phone the place and the QR ride the foot of the photograph. Beside the
  * record the photograph is its own picture with nothing laid over it but its
- * menu, so the place and the code come down to the name — they are facts
+ * controls, so the place and the code come down to the name — they are facts
  * about where this plant is, and that is the line they belong on. Showing the
- * QR is in the menu, with everything else this page does.
+ * QR is in the log sheet, with the link.
  */
 function TagLine({ plant }: { plant: Plant }) {
   const state = useStore()
@@ -695,145 +710,30 @@ function EditLink({ plant }: { plant: Plant }) {
 }
 
 /**
- * Everything this page does, from `md`, in one place on the photograph.
+ * Log, hung from the foot of the photograph beside the record, from `lg`.
  *
- * Water, Log, Edit, the QR and the link used to be spread over the title row
- * and the photograph, and the buttons beside the name were pushed a line down
- * whenever the name was long. So they all moved here, behind a chip of the
- * same size and shape as every other control on the photograph — this one
- * stands where Edit stood. A phone keeps its own: the drop, the tab bar's Log,
- * Edit on the photograph and the link beside the name.
- *
- * The panel is a card like the ones under it: each row leads with the same
- * tinted chip as Last watered and the history, and the two groups carry the
- * small capitals of Details and Family — care first, then the plant itself.
- * It hangs under the chip, right-aligned to it, opening from that corner.
+ * The tab bar's own move: its centre disc cuts the bar's hairline so it reads
+ * as a button rather than a fifth place to be, and this one cuts the frame's
+ * edge for the same reason. Half on the picture and half on paper, it reads on
+ * any photograph — a disc wholly over a dark one disappears into it. Ink, as
+ * on the tab bar on this page, and the size of the log sheet's own circles.
+ * The paper ring is the cut, not a border: it is the page showing through.
  */
-function PlantMenu({
-  plant,
-  onWater,
-  onLog,
-  onShowQr,
-  onCopyLink,
-}: {
-  plant: Plant
-  onWater: () => void
-  onLog: () => void
-  onShowQr: () => void
-  onCopyLink: () => void
-}) {
-  const [open, setOpen] = useState(false)
-  const trigger = useRef<HTMLButtonElement>(null)
-  const panel = useRef<HTMLDivElement>(null)
-
-  const close = () => {
-    setOpen(false)
-    trigger.current?.focus()
-  }
-  const choose = (action: () => void) => () => {
-    setOpen(false)
-    action()
-  }
-
-  // Opened from the keyboard or not, the first item takes focus, so the
-  // arrows have somewhere to start from.
-  useEffect(() => {
-    if (open) panel.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus()
-  }, [open])
-
-  const onKeyDown = (event: KeyboardEvent) => {
-    const items = [...(panel.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? [])]
-    const at = items.indexOf(document.activeElement as HTMLElement)
-    if (event.key === 'Escape') {
-      event.preventDefault()
-      close()
-    } else if (event.key === 'ArrowDown') {
-      event.preventDefault()
-      items[(at + 1) % items.length]?.focus()
-    } else if (event.key === 'ArrowUp') {
-      event.preventDefault()
-      items[(at - 1 + items.length) % items.length]?.focus()
-    } else if (event.key === 'Tab') {
-      setOpen(false)
-    }
-  }
-
-  // A row of the card below it, pressable: the same tinted chip leads it.
-  const item = 'warm flex min-h-touch w-full items-center gap-3 px-4 py-1 text-left text-[0.9375rem] font-medium text-ink hover:bg-sunk focus-visible:bg-sunk focus-visible:outline-none active:opacity-70'
-
+function LogDisc({ onLog }: { onLog: () => void }) {
   return (
-    <div className="relative">
-      <button
-        ref={trigger}
-        type="button"
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-label="More for this plant"
-        title="More for this plant"
-        onClick={() => setOpen((was) => !was)}
-        className={cn(
-          'lift flex size-10 items-center justify-center rounded-full text-ink shadow-md active:opacity-70 hover:bg-surface hover:shadow-lg',
-          'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-leaf',
-          open ? 'bg-surface' : 'bg-floating',
-        )}
-      >
-        <Icon name="more" size={19} />
-      </button>
-
-      {open ? (
-        <>
-          <button
-            type="button"
-            aria-label="Close menu"
-            tabIndex={-1}
-            onClick={() => setOpen(false)}
-            className="fixed inset-0 z-40 cursor-default"
-          />
-          <div
-            ref={panel}
-            role="menu"
-            aria-label="More for this plant"
-            onKeyDown={onKeyDown}
-            className={cn(
-              'absolute top-full right-0 z-50 mt-2 w-60 overflow-hidden pb-2',
-              'rounded-xl border border-line bg-surface shadow-xl',
-              'origin-top-right animate-panel-in motion-reduce:animate-none',
-            )}
-          >
-            <div role="group" aria-label="Care">
-              <div aria-hidden className="px-4 pt-3 pb-1">
-                <GroupLabel>Care</GroupLabel>
-              </div>
-              <button type="button" role="menuitem" onClick={choose(onWater)} className={item}>
-                <IconChip icon="droplet" tone="water" />
-                Water
-              </button>
-              <button type="button" role="menuitem" onClick={choose(onLog)} className={item}>
-                <IconChip icon="plus" tone="leaf" />
-                Log activity
-              </button>
-            </div>
-            <div role="group" aria-label="The plant" className="mt-2 border-t border-line">
-              <div aria-hidden className="px-4 pt-3 pb-1">
-                <GroupLabel>The plant</GroupLabel>
-              </div>
-              <a href={routes.edit(plant.code)} role="menuitem" className={item}>
-                <IconChip icon="edit" tone="ink" />
-                Edit
-              </a>
-              <button type="button" role="menuitem" onClick={choose(onShowQr)} className={item}>
-                <IconChip icon="qr" tone="ink" />
-                Show QR code
-              </button>
-              <button type="button" role="menuitem" onClick={choose(onCopyLink)} className={item}>
-                <IconChip icon="link" tone="ink" />
-                Copy tag link
-              </button>
-            </div>
-          </div>
-        </>
-      ) : null}
-    </div>
+    <button
+      type="button"
+      onClick={onLog}
+      aria-label="Log activity"
+      title="Log activity"
+      className={cn(
+        'lift absolute bottom-0 left-1/2 z-10 flex size-16 shrink-0 -translate-x-1/2 translate-y-1/2 items-center justify-center rounded-full',
+        'border-4 border-paper bg-ink text-paper shadow-md active:opacity-70 hover:bg-ink-deep hover:shadow-lg',
+        'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-leaf',
+      )}
+    >
+      <Icon name="plus" size={26} />
+    </button>
   )
 }
 

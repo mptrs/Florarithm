@@ -142,11 +142,11 @@ components:
     rounded: "{rounded.lg}"
     border: "{colors.line}"
     padding: "1.5rem"
-  nav-item-sidebar:
+  nav-item-rail:
     backgroundColor: "{colors.transparent}"
-    textColor: "{colors.ink-muted}"
+    textColor: "{colors.ink-faint}"
     rounded: "{rounded.md}"
-    height: "{spacing.touch}"
+    height: "3.5rem"
   toast:
     backgroundColor: "{colors.ink}"
     textColor: "{colors.paper}"
@@ -238,7 +238,7 @@ may reach for them — a leaf colour spent on a control would be a fourth accent
 with no meaning assigned to it.
 
 ### Colours that carry their own transparency
-`scrim` (behind a sheet, the fan and the overflow menu), `floating` (a chip or
+`scrim` (behind a sheet, the fan and the wishlist's overflow menu), `floating` (a chip or
 button laid over a photograph) and `veil-strong` (the QR overlay on the plant
 hero) bake their alpha into the token rather than using an opacity modifier.
 Two reasons, both load-bearing: an opacity modifier on `ink` produced a *pale*
@@ -309,8 +309,10 @@ Phone and desktop share one markup; layout differs only by Tailwind breakpoint
 (`md` 768px, `lg` 1024px), never by a JavaScript viewport check — no flash of the
 wrong layout, and the two cannot drift apart.
 
-- Navigation is a bottom tab bar below `md`, a `15.5rem` left sidebar from `md`.
-- Content sits in a `max-w-5xl` centred column: `px-4 pt-6 pb-under-bar` on
+- Navigation is a bottom tab bar below `md`, a `5rem` rail down the left from
+  `md` — the tab bar stood upright.
+- Content sits in a `max-w-5xl` centred column (Today, a table that wants the
+  window, takes `max-w-7xl`): `px-4 pt-6 pb-under-bar` on
   phone (the foot clears the fixed tab bar, then leaves a screen-part step),
   `px-12 pt-8 pb-12` from `md`.
 - Lists are hairline-divided row stacks on phone and gain real table columns
@@ -574,10 +576,15 @@ the same two actions appear on hover or focus instead — the two ways never
 overlap.
 
 ### Navigation (`layout/AppShell.tsx`)
-- **Sidebar (`md`+):** `surface`, `line` right border, the wordmark in the serif,
-  five stops with mono counts. Active is `leaf-tint` ground with `leaf` semibold
-  text; inactive is `ink-muted` warming to `sunk`. The sync line sits at the foot
-  unless Settings is showing its own.
+- **Rail (`md`+):** the tab bar stood upright, 80px wide. `surface`, `line` right
+  border, the wordmark's serif initial at the head, then each stop as its glyph
+  over its word. Active is `leaf-tint` ground with `leaf` semibold; inactive is
+  `ink-faint` warming to `sunk`. New is the same filled `leaf` disc as on the
+  tab bar, on every page — Log is a phone's, and on a desktop it lives on the
+  plant's photograph. The sync status sits at the foot as a glyph over one word,
+  its full line the tooltip; a failure keeps the ember and stays a link to
+  Settings. It replaced a 15.5rem sidebar that spent a 14-inch screen's width on
+  five words.
 - **Bottom tab bar (phone):** `surface`, `line` top border, `safe-bottom`. Active
   is `leaf`, inactive `ink-faint`. "New plant" is the one action on a bar of
   destinations, drawn as a filled `leaf` disc that cuts the bar's own hairline so
@@ -590,12 +597,47 @@ overlap.
   own size, holding the middle of the arc), watered with fertiliser, and
   everything else. No labels — colour and glyph carry it, and three is few enough
   to learn once. `scale` and `translate` only, so it stays smooth on a phone.
-- **Desktop (`ui/SplitButton.tsx`):** the same three things as a split button on
-  the title row. A thumb rests near a screen's corner; a pointer does not, and a
-  button pinned to the corner of a wide window drifts away from the record it
-  belongs to. One click waters, the caret reaches the rest. Both segments deepen
-  independently but the whole pill rises as one piece — half a pill lifting reads
-  as broken.
+- **Desktop (`LogDisc` in `screens/PlantScreen.tsx`):** a pointer rests nowhere
+  in particular, so the page's actions sit on the photograph: Edit as a round
+  `floating` chip in its corner, and Log as a 64px `ink` disc hung from the
+  foot of the photograph, half on the picture and half on paper. A paper ring
+  cuts it out of the frame's edge — the tab bar's New disc cutting its hairline,
+  for the same reason — and it reads on any photograph, where a disc wholly over
+  a dark one disappears. It opens the log sheet, which on a desktop carries a
+  second, quieter row under its circles: "The plant", the QR code and the tag
+  link, outlined because they write nothing. Watering there is one of the
+  circles; a desktop waters from Today. Between `md` and `lg` the photograph is
+  still a band, so Log is a 40px `ink` chip beside Edit.
+
+### Chores on Today (`ui/Chores.tsx`)
+Whatever is owed today besides the water — the cachepots, settling in, the
+sachets once they need ordering — is a tile: a mono count and a glyph over a
+word, `rounded-md`, `surface`, a `line` border, and `border-ink` on `sunk`
+while its sheet is open. Under the title on a phone, sharing the width; in the
+title's own row from `lg`, 11rem each. A tile opens its rows in a sheet at
+every width: work opens in a sheet everywhere in this app, and the rows laid
+open in a column beside the water made two ledgers of equal weight side by
+side. Every row in those sheets ends in the same 44px round button — a glyph
+per chore, never a word — so a column of them ends on one edge.
+
+Settling in cuts its rows by kind — Hardening off, Into pon, Quarantine —
+under the same drawer label the cachepots use for a room.
+
+The water list itself has no heading: the tiles in the title row and the
+table's own column heads say where it starts. It is always cut into rooms,
+and there is no sort to choose. Rooms come in order of their neediest plant,
+and plants inside each by need — how far a plant is into its own usual gap
+between waterings, the median of its latest six gaps once it has had water
+four times (`waterRhythm`). Under the days figure the row says that rhythm,
+`usually 7`, and the figure turns ember at half as long again. A plant comes
+onto the list a day before its rhythm; one without a rhythm yet after the
+days set in Settings › Today (four by default, kept per device); one never
+watered is always there, and one watered today stays ticked until tomorrow.
+What is left off is one quiet line under the table that lets it back in.
+
+**Sheets render into the body** (a portal), not where they are written: a sheet
+opened from inside another — new sachets, from the chore asking for them — was
+otherwise fixed to the first panel's transformed box and clipped to its size.
 
 ### Banner, sync status, confirm, toast
 - **`Banner`** — a line that stays until the thing it asks for is done, and is
