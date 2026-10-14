@@ -517,9 +517,9 @@ Fully round, two kinds whose difference is stakes, not decoration:
 - **`choice`** (44px) picks a value that gets written down, so it obeys the
   floor. Selected is solid `water` on `on-accent`.
 
-`ChipStrip` scrolls rather than wraps, so the list below never jumps a row.
-`SortSwitch` is the shared sort control — Collection and Today sort the same
-plants, and a switch that looked different on the two would read as two controls.
+There is no sort control anywhere. Today is room by room in order of need,
+Collection is by genus, and Collection's search is its only control: a place,
+a genus or a system picked from its suggestions sits in the field as a tag.
 
 ### Cards and containers
 - **`Card`** — `rounded-xl`, `surface`, `line` border, no shadow. The plant page

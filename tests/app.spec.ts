@@ -333,7 +333,7 @@ test('a hybrid is recorded as a cross, not as a cultivar', async ({ page }) => {
 
   // And it is findable by the parent, typed with the character on the keyboard.
   await page.goto('#collection')
-  await page.getByPlaceholder('Name, species or place').fill('papillilaminum x cry')
+  await page.getByPlaceholder('Name, species, place or system').fill('papillilaminum x cry')
   await expect(page.getByRole('link', { name: /Vlek/ })).toBeVisible()
 })
 
@@ -605,33 +605,43 @@ test('the collection searches on name, species, code and place', async ({ page }
   await expect(page.getByRole('link', { name: /Drakenkop/ })).toBeVisible()
 })
 
-test('the collection groups by place, or drops the grouping for A\u2013Z', async ({ page }) => {
-  await addPlant(page, 'Monstera deliciosa', 'Gruy\u00e8re', 'Living room')
+test('a system picked from the search becomes a filter, like a place', async ({ page }) => {
   await addPlant(page, 'Alocasia zebrina', 'Zebra', 'Bedroom')
+  const gruyere = await addPlant(page, 'Monstera deliciosa', 'Gruy\u00e8re', 'Living room')
+
+  // Both start in hydro, the form's default; one moves to soil, written
+  // straight to the record — this is about the search, not the form.
+  await page.evaluate(async (code) => {
+    await new Promise<void>((resolve, reject) => {
+      const open = indexedDB.open('florarithm')
+      open.onsuccess = () => {
+        const store = open.result.transaction('plants', 'readwrite').objectStore('plants')
+        const read = store.get(code)
+        read.onsuccess = () => {
+          const write = store.put({ ...read.result, system: 'soil' })
+          write.onsuccess = () => resolve()
+          write.onerror = () => reject(write.error)
+        }
+      }
+      open.onerror = () => reject(open.error)
+    })
+  }, gruyere)
 
   await page.goto('#collection')
+  await page.reload()
+  const search = page.getByLabel('Search the collection')
+  await search.fill('hyd')
+  await page.getByRole('option', { name: /Hydro\s*System/ }).click()
+  await expect(search).toHaveValue('')
+  await expect(main(page).getByRole('link', { name: /Zebra/ })).toBeVisible()
+  await expect(main(page).getByRole('link', { name: /Gruy\u00e8re/ })).toBeHidden()
 
-  // Grouped by place, the drawer label carries the room and the tile is free
-  // to say what the plant is.
-  await expect(main(page).getByText('Living room', { exact: true })).toBeVisible()
-  await expect(main(page).getByRole('link', { name: /Gruy\u00e8re/ })).toContainText(
-    'Monstera deliciosa',
-  )
+  await page.getByRole('button', { name: 'Stop showing only Hydro' }).click()
+  await expect(main(page).getByRole('link', { name: /Gruy\u00e8re/ })).toBeVisible()
 
-  await page.getByRole('button', { name: 'A\u2013Z' }).click()
-
-  // Sorted A\u2013Z there is no label to carry it. On a desktop it moves into
-  // the Place column; on a phone there is no column and it is simply not
-  // shown \u2014 the sort switch is one tap away. The species is there either way.
-  await expect(main(page).getByRole('link', { name: /Gruy\u00e8re/ })).toContainText(
-    'Monstera deliciosa',
-  )
-  await expectPlaceShown(page, /Gruy\u00e8re/, 'Living room')
-  const names = await main(page)
-    .getByRole('link')
-    .filter({ hasText: /Gruy\u00e8re|Zebra/ })
-    .allInnerTexts()
-  expect(names[0]).toContain('Gruy\u00e8re')
+  // No switch and no chips beside the search: the search is the only control.
+  await expect(page.getByRole('button', { name: 'A\u2013Z' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Soil' })).toHaveCount(0)
 })
 
 test('the collection cuts itself into genera, and sweeps up the tail', async ({ page }) => {
@@ -640,7 +650,6 @@ test('the collection cuts itself into genera, and sweeps up the tail', async ({ 
   await addPlant(page, 'Monstera deliciosa', 'Gruy\u00e8re', 'Living room')
 
   await page.goto('#collection')
-  await page.getByRole('button', { name: 'By genus' }).click()
 
   // Two of a genus is a run, and the drawer label says it once for the whole
   // run \u2014 so the row underneath drops the genus and shows the epithet alone.
@@ -665,7 +674,7 @@ test('the collection cuts itself into genera, and sweeps up the tail', async ({ 
   )
 
   // Nothing above a row is saying where the plant stands, so the Place column
-  // is back, exactly as it is under A\u2013Z.
+  // says it.
   await expectPlaceShown(page, /Fluweel/, 'Living room')
 })
 
@@ -683,29 +692,18 @@ test('Today is cut into rooms, and the row says what the plant is', async ({ pag
   )
 })
 
-test('a sort chosen on a list is still chosen after opening a plant', async ({ page }) => {
+test('a search on the collection is still there after opening a plant', async ({ page }) => {
   await addPlant(page, 'Monstera deliciosa', 'Gruy\u00e8re', 'Living room')
 
-  // The collection keeps its sort and its search across a visit to a plant.
   await page.goto('#collection')
-  await page.getByRole('button', { name: 'By genus' }).click()
   await page.getByRole('combobox', { name: 'Search the collection' }).fill('Gruy')
+  // The suggestions put away, the way reading on past them does.
+  await page.keyboard.press('Escape')
   await main(page).getByRole('link', { name: /Gruy\u00e8re/ }).click()
   await page.goBack()
 
-  await expect(page.getByRole('button', { name: 'By genus' })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  )
   await expect(page.getByRole('combobox', { name: 'Search the collection' })).toHaveValue(
     'Gruy',
-  )
-
-  // A sort is how this device likes to look at things, so it outlasts a reload.
-  await page.reload()
-  await expect(page.getByRole('button', { name: 'By genus' })).toHaveAttribute(
-    'aria-pressed',
-    'true',
   )
 })
 

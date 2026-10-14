@@ -78,9 +78,9 @@ export function activeNavKey(route: Route): NavKey | null {
 
 export function AppShell({ route, children }: { route: Route; children: ReactNode }) {
   const active = activeNavKey(route)
-  // Today is a table, and the one screen that wants the whole window; the
-  // rest are a record or a form, and read better at a column's width.
-  const wide = route.name === 'today'
+  // Today and Collection are tables, and want the whole window; the rest are
+  // a record or a form, and read better at a column's width.
+  const wide = route.name === 'today' || route.name === 'collection'
 
   return (
     <div className="min-h-dvh md:flex">
