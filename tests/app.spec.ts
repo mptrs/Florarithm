@@ -29,20 +29,22 @@ async function addPlant(page: Page, species: string, name: string, place = 'Livi
 
 /**
  * One of the plant page's actions, ready to press. A phone shows them as they
- * are — the drop, the tab bar's Log; from `md` they are items in the menu on
- * the photograph, so this opens it first. The copy this viewport does not
- * show is `display: none`, so each role query only ever finds one.
+ * are — the drop, the tab bar's Log. From `md` Log is on the photograph and
+ * Water is one of the log sheet's circles, so this opens the sheet first. The
+ * copy this viewport does not show is `display: none`, so each role query
+ * only ever finds one.
  */
 async function plantAction(page: Page, name: 'Water' | 'Log activity'): Promise<Locator> {
-  const more = page.getByRole('button', { name: 'More for this plant' })
-  if (await more.isVisible()) {
-    await more.click()
-    return page.getByRole('menuitem', { name, exact: true })
-  }
-  return page.getByRole('button', { name, exact: true })
+  // A sheet from the press before may still be closing, and its own Water
+  // would be the one found.
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  const button = page.getByRole('button', { name, exact: true })
+  if (name === 'Log activity' || (await button.isVisible())) return button
+  await page.getByRole('button', { name: 'Log activity', exact: true }).click()
+  return page.getByRole('dialog').getByRole('button', { name: 'Water', exact: true })
 }
 
-/** Water the plant: one press of the drop, or one choice from the menu. */
+/** Water the plant: one press of the drop, or one circle in the log sheet. */
 async function water(page: Page) {
   await (await plantAction(page, 'Water')).click()
 }
@@ -163,9 +165,9 @@ test('a scanned sticker opens the plant with the actions already in view', async
   // Exactly what an NFC tag carries: a cold load straight at the hash.
   await page.goto(`#p=${code}`)
 
-  // The drop on a phone; from `md`, the menu on the photograph that holds it.
+  // The drop on a phone; from `md`, Log on the photograph.
   const phone = page.getByRole('button', { name: 'Water', exact: true })
-  const action = (await phone.isVisible()) ? phone : page.getByRole('button', { name: 'More for this plant' })
+  const action = (await phone.isVisible()) ? phone : page.getByRole('button', { name: 'Log activity', exact: true })
   await expect(action).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Gruyère' })).toBeVisible()
 
@@ -667,24 +669,15 @@ test('the collection cuts itself into genera, and sweeps up the tail', async ({ 
   await expectPlaceShown(page, /Fluweel/, 'Living room')
 })
 
-test('Today sorts by thirst, or cuts the same list into rooms', async ({ page }) => {
+test('Today is cut into rooms, and the row says what the plant is', async ({ page }) => {
   await addPlant(page, 'Monstera deliciosa', 'Gruy\u00e8re', 'Living room')
   await addPlant(page, 'Alocasia zebrina', 'Zebra', 'Bedroom')
 
   await page.goto('#today')
 
-  // Thirstiest first, and with no label above the row: the place shows in the
-  // desktop column and nowhere on a phone. The species is there at both.
-  await expect(main(page).getByRole('link', { name: /Gruy\u00e8re/ })).toContainText(
-    'Monstera deliciosa',
-  )
-  await expectPlaceShown(page, /Gruy\u00e8re/, 'Living room')
-
-  await page.getByRole('button', { name: 'By place' }).click()
-
-  // Cut into rooms, the drawer label says where you are and the row goes back
-  // to saying what the plant is.
+  // The drawer label says where you are, so the row says what the plant is.
   await expect(main(page).getByText('Bedroom', { exact: true })).toBeVisible()
+  await expect(main(page).getByText('Living room', { exact: true })).toBeVisible()
   await expect(main(page).getByRole('link', { name: /Gruy\u00e8re/ })).toContainText(
     'Monstera deliciosa',
   )
@@ -708,19 +701,9 @@ test('a sort chosen on a list is still chosen after opening a plant', async ({ p
     'Gruy',
   )
 
-  // So does Today.
-  await page.goto('#today')
-  await page.getByRole('button', { name: 'By place' }).click()
-  await main(page).getByRole('link', { name: /Gruy\u00e8re/ }).click()
-  await page.goBack()
-  await expect(page.getByRole('button', { name: 'By place' })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  )
-
   // A sort is how this device likes to look at things, so it outlasts a reload.
   await page.reload()
-  await expect(page.getByRole('button', { name: 'By place' })).toHaveAttribute(
+  await expect(page.getByRole('button', { name: 'By genus' })).toHaveAttribute(
     'aria-pressed',
     'true',
   )
@@ -758,17 +741,15 @@ test('watering from Today is a press on the figure, and another takes it back', 
 
   const figures = main(page).getByRole('button', { name: /: watered today$/ })
   const gruyere = main(page).getByRole('button', { name: 'Gruy\u00e8re: watered today' })
-  const round = main(page).getByText(/of 3 watered$/)
 
-  // None logged, so the three tie and stand by name.
-  await expect(figures.first()).toHaveAccessibleName('Gruy\u00e8re: watered today')
-  await expect(round).toBeHidden()
+  // None logged, so every room ties and stands by name — Bedroom, then the
+  // Living room's two by theirs.
+  await expect(figures.nth(1)).toHaveAccessibleName('Gruy\u00e8re: watered today')
 
   await gruyere.click()
   await expect(gruyere).toHaveAttribute('aria-pressed', 'true')
-  await expect(round).toHaveText('1 of 3 watered')
   // Watered, it would rank last; while the screen is up it stays where it was.
-  await expect(figures.first()).toHaveAccessibleName('Gruy\u00e8re: watered today')
+  await expect(figures.nth(1)).toHaveAccessibleName('Gruy\u00e8re: watered today')
 
   // It is a real entry, and the next visit opens in the real order.
   await page.reload()
@@ -778,10 +759,8 @@ test('watering from Today is a press on the figure, and another takes it back', 
   // Pressed again, it is taken back.
   await gruyere.click()
   await expect(gruyere).toHaveAttribute('aria-pressed', 'false')
-  await expect(round).toBeHidden()
 
-  // By place, a room with more than one still to go is one press.
-  await page.getByRole('button', { name: 'By place' }).click()
+  // A room with more than one still to go is one press.
   const all = main(page).getByRole('button', { name: 'All watered' })
   await expect(all).toHaveCount(1)
   await all.click()
@@ -795,6 +774,77 @@ test('watering from Today is a press on the figure, and another takes it back', 
     'false',
   )
   await expect(all).toBeHidden()
+})
+
+/**
+ * Today holds each plant against its own rhythm. A plant with four weekly
+ * waterings comes on the day before its week is up and says what it usually
+ * is; one with too little history waits the days set in Settings; one never
+ * watered is always there. What is left off is one line that lets it back in.
+ */
+test('Today holds each plant to its own rhythm, and says how many it left off', async ({
+  page,
+}) => {
+  await page.goto('#today')
+  await page.evaluate(async () => {
+    const at = (days: number) => {
+      const date = new Date()
+      date.setDate(date.getDate() - days)
+      date.setHours(12, 0, 0, 0)
+      return date.toISOString()
+    }
+    const plant = (code: string, name: string) => ({
+      code, name, genus: 'Monstera', species: '', cross: '', cultivar: '', variegation: '',
+      locationId: null, system: 'hydro', potSize: null, mediumId: null,
+      origin: { type: null, from: '', date: null, price: null }, parent: null,
+      status: 'active', wish: false, wishNote: '', createdAt: at(60), updatedAt: at(60),
+    })
+    // Weekly, last six days ago: due tomorrow, so on. Weekly, last four days
+    // ago: not yet. Twice only, last two days ago: no rhythm, under four days.
+    const waterings: [string, string, number[]][] = [
+      ['MON-0001', 'Gruyère', [6, 13, 20, 27]],
+      ['MON-0002', 'Emmentaler', [4, 11, 18, 25]],
+      ['MON-0003', 'Brie', [2, 9]],
+      ['MON-0004', 'Comté', []],
+    ]
+    await new Promise<void>((resolve, reject) => {
+      const open = indexedDB.open('florarithm')
+      open.onsuccess = () => {
+        const transaction = open.result.transaction(['plants', 'events', 'meta'], 'readwrite')
+        for (const [code, name, days] of waterings) {
+          transaction.objectStore('plants').put(plant(code, name))
+          for (const day of days) {
+            transaction.objectStore('events').put({ id: `w-${code}-${day}`, plantCode: code, type: 'water', date: at(day), fertilized: true })
+          }
+        }
+        transaction.objectStore('meta').put(new Date().toISOString(), 'lastBackupAt')
+        transaction.oncomplete = () => resolve()
+        transaction.onerror = () => reject(transaction.error)
+      }
+      open.onerror = () => reject(open.error)
+    })
+  })
+  await page.reload()
+
+  const figure = (name: string) => main(page).getByRole('button', { name: `${name}: watered today` })
+  await expect(figure('Gruyère')).toBeVisible()
+  await expect(figure('Gruyère')).toContainText('usually 7')
+  await expect(figure('Comté')).toBeVisible()
+  await expect(figure('Emmentaler')).toBeHidden()
+  await expect(figure('Brie')).toBeHidden()
+
+  await main(page).getByRole('button', { name: '2 plants not yet near their usual gap' }).click()
+  await expect(figure('Emmentaler')).toBeVisible()
+  await expect(figure('Brie')).toBeVisible()
+
+  // Always, from Settings: a plant with no rhythm yet is on, and the line
+  // counts only the one that has one and is not near it.
+  await page.goto('#settings')
+  await page.getByLabel('A plant without a rhythm yet').selectOption('0')
+  await page.goto('#today')
+  await expect(figure('Brie')).toBeVisible()
+  await expect(figure('Emmentaler')).toBeHidden()
+  await expect(main(page).getByRole('button', { name: '1 plant not yet near their usual gap' })).toBeVisible()
 })
 
 test('an archived plant is out of the way but still findable', async ({ page }) => {
@@ -1226,17 +1276,11 @@ test('the sachets count down on Today, ask to be replaced, and reset in one shee
 })
 
 /**
- * Open a chore on Today. On a phone it is a tile that opens its rows in a
- * sheet; on a desktop the rows are already open beside the water, and there
- * is no tile to press.
+ * Open a chore on Today: a tile that opens its rows in a sheet, under the
+ * title on a phone and in the title's row on a desktop.
  */
 async function openChore(page: Page, title: string) {
-  const tile = page.getByRole('button', { name: new RegExp(`^${title}: `) })
-  const section = page.getByRole('heading', { name: new RegExp(`^${title}`) })
-  // Waited for in either layout first: straight after a reload the store is
-  // still loading, and a tile looked for too soon is simply not there yet.
-  await expect(tile.or(section).first()).toBeVisible()
-  if (await tile.isVisible()) await tile.click()
+  await page.getByRole('button', { name: new RegExp(`^${title}: `) }).click()
 }
 
 /**

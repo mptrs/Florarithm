@@ -17,8 +17,9 @@ step without either of those things.
 - **The drop logs a watering.** On a phone it sits in the corner a thumb rests
   in and never scrolls away; tapping it fans out three things: watered, watered
   with fertilizer, and everything else. No confirmation step — the water splashes
-  and the entry is in. A desktop has no thumb, so the same three things become a
-  split button on the plant's title row.
+  and the entry is in. A desktop has no thumb: there the photograph carries Edit in its
+  corner and Log as a disc hung from its foot, and watering is one of the log
+  sheet's circles — a desktop waters from Today.
 - Also logged: repotting (which updates the pot and medium of the plant
   itself), new leaves, blooming, and free notes — each of them datable, so the
   watering you forgot on Tuesday can still be recorded on Thursday.
@@ -105,7 +106,7 @@ src/
     photos     the photographs, read on demand and cached by event
     backup     export and import
   ui/          the design system as components (see DESIGN.md)
-  layout/      the shell: tab bar on a phone, sidebar on a desktop
+  layout/      the shell: tab bar on a phone, the same stops as a rail on a desktop
   screens/     one file per screen
 ```
 
@@ -156,7 +157,7 @@ Utility conflicts are resolved by CSS order rather than class order, so a
 passthrough could not reliably override anything anyway. See `lib/cn.ts`.
 
 **One markup, two layouts.** Phone and desktop differ by breakpoint, not by a
-JavaScript viewport check: columns appear at `lg`, the sidebar replaces the tab
+JavaScript viewport check: columns appear at `lg`, the rail replaces the tab
 bar at `md`. Nothing to keep in sync and no flash of the wrong layout.
 
 **Anything that writes data is at least 44px tall.** Filter chips are the single
@@ -186,7 +187,7 @@ in Chrome on Android. Reading works everywhere, because the tag just holds a URL
   `events/YYYY-MM.json` per month and `meta.json`, merged with a pure function
   and pushed with a fine-grained token. Sync doubles as the backup.
 - **M3 — done.** A QR code on the plant page as a fallback for a dead sticker,
-  behind the overflow menu. Photographs attached to log entries, capped at a
+  in the log sheet on a desktop, at the foot of the photograph on a phone. Photographs attached to log entries, capped at a
   1600px JPEG on the way in, kept in their own IndexedDB store and synced to
   the same private repository as `photos/YYYY-MM/<event id>.jpg` — one file
   each, next to the log that describes them. They are still out of the backup

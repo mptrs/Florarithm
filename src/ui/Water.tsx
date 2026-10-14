@@ -96,11 +96,14 @@ export function WaterFigure({
   watered,
   onWater,
   onTakeBack,
+  unit,
   className,
 }: {
   name: string
   days: number | null
   thirsty: boolean
+  /** What the figure is under; see `DaysSinceWater`. */
+  unit?: string
   watered: boolean
   onWater: () => void
   onTakeBack: () => void
@@ -142,7 +145,7 @@ export function WaterFigure({
       {watered ? null : (
         <Icon name="droplet" size={14} className="shrink-0 text-ink-faint opacity-70 transition-opacity group-hover/water:text-ink-muted group-hover/water:opacity-100" />
       )}
-      <DaysSinceWater days={watered ? 0 : days} thirsty={thirsty} />
+      <DaysSinceWater days={watered ? 0 : days} thirsty={thirsty} unit={unit} />
       {/* One ring, centred on the check: the pour on a plant's page, at the
           size of a figure in a list. */}
       {splash ? (

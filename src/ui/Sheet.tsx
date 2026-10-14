@@ -4,9 +4,16 @@
  * It rises from the bottom on a phone, because that is where a thumb is, and
  * becomes a centred panel from `md` up, because a desktop window has no bottom
  * edge worth reaching for. Same component, same content, one breakpoint.
+ *
+ * Rendered into the body rather than where it is written. A sheet opened from
+ * inside another one — new sachets, from the chore that asks for them — was
+ * otherwise a child of the first panel, whose entrance animation gives it a
+ * transform: a `fixed` box inside a transformed one is fixed to that box, so
+ * the second sheet was clipped to the first one's size.
  */
 
 import { useEffect, useRef, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { cn } from '~/lib/cn'
 import { Icon } from './Icon'
 
@@ -46,7 +53,7 @@ export function Sheet({ open, onClose, title, onBack, children }: SheetProps) {
 
   if (!open) return null
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center">
       <button
         type="button"
@@ -103,6 +110,7 @@ export function Sheet({ open, onClose, title, onBack, children }: SheetProps) {
 
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
