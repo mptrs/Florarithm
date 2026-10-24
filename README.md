@@ -76,7 +76,9 @@ step without either of those things.
 What it deliberately does **not** do is predict when a plant needs water. You
 water on fixed days, so every measured gap lands on 7 or 14 and the app would be
 predicting your calendar back at you. It shows the average with its spread,
-looking backwards, and stops there.
+looking backwards, and stops there. Today's "in 3" is the same thing said the
+other way round — the days left to your own usual gap — not a guess at what
+the plant wants.
 
 ## Running it
 

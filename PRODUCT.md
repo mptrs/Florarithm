@@ -16,7 +16,7 @@ A plant logbook you open by tapping an NFC tag stuck to the pot. It exists so th
 
 ## Positioning
 
-Most plant-care apps push notifications and try to predict when a plant needs water next. Florarithm deliberately does not: watering happens on fixed days regardless of the plant, so a prediction would just be echoing the user's own calendar back at them. Instead it shows the historical average interval and its spread, looking backward only. The other differentiator is the physical trigger — an NFC tag on the pot opens straight to that plant's page, no search, no account, no server.
+Most plant-care apps push notifications and try to predict when a plant needs water next. Florarithm deliberately does not: watering happens on fixed days regardless of the plant, so a prediction would just be echoing the user's own calendar back at them. Instead it shows the historical average interval and its spread, looking backward only; where Today says a plant comes up "in 3", that is the days left to the user's own usual gap, not a forecast of the plant's need. The other differentiator is the physical trigger — an NFC tag on the pot opens straight to that plant's page, no search, no account, no server.
 
 ## Operating Context
 

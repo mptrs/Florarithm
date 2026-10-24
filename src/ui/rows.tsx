@@ -27,17 +27,22 @@ export function RowLink({
   children,
   className,
   trailing,
+  flush,
 }: {
   href: string
   children: ReactNode
   className?: string
   trailing?: ReactNode
+  /** No inset at the start: a row in a narrow column, under a heading that
+   *  already stands on the column's edge. */
+  flush?: boolean
 }) {
   const link = (
     <a
       href={href}
       className={cn(
-        'flex min-h-touch items-center gap-3 px-3 py-3',
+        'flex min-h-touch items-center gap-3 py-3',
+        flush ? 'pr-3' : 'px-3',
         trailing ? 'min-w-0 flex-1' : 'border-b border-line',
         'warm active:bg-sunk',
         trailing ? '' : 'hover:bg-sunk',
