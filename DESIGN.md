@@ -306,7 +306,8 @@ the mono.
 ## Layout
 
 Phone and desktop share one markup; layout differs only by Tailwind breakpoint
-(`md` 768px, `lg` 1024px), never by a JavaScript viewport check — no flash of the
+(`md` 768px, `lg` 1024px, and `xl` 1280px for Today's board alone, where three
+columns of rows first have room for a species), never by a JavaScript viewport check — no flash of the
 wrong layout, and the two cannot drift apart.
 
 - Navigation is a bottom tab bar below `md`, a `5rem` rail down the left from
@@ -517,9 +518,10 @@ Fully round, two kinds whose difference is stakes, not decoration:
 - **`choice`** (44px) picks a value that gets written down, so it obeys the
   floor. Selected is solid `water` on `on-accent`.
 
-There is no sort control anywhere. Today is room by room in order of need,
-Collection is by genus, and Collection's search is its only control: a place,
-a genus or a system picked from its suggestions sits in the field as a tag.
+There is no sort control anywhere. Today is one line from Late to Later with
+the rooms as filter chips, Collection is by genus, and Collection's search is
+its only control: a place, a genus or a system picked from its suggestions
+sits in the field as a tag.
 
 ### Cards and containers
 - **`Card`** — `rounded-xl`, `surface`, `line` border, no shadow. The plant page
@@ -623,17 +625,31 @@ per chore, never a word — so a column of them ends on one edge.
 Settling in cuts its rows by kind — Hardening off, Into pon, Quarantine —
 under the same drawer label the cachepots use for a room.
 
-The water list itself has no heading: the tiles in the title row and the
-table's own column heads say where it starts. It is always cut into rooms,
-and there is no sort to choose. Rooms come in order of their neediest plant,
-and plants inside each by need — how far a plant is into its own usual gap
-between waterings, the median of its latest six gaps once it has had water
-four times (`waterRhythm`). Under the days figure the row says that rhythm,
-`usually 7`, and the figure turns ember at half as long again. A plant comes
-onto the list a day before its rhythm; one without a rhythm yet after the
-days set in Settings › Today (four by default, kept per device); one never
-watered is always there, and one watered today stays ticked until tomorrow.
-What is left off is one quiet line under the table that lets it back in.
+The water is the whole collection on one line, measured against each plant's
+own rhythm — the median of its latest six gaps once it has had water four
+times (`waterRhythm`): **Late** at half as long again as that gap, or never
+watered; **Due** at the gap; **Tomorrow** a day short; **Later** everything
+else, with how many days it has to go (`in 3`). A plant without a rhythm yet
+is Due after the days set in Settings › Today (four by default, kept per
+device). Inside a column the order is need — how far a plant is into its
+usual gap — and there is no sort to choose.
+
+From `xl` the four stand side by side, Later past a hairline rule and
+narrower; below it they are sections, and Later folds into one quiet line
+that lets it in. The row leads with the plant's photograph and the species,
+binomial in italic and cultivar upright, in the serif; the name you gave it
+follows small, still in the serif, and its room after it in the sans. Under the days figure the row says the rhythm,
+`usually 7`, and the figure is ember in Late.
+
+Above it the rooms are `filter` chips, each counting what is Late or Due in
+it. A room picked shows that room alone, says how many are owed, and offers
+**Water all N** for those — a `tinted` button, never the filled one, and
+never Tomorrow's, which are ticked one by one. Every room has no such press:
+the whole house in one is too easy to make by mistake. It always opens on
+Every room: the filter is for the round in hand. A row in Later still presses,
+at the reach floor like anything that writes. A plant
+watered today keeps the column it stood in that morning and sits ticked at
+its foot; while the screen is up nothing moves under the pointer.
 
 **Sheets render into the body** (a portal), not where they are written: a sheet
 opened from inside another — new sachets, from the chore asking for them — was
