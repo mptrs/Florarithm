@@ -63,79 +63,6 @@ export function CodeBadge({
 }
 
 /**
- * The number of days since a plant last had water.
- *
- * Thirst is carried by colour and weight — no badge, no bar, no stripe down the
- * side. A plant that has never been logged says so in words, because a zero
- * there would be a lie.
- *
- * A plant watered today gets a mark instead of a nought. A column of figures
- * with a few zeroes in it still has to be read; a mark is seen — which is the
- * whole point on the one screen you scan while walking a room. `leaf` because
- * the system already spends it on checkmarks.
- */
-export function DaysSinceWater({
-  days,
-  thirsty,
-  align = 'end',
-  unit = 'days',
-}: {
-  days: number | null
-  thirsty: boolean
-  align?: 'start' | 'end'
-  /** Under the figure: `days`, or on Today the plant's own rhythm. */
-  unit?: string
-}) {
-  if (days === null) {
-    return (
-      <span className="font-display text-[0.875rem] whitespace-nowrap italic text-ink-faint">
-        never logged
-      </span>
-    )
-  }
-
-  // The same height as the figure and its unit, so a mixed column keeps one
-  // baseline rather than jumping wherever a plant has just had water.
-  if (days === 0) {
-    return (
-      <span
-        className={cn(
-          'flex h-[2.3125rem] items-center text-leaf',
-          align === 'end' ? 'justify-end' : '',
-        )}
-      >
-        <Icon name="check" size={20} />
-        <span className="sr-only">watered today</span>
-      </span>
-    )
-  }
-
-  // A fixed width, wide enough for "usually 14": the unit under the figure
-  // is a word as often as a number, and a box only as wide as whatever it
-  // says moved the drop in front of it on every row.
-  return (
-    <div className={cn('flex w-16 flex-col', align === 'end' ? 'items-end' : 'items-start')}>
-      <span
-        className={cn(
-          'font-mono text-metric',
-          thirsty ? 'font-semibold text-ember' : 'text-ink',
-        )}
-      >
-        {days}
-      </span>
-      <span
-        className={cn(
-          'text-[0.6875rem] leading-3 whitespace-nowrap',
-          thirsty ? 'text-ember' : 'text-ink-faint',
-        )}
-      >
-        {unit}
-      </span>
-    </div>
-  )
-}
-
-/**
  * A named run of fields — or of anything else a screen groups.
  *
  * Set in the serif, at the size the sheets set their titles. It has to be a
@@ -214,26 +141,40 @@ export function SectionHeading({
 export function ScreenHeader({
   title,
   meta,
+  beside,
   action,
   className,
 }: {
   title: string
   meta?: ReactNode
+  /** What the screen is showing, right after the title rather than under it
+   *  — Today's room — so it costs the page no line of its own. */
+  beside?: ReactNode
   /** A control in the slot the counts would use. Wins over `meta`. */
   action?: ReactNode
   className?: string
 }) {
+  const heading = (
+    <h1 className="font-display text-[2rem] leading-9 font-medium tracking-[-0.015em] md:text-[2.125rem]">
+      {title}
+    </h1>
+  )
   return (
     <div
       className={cn(
         'flex justify-between gap-3',
-        action ? 'items-center' : 'items-baseline',
+        action || beside ? 'items-center' : 'items-baseline',
         className,
       )}
     >
-      <h1 className="font-display text-[2rem] leading-9 font-medium tracking-[-0.015em] md:text-[2.125rem]">
-        {title}
-      </h1>
+      {beside ? (
+        <div className="flex min-w-0 flex-wrap items-center gap-x-6 gap-y-2">
+          {heading}
+          {beside}
+        </div>
+      ) : (
+        heading
+      )}
       {action ?? (meta ? <div className="text-[0.8125rem] text-ink-muted">{meta}</div> : null)}
     </div>
   )

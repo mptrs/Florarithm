@@ -22,6 +22,7 @@ export type ButtonVariant =
   | 'outline'
   | 'tinted'
   | 'quiet'
+  | 'water-quiet'
   | 'danger'
   | 'danger-quiet'
 export type ButtonSize = 'lg' | 'md' | 'sm'
@@ -50,6 +51,11 @@ const VARIANTS: Record<ButtonVariant, string> = {
    *  shouting on hover either: the ground holds and only the mark deepens. */
   tinted: 'bg-water-tint text-water border border-transparent hover:text-water-deep',
   quiet: 'border border-transparent text-ink-muted hover:bg-sunk hover:text-ink',
+  /** Water offered rather than pressed: the colour that says watering, with no
+   *  ground until the pointer is on it. For a press beside a list that already
+   *  presses on every row — Today's Water all — where even the tint was the
+   *  loudest thing on the page. */
+  'water-quiet': 'border border-transparent text-water hover:bg-water-tint hover:text-water-deep',
   danger: 'border border-ember text-ember hover:bg-ember-tint',
   /** The same warning colour without the frame — for a destructive action that
    *  is offered rather than pressed, sitting in the run of a form. An outlined

@@ -6,13 +6,16 @@
  * many days it has to go. Late is half as long again as the usual gap, the
  * point where "late" stops being a matter of a day; Tomorrow is a day short,
  * the evening before a round being when you look to see what is coming.
+ * Only a plant with a rhythm can be late: late is a claim about a habit, and
+ * one watered once or never has none yet, so however long it has gone it is
+ * Due.
  *
  * Need is measured against each plant's own rhythm — the gap you usually leave
  * between its waterings, read back out of its log (see `waterRhythm`). A plant
  * on a weekly round at day nine is further along than one in a self-watering
  * pot at day ten of its usual fourteen, and a single scale of days could not
  * say so. A plant without enough history to have a rhythm waits the number of
- * days set in Settings, and one never watered is late.
+ * days set in Settings, and one never watered leads Due.
  *
  * Every plant is there. A list that quietly showed less than the collection
  * was a list you stopped trusting, and on a desktop there was the room to show
@@ -22,8 +25,11 @@
  * know it by; the name you gave it follows small, with the room it stands in.
  * The rooms are a filter rather than a grouping: you water a room at a time,
  * so a room picked shows that room alone, with what is owed in it in one
- * press. It always opens on every room — the filter is for the round in hand,
- * not a setting.
+ * press. There are a dozen of them, so the filter is one control that says
+ * the room it is on rather than a row of chips that said all of them at
+ * once. The room picked stays picked while the app is open — you go into a
+ * plant from it and come back to the same round — and the app opens again on
+ * every room.
  *
  * Watering is logged from here too. The figure on each row is a button:
  * pressed, it turns to the check that already meant "watered today", and
@@ -38,11 +44,10 @@
  * under your pointer.
  */
 
-import { useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react'
 import { logEvent, removeEvent, useStore, waterPlants, type State } from '~/data/store'
 import {
   eventsFor,
-  isThirsty,
   livePlants,
   todayList,
   vocabName,
@@ -55,11 +60,11 @@ import { daysSince, isoToInputValue, todayInputValue } from '~/lib/date'
 import { formatSpecies, plural } from '~/lib/format'
 import { useTodayAfter } from '~/lib/todayAfter'
 import { useToday } from '~/lib/today'
+import { useHeld as useKept } from '~/lib/remembered'
 import { navigate, routes } from '~/lib/router'
 import { cn } from '~/lib/cn'
 import { Banner } from '~/ui/Banner'
 import { Button } from '~/ui/Button'
-import { Chip } from '~/ui/Chip'
 import { ChoresStrip } from '~/ui/Chores'
 import { Icon } from '~/ui/Icon'
 import { PlantThumb } from '~/ui/plantPicture'
@@ -123,7 +128,7 @@ function standing(state: State, plant: Plant, fallback: number): Standing {
   const wateredToday = wateringToday(state, plant.code) !== null
   const base = { plant, room, days, rhythm, wateredToday }
 
-  if (days === null) return { ...base, need: Infinity, column: 'late', until: 0 }
+  if (days === null) return { ...base, need: Infinity, column: 'due', until: 0 }
   const gap = rhythm ?? fallback
   const need = gap > 0 ? days / gap : days
   const until = gap - days
@@ -133,9 +138,9 @@ function standing(state: State, plant: Plant, fallback: number): Standing {
       days >= rhythm * 1.5 ? 'late' : days >= rhythm ? 'due' : days >= rhythm - 1 ? 'soon' : 'later'
     return { ...base, need, column, until }
   }
-  // No rhythm yet: on once the days set in Settings are up, and late by the
-  // same fixed mark the rest of the app calls thirsty.
-  const column = days < fallback ? 'later' : isThirsty(days) ? 'late' : 'due'
+  // No rhythm yet: on once the days set in Settings are up, and never late —
+  // a plant watered once, three weeks ago, may well be one that likes it dry.
+  const column = days < fallback ? 'later' : 'due'
   return { ...base, need, column, until }
 }
 
@@ -158,7 +163,7 @@ export function TodayScreen() {
   useToday()
   const syncStatus = useSyncStatus()
   const [fallback] = useTodayAfter()
-  const [room, setRoom] = useState<string | null>(null)
+  const [room, setRoom] = useKept<string | null>('today-room', null)
   const [showLater, setShowLater] = useState(false)
 
   const plants = todayList(state)
@@ -187,7 +192,51 @@ export function TodayScreen() {
             as the same tiles a phone shows under it: the one glance that says
             what there is to do, and the water still the first list on the
             page. */}
-        <ScreenHeader title="Today" action={<ChoresStrip className="hidden lg:block" />} />
+        <ScreenHeader
+          title="Today"
+          beside={
+            // The room in the title's own row: what the board below is
+            // showing, said where its name is, and no line of the page
+            // spent on it.
+            plants.length > 0 ? (
+              <RoomPicker
+                rooms={rooms.map((name) => ({
+                  name,
+                  owed: held.filter((each) => each.room === name && owed(each)).length,
+                }))}
+                picked={picked}
+                onPick={setRoom}
+              />
+            ) : null
+          }
+          action={
+            <div className="flex items-center gap-3">
+              {/* What is really owed in the room, and only that — Late and
+                  Due: Tomorrow's are a day short, and are ticked one by one
+                  if they had water too. At the row's end, where an action
+                  stands, apart from the room it acts on. The count is in it,
+                  so it says what it will do and no line beside it has to:
+                  Water 2. One left is the row's own figure, so none. Quiet,
+                  in the water's colour with no ground until the pointer is
+                  on it: a list that already presses on every row has no
+                  need to shout, and even a tinted fill was the loudest
+                  thing on the page. Every room has none — a round is a
+                  room. */}
+              {picked !== null && left.length > 1 ? (
+                <Button
+                  size="sm"
+                  variant="water-quiet"
+                  icon="droplet"
+                  title={`Water the ${left.length} late and due in ${picked}`}
+                  onClick={() => void waterPlants(left.map((each) => each.plant.code))}
+                >
+                  {`Water ${left.length}`}
+                </Button>
+              ) : null}
+              <ChoresStrip className="hidden lg:block" />
+            </div>
+          }
+        />
         {/* The sachets while they are only hanging: a fact about the room
             the plants stand in, owed nothing, so a line under the title
             rather than a tile. Ordering them is a chore, and is one above. */}
@@ -217,64 +266,15 @@ export function TodayScreen() {
         />
       ) : (
         <section className="flex min-w-0 flex-col gap-4">
-          {/* The count on each is what is owed in it, so a room with nothing
-              late or due reads as done before you pick it. */}
-          <div
-            role="group"
-            aria-label="Room"
-            className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] md:mx-0 md:flex-wrap md:px-0 [&::-webkit-scrollbar]:hidden"
-          >
-            <Chip
-              selected={picked === null}
-              count={held.filter(owed).length}
-              onClick={() => setRoom(null)}
-            >
-              Every room
-            </Chip>
-            {rooms.map((name) => (
-              <Chip
-                key={name}
-                selected={picked === name}
-                count={held.filter((each) => each.room === name && owed(each)).length}
-                onClick={() => setRoom(name)}
-              >
-                {name}
-              </Chip>
-            ))}
-          </div>
-
-          {picked !== null ? (
-            <div className="flex min-h-touch flex-wrap items-center gap-x-4 gap-y-2">
-              <div className="flex flex-col">
-                <span className="font-display text-[1.3125rem] leading-7">{picked}</span>
-                <span className="text-[0.8125rem] text-ink-muted">
-                  {left.length > 0 ? `${left.length} to water` : 'Nothing owed'}
-                </span>
-              </div>
-              {/* What is really owed, and only that: Tomorrow's are a day
-                  short, and are ticked one by one if they had water too. For
-                  the last one it is the same press as the row's own figure,
-                  said twice. Tinted rather than filled: the filled water
-                  button is the plant page's, and a list that already presses
-                  on every row has no need to shout. */}
-              {left.length > 1 ? (
-                <Button
-                  size="sm"
-                  variant="tinted"
-                  icon="droplet"
-                  onClick={() => void waterPlants(left.map((each) => each.plant.code))}
-                >
-                  {`Water all ${left.length}`}
-                </Button>
-              ) : null}
-            </div>
-          ) : null}
-
           {/* Below `xl` the columns are sections, one under the other, and
-              Later is one line that lets it in. From `xl` they stand side by
-              side — three columns of water and, past a rule, Later. */}
-          <div className="flex flex-col gap-6 xl:flex-row xl:items-stretch xl:gap-6">
-            <div className="flex min-w-0 flex-col gap-6 xl:grid xl:flex-1 xl:grid-cols-3 xl:gap-6">
+              Later is one line that lets it in. From `xl` the three columns
+              of water stand side by side, and Later runs the full width
+              under them, its names set in columns of their own. Four in one
+              line left a column a quarter of the screen wide, which cut a
+              species after a word; and Later is where most of a collection
+              is on most days, so it is what gets the width. */}
+          <div className="flex flex-col gap-6 xl:gap-12">
+            <div className="flex min-w-0 flex-col gap-6 xl:grid xl:grid-cols-3 xl:gap-8">
               {OWED.map(({ column, title, tone }) => {
                 const members = inColumn(column)
                 return (
@@ -297,9 +297,7 @@ export function TodayScreen() {
               </p>
             ) : null}
 
-            <div aria-hidden className="hidden w-px shrink-0 bg-line-strong xl:block" />
-
-            <section className="min-w-0 xl:w-52 xl:shrink-0">
+            <section className="min-w-0">
               {later.length > 0 ? (
                 <button
                   type="button"
@@ -312,7 +310,7 @@ export function TodayScreen() {
                 </button>
               ) : null}
               <ColumnHead title="Later" count={later.length} className="hidden text-ink-muted xl:flex" />
-              <div className={cn(showLater ? 'block' : 'hidden', 'xl:block')}>
+              <div className={cn(showLater ? 'block' : 'hidden', 'xl:block xl:columns-3 xl:gap-8 2xl:columns-4')}>
                 {later.map((each) => (
                   <LaterRow key={each.plant.code} standing={each} />
                 ))}
@@ -321,6 +319,180 @@ export function TodayScreen() {
           </div>
         </section>
       )}
+    </div>
+  )
+}
+
+/**
+ * Which room the board shows: the room's name set as a heading, with a
+ * chevron, opening the rooms under it.
+ *
+ * A list of our own rather than the system's: the native one dropped a
+ * system font and a blue highlight into a page set in this one's type, and
+ * could not put a room's count where it reads as a count. It is still a
+ * listbox in every way the web expects — arrows, Home and End, Enter to
+ * pick, Escape to close, a press outside to let go — the anchored panel the
+ * Wishlist's menu already is. In the list each room says what is owed in it,
+ * so one with nothing late or due reads as done before it is picked.
+ */
+function RoomPicker({
+  rooms,
+  picked,
+  onPick,
+}: {
+  rooms: { name: string; owed: number }[]
+  picked: string | null
+  onPick: (room: string | null) => void
+}) {
+  const id = useId()
+  const [open, setOpen] = useState(false)
+  const [active, setActive] = useState(0)
+  const trigger = useRef<HTMLButtonElement>(null)
+  const list = useRef<HTMLDivElement>(null)
+
+  const choices: { value: string | null; name: string; owed: number }[] = [
+    { value: null, name: 'Every room', owed: rooms.reduce((sum, room) => sum + room.owed, 0) },
+    ...rooms.map((room) => ({ value: room.name, ...room })),
+  ]
+  const pickedAt = Math.max(0, choices.findIndex((choice) => choice.value === picked))
+
+  // The list takes the keys as it opens, on the room it is on.
+  useEffect(() => {
+    if (open) list.current?.focus()
+  }, [open])
+  useEffect(() => {
+    if (open) document.getElementById(`${id}-${active}`)?.scrollIntoView({ block: 'nearest' })
+  }, [open, active, id])
+
+  const show = () => {
+    setActive(pickedAt)
+    setOpen(true)
+  }
+  const close = () => {
+    setOpen(false)
+    trigger.current?.focus()
+  }
+  const pick = (index: number) => {
+    onPick(choices[index]!.value)
+    close()
+  }
+
+  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    const last = choices.length - 1
+    const to: Record<string, number> = {
+      ArrowDown: Math.min(last, active + 1),
+      ArrowUp: Math.max(0, active - 1),
+      Home: 0,
+      End: last,
+    }
+    if (event.key in to) {
+      event.preventDefault()
+      setActive(to[event.key]!)
+    } else if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      pick(active)
+    } else if (event.key === 'Escape') {
+      event.preventDefault()
+      close()
+    } else if (event.key === 'Tab') {
+      setOpen(false)
+    }
+  }
+
+  return (
+    <div className="relative inline-flex">
+      <button
+        ref={trigger}
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-controls={open ? `${id}-list` : undefined}
+        aria-label={`Room: ${choices[pickedAt]!.name}`}
+        onClick={() => (open ? close() : show())}
+        onKeyDown={(event) => {
+          if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+            event.preventDefault()
+            show()
+          }
+        }}
+        className={cn(
+          'warm inline-flex h-touch items-center gap-2 rounded-md px-3 hover:bg-sunk active:opacity-70',
+          'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-leaf',
+          open && 'bg-sunk',
+        )}
+      >
+        <span className="font-display text-[1.3125rem] leading-7 text-ink">
+          {choices[pickedAt]!.name}
+        </span>
+        <Icon
+          name="chevronDown"
+          size={18}
+          className={cn(
+            'shrink-0 text-ink-muted transition-[rotate] duration-200 ease-grow',
+            open && 'rotate-180',
+          )}
+        />
+      </button>
+
+      {open ? (
+        <>
+          <button
+            type="button"
+            tabIndex={-1}
+            aria-label="Close the rooms"
+            onClick={() => setOpen(false)}
+            className="fixed inset-0 z-40 cursor-default"
+          />
+          <div
+            ref={list}
+            id={`${id}-list`}
+            role="listbox"
+            aria-label="Room"
+            tabIndex={-1}
+            aria-activedescendant={`${id}-${active}`}
+            onKeyDown={onKeyDown}
+            // On the room name's edge rather than the hover's, so on a phone
+            // it keeps the page's gutter.
+            className={cn(
+              'absolute top-full left-3 z-50 mt-1 w-64 max-h-[min(30rem,70vh)] overflow-y-auto overscroll-contain',
+              'rounded-xl border border-line bg-surface py-1 shadow-xl outline-none',
+              'origin-top-left animate-panel-in motion-reduce:animate-none',
+            )}
+          >
+            {choices.map((choice, index) => {
+              const selected = index === pickedAt
+              return (
+                <div
+                  key={choice.value ?? ''}
+                  id={`${id}-${index}`}
+                  role="option"
+                  aria-selected={selected}
+                  onClick={() => pick(index)}
+                  onPointerMove={() => setActive(index)}
+                  className={cn(
+                    'flex h-11 cursor-pointer items-center gap-3 px-4 text-[0.9375rem] text-ink',
+                    // Every room is the whole house; a hairline sets it
+                    // apart from the rooms it is made of.
+                    index === 0 && 'border-b border-line',
+                    index === active && 'bg-sunk',
+                    selected && 'font-semibold',
+                  )}
+                >
+                  <span className="flex w-4 shrink-0 justify-center text-leaf">
+                    {selected ? <Icon name="check" size={16} /> : null}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate">{choice.name}</span>
+                  {/* Nothing owed is no figure at all, so a room that is
+                      done reads as quiet rather than as a nought. */}
+                  {choice.owed > 0 ? (
+                    <span className="font-mono text-micro text-ink-faint">{choice.owed}</span>
+                  ) : null}
+                </div>
+              )
+            })}
+          </div>
+        </>
+      ) : null}
     </div>
   )
 }
@@ -384,8 +556,8 @@ function useWaterPress(plant: Plant) {
 /**
  * One plant owed water: its picture, what it is, and the figure that waters it.
  *
- * Under the figure, the plant's own rhythm rather than the word "days": the
- * number means nothing much until you know what it usually is.
+ * After the figure, the plant's own rhythm, `17 /9`: the number means
+ * nothing much until you know what it usually is.
  */
 function TodayRow({ standing: { plant, room, days, rhythm, column }, withRoom }: { standing: Standing; withRoom: boolean }) {
   const { watered, water, takeBack } = useWaterPress(plant)
@@ -399,13 +571,12 @@ function TodayRow({ standing: { plant, room, days, rhythm, column }, withRoom }:
   return (
     <RowLink
       href={routes.plant(plant.code)}
-      flush
       trailing={
         <WaterFigure
           name={plant.name}
           days={days}
-          thirsty={column === 'late'}
-          unit={rhythm !== null ? `usually ${rhythm}` : undefined}
+          rhythm={rhythm}
+          tone={column === 'later' ? 'soon' : column}
           watered={watered}
           onWater={water}
           onTakeBack={takeBack}
@@ -442,12 +613,13 @@ function LaterRow({ standing: { plant, until } }: { standing: Standing }) {
   const { watered, water, takeBack } = useWaterPress(plant)
 
   return (
-    <div className="warm flex items-center border-b border-line hover:bg-sunk">
+    <div className="warm flex break-inside-avoid items-center border-b border-line hover:bg-sunk">
       <a
         href={routes.plant(plant.code)}
-        className="flex min-h-touch min-w-0 flex-1 items-center gap-2 truncate py-2 font-display text-[0.9375rem] text-ink-muted"
+        className="flex min-h-touch min-w-0 flex-1 items-center py-2 pl-3 font-display text-[0.9375rem] leading-5 text-ink-muted"
       >
-        <span className="truncate">
+        {/* Two lines before it is cut, as on a row owed water. */}
+        <span className="line-clamp-2">
           <SpeciesName species={speciesOf(plant)} name={plant.name} />
         </span>
       </a>
@@ -458,7 +630,7 @@ function LaterRow({ standing: { plant, until } }: { standing: Standing }) {
         aria-label={`${plant.name}: watered today`}
         title={watered ? 'Watered today. Press to take it back' : 'Watered'}
         className={cn(
-          'flex min-h-touch min-w-14 shrink-0 items-center justify-end rounded-md px-2 font-mono text-micro',
+          'flex min-h-touch min-w-14 shrink-0 items-center justify-end rounded-md px-3 font-mono text-micro',
           'hover:bg-line active:opacity-70',
           'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-leaf',
           watered ? 'text-leaf' : 'text-ink-faint',
