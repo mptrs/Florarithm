@@ -266,21 +266,23 @@ export function TodayScreen() {
         />
       ) : (
         <section className="flex min-w-0 flex-col gap-4">
-          {/* Below `xl` the columns are sections, one under the other, and
-              Later is one line that lets it in. From `xl` the three columns
-              of water stand side by side, and Later runs the full width
-              under them, its names set in columns of their own. Four in one
-              line left a column a quarter of the screen wide, which cut a
-              species after a word; and Later is where most of a collection
-              is on most days, so it is what gets the width. */}
-          <div className="flex flex-col gap-6 xl:gap-12">
-            <div className="flex min-w-0 flex-col gap-6 xl:grid xl:grid-cols-3 xl:gap-8">
+          {/* On a phone the columns are sections, one under the other, and
+              Later is one line that lets it in. From `md` Late and Due stand
+              side by side, Tomorrow under Late, and from `xl` all three of
+              the water do; three at `lg` cut a species after every word
+              again. Later runs the full width under them, its names set in
+              columns of their own. Four in one line left a column a quarter
+              of the screen wide, which cut a species after a word; and Later
+              is where most of a collection is on most days, so it is what
+              gets the width. */}
+          <div className="flex flex-col gap-6 md:gap-12">
+            <div className="flex min-w-0 flex-col gap-6 md:grid md:grid-cols-2 md:gap-8 xl:grid-cols-3">
               {OWED.map(({ column, title, tone }) => {
                 const members = inColumn(column)
                 return (
                   <section
                     key={column}
-                    className={cn('min-w-0', members.length === 0 && 'hidden xl:block')}
+                    className={cn('min-w-0', members.length === 0 && 'hidden md:block')}
                   >
                     <ColumnHead title={title} count={members.length} className={tone} />
                     {members.map((each) => (
@@ -292,7 +294,7 @@ export function TodayScreen() {
             </div>
 
             {!anyOwed ? (
-              <p className="text-[0.9375rem] text-ink-muted xl:hidden">
+              <p className="text-[0.9375rem] text-ink-muted md:hidden">
                 Nothing is near its usual gap today.
               </p>
             ) : null}
@@ -303,14 +305,14 @@ export function TodayScreen() {
                   type="button"
                   onClick={() => setShowLater((was) => !was)}
                   aria-expanded={showLater}
-                  className="flex min-h-touch items-center gap-2 text-[0.8125rem] text-ink-muted hover:text-ink xl:hidden"
+                  className="flex min-h-touch items-center gap-2 text-[0.8125rem] text-ink-muted hover:text-ink md:hidden"
                 >
                   <Icon name={showLater ? 'chevronDown' : 'chevronRight'} size={15} className="shrink-0" />
                   {showLater ? `Hide the ${later.length} for later` : `${later.length} for later`}
                 </button>
               ) : null}
-              <ColumnHead title="Later" count={later.length} className="hidden text-ink-muted xl:flex" />
-              <div className={cn(showLater ? 'block' : 'hidden', 'xl:block xl:columns-3 xl:gap-8 2xl:columns-4')}>
+              <ColumnHead title="Later" count={later.length} className="hidden text-ink-muted md:flex" />
+              <div className={cn(showLater ? 'block' : 'hidden', 'md:block md:columns-2 md:gap-8 xl:columns-3 2xl:columns-4')}>
                 {later.map((each) => (
                   <LaterRow key={each.plant.code} standing={each} />
                 ))}

@@ -636,11 +636,12 @@ device), however long it then goes: a plant watered once, three weeks ago,
 may be one that likes it dry. Inside a column the order is need — how far a plant is into its
 usual gap — and there is no sort to choose.
 
-From `xl` Late, Due and Tomorrow stand side by side, and Later runs the full
-width under them, its names in three columns (four from `2xl`) on the same
-edges. Four in one line left each a quarter of the screen, which cut a
+From `md` Late and Due stand side by side, Tomorrow under Late, and from
+`xl` all three do; three at `lg` cut a species after every word. Later runs
+the full width under them, its names in two columns, three from `xl` and
+four from `2xl`, on the same edges. Four in one line left each a quarter of the screen, which cut a
 species after its first word and every name in Later short; and Later is
-where most of a collection is on most days. Below `xl` they are sections,
+where most of a collection is on most days. On a phone they are sections,
 and Later folds into one quiet line that lets it in. Every row is inset on
 both sides, the hover included — a row's shade running into the text was
 the bug twice. The row leads with the plant's photograph and the species,

@@ -873,8 +873,8 @@ test('Today holds each plant to its own rhythm, and says how long the rest have 
   const openLater = async (count: number) => {
     const line = main(page).getByRole('button', { name: `${count} for later` })
     // Asked of the viewport rather than of the page, so a line not drawn yet
-    // is waited for instead of taken for a desktop. 1280 is `xl`.
-    if (page.viewportSize()!.width < 1280) await line.click()
+    // is waited for instead of taken for a desktop. 768 is `md`.
+    if (page.viewportSize()!.width < 768) await line.click()
   }
 
   await expect(column('Tomorrow')).toContainText('Gruyère')
