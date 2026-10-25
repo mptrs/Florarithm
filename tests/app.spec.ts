@@ -678,6 +678,12 @@ test('the collection cuts itself into genera, and sweeps up the tail', async ({ 
   await expectPlaceShown(page, /Fluweel/, 'Living room')
 })
 
+/** Picks a room on Today, from the list under the room's name. */
+async function pickRoom(page: Page, room: string) {
+  await main(page).getByRole('button', { name: /^Room: / }).click()
+  await page.getByRole('option', { name: new RegExp(`^${room}`) }).click()
+}
+
 test('Today leads with the species, and a room is a filter', async ({ page }) => {
   await addPlant(page, 'Monstera deliciosa', 'Gruy\u00e8re', 'Living room')
   await addPlant(page, 'Alocasia zebrina', 'Zebra', 'Bedroom')
@@ -691,18 +697,31 @@ test('Today leads with the species, and a room is a filter', async ({ page }) =>
   await expect(gruyere).toContainText('Gruy\u00e8re \u00b7 Living room')
 
   // A room picked is that room alone, and the room no longer repeats in it.
-  await main(page).getByRole('button', { name: /^Bedroom/ }).click()
+  const room = main(page).getByRole('button', { name: /^Room: / })
+  await pickRoom(page, 'Bedroom')
   await expect(gruyere).toBeHidden()
   await expect(zebra).toBeVisible()
   await expect(zebra).not.toContainText('Bedroom')
 
-  // It opens on every room again next time.
+  // Into a plant and back, it is still the round in hand.
+  await zebra.click()
+  await page.goBack()
+  await expect(room).toHaveAccessibleName('Room: Bedroom')
+  await expect(gruyere).toBeHidden()
+
+  // The app opened again opens on every room.
   await page.reload()
   await expect(gruyere).toBeVisible()
-  await expect(main(page).getByRole('button', { name: /^Every room/ })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  )
+  await expect(room).toHaveAccessibleName('Room: Every room')
+
+  // The keys go through the list as they would a select's.
+  await room.focus()
+  await page.keyboard.press('ArrowDown')
+  await expect(page.getByRole('listbox', { name: 'Room' })).toBeVisible()
+  await page.keyboard.press('End')
+  await page.keyboard.press('Enter')
+  await expect(room).toHaveAccessibleName('Room: Living room')
+  await expect(page.getByRole('listbox', { name: 'Room' })).toBeHidden()
 })
 
 test('a search on the collection is still there after opening a plant', async ({ page }) => {
@@ -726,7 +745,7 @@ test('a plant watered today shows a mark instead of a nought', async ({ page }) 
 
   // Nothing logged is not the same fact as a long time ago, and says so.
   await page.goto('#today')
-  await expect(figure).toContainText('never logged')
+  await expect(figure).toContainText('never')
   await expect(figure).toHaveAttribute('aria-pressed', 'false')
 
   await page.goto(`#p=${code}`)
@@ -754,7 +773,7 @@ test('watering from Today is a press on the figure, and another takes it back', 
   const figures = main(page).getByRole('button', { name: /: watered today$/ })
   const gruyere = main(page).getByRole('button', { name: 'Gruy\u00e8re: watered today' })
 
-  // None logged, so all three are late and tie, and stand by name.
+  // None logged, so all three are due and tie, and stand by name.
   await expect(figures.first()).toHaveAccessibleName('Gruy\u00e8re: watered today')
 
   await gruyere.click()
@@ -773,9 +792,9 @@ test('watering from Today is a press on the figure, and another takes it back', 
   await expect(gruyere).toHaveAttribute('aria-pressed', 'false')
 
   // Every room is not one press; a room picked, with more than one owed, is.
-  await expect(main(page).getByRole('button', { name: /^Water all/ })).toHaveCount(0)
-  await main(page).getByRole('button', { name: /^Living room/ }).click()
-  const all = main(page).getByRole('button', { name: 'Water all 2' })
+  await expect(main(page).getByRole('button', { name: /^Water \d/ })).toHaveCount(0)
+  await pickRoom(page, 'Living room')
+  const all = main(page).getByRole('button', { name: 'Water 2' })
   await expect(all).toHaveCount(1)
   await all.click()
   await expect(gruyere).toHaveAttribute('aria-pressed', 'true')
@@ -785,7 +804,7 @@ test('watering from Today is a press on the figure, and another takes it back', 
   )
   await expect(all).toBeHidden()
   // Nore, in the bedroom, was not in it.
-  await main(page).getByRole('button', { name: /^Every room/ }).click()
+  await pickRoom(page, 'Every room')
   await expect(main(page).getByRole('button', { name: 'Nore: watered today' })).toHaveAttribute(
     'aria-pressed',
     'false',
@@ -796,7 +815,8 @@ test('watering from Today is a press on the figure, and another takes it back', 
  * Today holds each plant against its own rhythm. A plant with four weekly
  * waterings comes on the day before its week is up and says what it usually
  * is; one with too little history waits the days set in Settings; one never
- * watered is late. The rest is Later, each with the days it has to go.
+ * watered leads Due, since only a plant with a rhythm can be late. The rest
+ * is Later, each with the days it has to go.
  */
 test('Today holds each plant to its own rhythm, and says how long the rest have to go', async ({
   page,
@@ -858,8 +878,8 @@ test('Today holds each plant to its own rhythm, and says how long the rest have 
   }
 
   await expect(column('Tomorrow')).toContainText('Gruyère')
-  await expect(figure('Gruyère')).toContainText('usually 7')
-  await expect(column('Late')).toContainText('Comté')
+  await expect(figure('Gruyère')).toContainText('/7')
+  await expect(column('Due')).toContainText('Comté')
 
   // Not near their gap yet, each with how many days it has to go.
   await openLater(2)

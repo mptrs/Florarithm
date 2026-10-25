@@ -518,8 +518,8 @@ Fully round, two kinds whose difference is stakes, not decoration:
 - **`choice`** (44px) picks a value that gets written down, so it obeys the
   floor. Selected is solid `water` on `on-accent`.
 
-There is no sort control anywhere. Today is one line from Late to Later with
-the rooms as filter chips, Collection is by genus, and Collection's search is
+There is no sort control anywhere. Today runs from Late to Later with the
+room picked from one control at its head, Collection is by genus, and Collection's search is
 its only control: a place, a genus or a system picked from its suggestions
 sits in the field as a tag.
 
@@ -627,26 +627,58 @@ under the same drawer label the cachepots use for a room.
 
 The water is the whole collection on one line, measured against each plant's
 own rhythm — the median of its latest six gaps once it has had water four
-times (`waterRhythm`): **Late** at half as long again as that gap, or never
-watered; **Due** at the gap; **Tomorrow** a day short; **Later** everything
+times (`waterRhythm`): **Late** at half as long again as that gap — only a
+plant with a rhythm can be late; **Due** at the gap, and first in it one
+never watered; **Tomorrow** a day short; **Later** everything
 else, with how many days it has to go (`in 3`). A plant without a rhythm yet
 is Due after the days set in Settings › Today (four by default, kept per
-device). Inside a column the order is need — how far a plant is into its
+device), however long it then goes: a plant watered once, three weeks ago,
+may be one that likes it dry. Inside a column the order is need — how far a plant is into its
 usual gap — and there is no sort to choose.
 
-From `xl` the four stand side by side, Later past a hairline rule and
-narrower; below it they are sections, and Later folds into one quiet line
-that lets it in. The row leads with the plant's photograph and the species,
+From `md` Late and Due stand side by side, Tomorrow straight under Late
+(Due spans both rows, so a long Due never pushes it down), and from
+`xl` all three do; three at `lg` cut a species after every word. From `xl`
+Later runs the full width under them, its names in three columns, four from
+`2xl`, on the same edges; below it, Later folds into one quiet line, as on
+a phone, and opens in two columns from `md`. Four in one line left each a quarter of the screen, which cut a
+species after its first word and every name in Later short; and Later is
+where most of a collection is on most days. On a phone they are sections. Every row is inset on
+both sides, the hover included — a row's shade running into the text was
+the bug twice. The row leads with the plant's photograph and the species,
 binomial in italic and cultivar upright, in the serif; the name you gave it
-follows small, still in the serif, and its room after it in the sans. Under the days figure the row says the rhythm,
-`usually 7`, and the figure is ember in Late.
+follows small, still in the serif, and its room after it in the sans.
 
-Above it the rooms are `filter` chips, each counting what is Late or Due in
-it. A room picked shows that room alone, says how many are owed, and offers
-**Water all N** for those — a `tinted` button, never the filled one, and
-never Tomorrow's, which are ticked one by one. Every room has no such press:
-the whole house in one is too easy to make by mistake. It always opens on
-Every room: the filter is for the round in hand. A row in Later still presses,
+The figure is the days since water over the plant's own rhythm on one line,
+`17 /9`: mono with tabular figures, the days semibold and the rhythm small
+at 70%, the pill only as wide as the digits and its padding. Late is a 36px
+pill of `ember-tint` with the figure in `ember` — the
+one fill on the board, and the size of a tap, which is what says it presses;
+Due is `ink`, Tomorrow `ink-muted`, both bare until the pointer is over
+them. Never watered is `never` in the italic serif; no rhythm yet, no slash.
+Watered is the leaf check. The button around it keeps the reach floor. It
+was drawn so on the board's canvas and first built as the older two-line
+figure with a drop in front (`usually 7` under the number), which took half
+as much width again and pushed species onto a second line.
+
+In the title's own row, after "Today", is the room, one control: its name set as a heading with a chevron,
+opening a list of the rooms in the anchored panel the Wishlist's menu is —
+`surface`, `rounded-xl`, `shadow-xl`, `panel-in` — with a check on the one
+picked and, at the right in mono, what is Late or Due in each (nothing, for a
+room that is done). It is a listbox in every way a select is: arrows, Home,
+End, Enter, Escape, a press outside. Thirteen rooms as chips were a wall of
+buttons that said every room at once, and their hover lift was clipped by
+the strip they scrolled in; the native select that followed dropped the
+system's font and highlight into the page. A room picked shows that room
+alone and offers **Water 2** for what is Late or Due in it, at the far end
+of the title row where an action stands, apart from the room it acts on.
+The count is in the button, so it says what it will do and no line beside
+it has to; one owed is the row's own figure, so none. It is `water-quiet` —
+the water's colour with no ground until hovered, since even a tint was the
+loudest thing on the page — never the filled one, and never for Tomorrow's, which are ticked one by one. Every room has no such press:
+the whole house in one is too easy to make by mistake. The room picked
+stays while the app is open — into a plant and back is the same round — and
+the app opens again on Every room. A row in Later still presses,
 at the reach floor like anything that writes. A plant
 watered today keeps the column it stood in that morning and sits ticked at
 its foot; while the screen is up nothing moves under the pointer.

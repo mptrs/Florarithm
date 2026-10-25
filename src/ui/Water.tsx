@@ -20,7 +20,6 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { cn } from '~/lib/cn'
 import { Icon } from './Icon'
-import { DaysSinceWater } from './primitives'
 import { DROP, RIPPLE, throwWater, type Splash } from './splash'
 
 /** The splash state, and a press that starts a fresh one every time. */
@@ -79,12 +78,19 @@ export function WaterDrop({ onWater }: { onWater: () => void }) {
 }
 
 /**
- * Today's figure, pressed to water.
+ * Today's figure, pressed to water: the days since water over the plant's
+ * own rhythm, `17 /9`.
  *
  * The days since water is the control, so a row gains no chrome of its own:
  * the figure turns to the check that already meant "watered today", and that
  * check is the one mark for it — a filled button beside it would say the same
- * fact twice. A faint drop in front of the figure is the only hint it presses.
+ * fact twice. On one line, in mono with the figures tabular, so a column of
+ * them reads down one edge; the rhythm after the slash is small, because the
+ * number means nothing much until you know what it usually is, and nothing
+ * more than that. Late is the only one tinted, a pill of `ember-tint` the
+ * size of a tap, and that tint is what says it presses; Due is ink, Tomorrow
+ * muted. A plant never watered says so in words — a nought there would be a
+ * lie — and one without a rhythm yet has no slash.
  *
  * A second press takes the day's watering back, the way a cachepot's tick
  * does: the correction is made on the row where the mistake shows.
@@ -92,18 +98,17 @@ export function WaterDrop({ onWater }: { onWater: () => void }) {
 export function WaterFigure({
   name,
   days,
-  thirsty,
+  rhythm,
+  tone,
   watered,
   onWater,
   onTakeBack,
-  unit,
   className,
 }: {
   name: string
   days: number | null
-  thirsty: boolean
-  /** What the figure is under; see `DaysSinceWater`. */
-  unit?: string
+  rhythm: number | null
+  tone: 'late' | 'due' | 'soon'
   watered: boolean
   onWater: () => void
   onTakeBack: () => void
@@ -126,7 +131,14 @@ export function WaterFigure({
     onWater()
   }
 
+  const tones = {
+    late: 'bg-ember-tint text-ember font-semibold',
+    due: 'text-ink font-semibold',
+    soon: 'text-ink-muted font-medium',
+  } as const
+
   return (
+    // The button is the reach floor tall; the pill inside it is what shows.
     <button
       type="button"
       onClick={press}
@@ -134,25 +146,56 @@ export function WaterFigure({
       aria-label={`${name}: watered today`}
       title={watered ? 'Watered today. Press to take it back' : 'Watered'}
       className={cn(
-        'warm relative flex min-h-14 shrink-0 items-center justify-end gap-2 rounded-md py-2 pr-3 pl-2',
-        // The row's hover shades the whole line; the control steps one shade
-        // darker under the pointer, so it still reads as the part that presses.
-        'group/water hover:bg-line active:opacity-70',
-        'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-leaf',
+        'group/water relative flex min-h-touch shrink-0 items-center justify-end pr-3 pl-2',
+        'rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-leaf',
         className,
       )}
     >
-      {watered ? null : (
-        <Icon name="droplet" size={14} className="shrink-0 text-ink-faint opacity-70 transition-opacity group-hover/water:text-ink-muted group-hover/water:opacity-100" />
-      )}
-      <DaysSinceWater days={watered ? 0 : days} thirsty={thirsty} unit={unit} />
+      <span
+        className={cn(
+          'warm inline-flex h-9 justify-end gap-px rounded-md px-2',
+          'font-mono text-[1rem] leading-9 tabular-nums group-active/water:opacity-70',
+          // The rhythm sits on the figure's baseline; the check, which has
+          // none, in the middle.
+          watered ? 'items-center' : 'items-baseline',
+          watered
+            ? 'text-leaf group-hover/water:bg-line'
+            : cn(
+                tones[tone],
+                // The row's hover shades the whole line; the figure steps one
+                // shade darker under the pointer, so it still reads as the
+                // part that presses. Late's tint deepens instead of greying.
+                tone === 'late'
+                  ? 'group-hover/water:bg-ember/15'
+                  : 'group-hover/water:bg-line',
+              ),
+        )}
+      >
+        {watered ? (
+          <>
+            <Icon name="check" size={18} className="stroke-[2.4]" />
+            <span className="sr-only">watered today</span>
+          </>
+        ) : days === null ? (
+          <span className="font-display text-[0.9375rem] font-normal italic">never</span>
+        ) : (
+          <>
+            <span>{days}</span>
+            {rhythm !== null ? (
+              <span className="text-[0.6875rem] font-normal opacity-70">
+                /{rhythm}
+              </span>
+            ) : null}
+          </>
+        )}
+      </span>
       {/* One ring, centred on the check: the pour on a plant's page, at the
           size of a figure in a list. */}
       {splash ? (
         <span
           key={splash}
           aria-hidden
-          className="pointer-events-none absolute inset-y-0 right-0 flex w-11 items-center justify-center motion-reduce:hidden"
+          className="pointer-events-none absolute inset-y-0 right-3 flex w-14 items-center justify-center motion-reduce:hidden"
         >
           <span className={cn('size-5 rounded-full border-2 animate-ripple', RIPPLE.water)} />
         </span>
