@@ -1,13 +1,13 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { load, useStore } from '~/data/store'
 import { requestPersistence } from '~/data/db'
 import { initSync } from '~/data/sync'
-import { useRoute } from '~/lib/router'
+import { canGoBack, redirect, routes, useRoute, type Route } from '~/lib/router'
 import { AppShell } from '~/layout/AppShell'
 import { CollectionScreen } from '~/screens/CollectionScreen'
 import { MilestonesScreen } from '~/screens/MilestonesScreen'
 import { PhotoViewer } from '~/screens/PhotoViewer'
-import { PlantFormScreen } from '~/screens/PlantFormScreen'
+import { NewPlantSheet } from '~/screens/PlantSheets'
 import { PlantScreen } from '~/screens/PlantScreen'
 import { SettingsScreen } from '~/screens/SettingsScreen'
 import { TodayScreen } from '~/screens/TodayScreen'
@@ -40,7 +40,61 @@ export function App() {
   )
 }
 
-function Screen({ route }: { route: ReturnType<typeof useRoute> }) {
+function Screen({ route }: { route: Route }) {
+  // The screen New was asked from, which it opens over. A plant with one of
+  // its sheets open counts as that plant's page.
+  const behind = useRef<Route | null>(null)
+  if (route.name === 'edit') behind.current = { name: 'plant', code: route.code }
+  else if (route.name !== 'new') behind.current = route
+
+  if (route.name === 'new') {
+    // Off a plant, over that plant; straight in from a link, over the list
+    // the new record will join.
+    const base: Route = route.parentCode
+      ? { name: 'plant', code: route.parentCode }
+      : (behind.current ?? { name: 'collection', filter: route.wish ? 'wishlist' : 'all' })
+    return (
+      <>
+        <ScreenFor route={base} />
+        <NewPlantSheet
+          // A fresh start for a wish, a plant or a cutting off another parent.
+          key={`new:${String(route.wish)}:${route.parentCode ?? ''}`}
+          startAsWish={route.wish}
+          parentCode={route.parentCode}
+          onClose={() => (canGoBack() ? window.history.back() : redirect(hashOf(base)))}
+          // Replaced rather than pushed: the sheet is not somewhere to come
+          // back to once the plant exists.
+          onAdded={(plant) => redirect(plant.wish ? routes.wishlist() : routes.plant(plant.code))}
+        />
+      </>
+    )
+  }
+
+  return <ScreenFor route={route} />
+}
+
+/** Where a screen lives, for going back to it when there is no history to
+ *  go back through. */
+function hashOf(route: Route): string {
+  switch (route.name) {
+    case 'plant':
+      return routes.plant(route.code)
+    case 'collection':
+      return route.filter === 'wishlist' ? routes.wishlist() : routes.collection(route.filter)
+    case 'milestones':
+      return routes.milestones()
+    case 'settings':
+      return routes.settings()
+    case 'photos':
+      return routes.photos(route.code, route.eventId ?? undefined)
+    case 'edit':
+      return routes.plant(route.code)
+    default:
+      return routes.today()
+  }
+}
+
+function ScreenFor({ route }: { route: Route }) {
   switch (route.name) {
     case 'today':
       return <TodayScreen />
@@ -58,18 +112,9 @@ function Screen({ route }: { route: ReturnType<typeof useRoute> }) {
         <CollectionScreen filter={route.filter} />
       )
     case 'new':
-      // Keyed on what makes it a fresh start: switching between plain "new",
-      // a wish, or a cutting from a different parent should never inherit
-      // the previous form's fields — a shared key with 'edit' would.
-      return (
-        <PlantFormScreen
-          key={`new:${String(route.wish)}:${route.parentCode ?? ''}`}
-          startAsWish={route.wish}
-          parentCode={route.parentCode}
-        />
-      )
+      return null
     case 'edit':
-      return <PlantFormScreen key={`edit:${route.code}`} code={route.code} promote={route.promote} />
+      return <PlantScreen key={`edit:${route.code}`} code={route.code} part={route.part} />
     case 'milestones':
       return <MilestonesScreen />
     case 'settings':

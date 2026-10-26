@@ -199,7 +199,7 @@ export function SachetSheet({
 
         <DatePickerField label="Hung on" value={hungOn} onChange={setHungOn} />
 
-        <Button variant="solid" block disabled={!valid} onClick={() => void commit()}>
+        <Button variant="accent" icon="check" block disabled={!valid} onClick={() => void commit()}>
           {mode === 'correct' ? 'Save' : 'Hang them'}
         </Button>
       </div>

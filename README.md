@@ -32,6 +32,9 @@ database; a private GitHub repository can keep a copy in sync if you want one.
   and system of the plant itself), new leaves, blooming, notes and
   photographs, each of them datable. A wrong entry is dragged left to delete
   it or right to edit it.
+- **No edit screen.** Each part of a plant's page has a pen that opens just
+  that part in a sheet, and New asks only what it is, its name and its room.
+  The fields are written on a line, the way a herbarium label is.
 - **The collection reads by genus.** Search is the only control: type a name,
   or pick a place, genus or system as a tag. Inside a genus the epithet leads,
   so a cross and the cultivar selected out of it land next to each other.

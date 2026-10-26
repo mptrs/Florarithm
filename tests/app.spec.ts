@@ -18,6 +18,8 @@ async function addPlant(page: Page, species: string, name: string, place = 'Livi
   await page.getByLabel('Species', { exact: true }).fill(rest.join(' '))
   await page.getByLabel('Name', { exact: true }).fill(name)
   await page.getByLabel('Place').fill(place)
+  // Leave the line, so its list is not lying over the button.
+  await page.getByLabel('Place', { exact: true }).press('Tab')
   await page.getByRole('button', { name: 'Add to the collection' }).click()
 
   await expect(page.getByRole('heading', { name })).toBeVisible()
@@ -290,7 +292,8 @@ test('deleting a plant forever tombstones it rather than erasing it outright', a
   await page.goto(`#p=${code}`)
   await water(page)
 
-  await page.goto(`#edit/${code}`)
+  // At the foot of the plant's page, on its own: never one slip from a Save.
+  await page.goto(`#p=${code}`)
   await page.getByRole('button', { name: 'Delete this plant for good' }).click()
   // A native confirm() is a silent no-op in an installed, standalone PWA on
   // iOS, so the confirmation is an in-app sheet rather than window.confirm.
@@ -306,26 +309,18 @@ test('deleting a plant forever tombstones it rather than erasing it outright', a
   await expect(page.getByText('No plant with this code')).toBeVisible()
 })
 
-test('a hybrid is recorded as a cross, not as a cultivar', async ({ page }) => {
+test('a cross is written on the species line, and a × is what makes it one', async ({ page }) => {
   await page.goto('#new')
   await page.getByLabel('Genus').fill('Anthurium')
-  await page.getByLabel('Species', { exact: true }).fill('crystallinum')
 
-  // The field is behind a switch, because most plants are not hybrids.
-  await expect(page.getByLabel('Cross')).toBeHidden()
-  await page.getByRole('switch', { name: 'This is a hybrid' }).click()
-
-  // A plant is a species or it is a cross, so the species empties and stays
-  // out of reach rather than sitting there contradicting the cross.
-  await expect(page.getByLabel('Species', { exact: true })).toHaveValue('')
-  await expect(page.getByLabel('Species', { exact: true })).toBeDisabled()
-
-  // Typing a plain x is what the keyboard offers; the field makes it a ×.
-  await page.getByLabel('Cross').fill('papillilaminum x crystallinum')
-  await expect(page.getByLabel('Cross')).toHaveValue('papillilaminum × crystallinum')
+  // No switch. Typing a plain x is what the keyboard offers; the line makes it
+  // a ×, and the × makes the line a cross.
+  await page.getByLabel('Species', { exact: true }).fill('papillilaminum x crystallinum')
+  await expect(page.getByLabel('Cross', { exact: true })).toHaveValue('papillilaminum × crystallinum')
 
   await page.getByLabel('Name', { exact: true }).fill('Vlek')
   await page.getByLabel('Place').fill('Living room')
+  await page.getByLabel('Place', { exact: true }).press('Tab')
   await page.getByRole('button', { name: 'Add to the collection' }).click()
 
   // No quotes anywhere: nobody registered this variety.
@@ -337,39 +332,33 @@ test('a hybrid is recorded as a cross, not as a cultivar', async ({ page }) => {
   await expect(page.getByRole('link', { name: /Vlek/ })).toBeVisible()
 })
 
-test('picking the parent fills in what the parent already knows', async ({ page }) => {
+test('a cutting starts as what its parent is, under the next name in the line', async ({ page }) => {
   const parent = await addPlant(page, 'Monstera deliciosa', 'Fluweel', 'Kitchen')
 
-  await page.goto('#new')
-  await page.getByLabel('Cultivar').fill('Thai Constellation')
-  await page.getByLabel('Propagated from').click()
-  await page.getByRole('option', { name: /Fluweel/ }).click()
-
+  await page.goto(`#new/from/${parent}`)
   // What it is and the next name in the line — no dice needed.
   await expect(page.getByLabel('Genus')).toHaveValue('Monstera')
   await expect(page.getByLabel('Species', { exact: true })).toHaveValue('deliciosa')
   await expect(page.getByLabel('Name', { exact: true })).toHaveValue('Fluweel II')
   // Where it lives is not the parent's: a cutting roots somewhere of its own.
   await expect(page.getByLabel('Place')).toHaveValue('')
-  // Off one of your own, there is no shop, seller or price to ask about.
-  await expect(page.getByRole('button', { name: 'Nursery' })).toBeHidden()
-  await expect(page.getByLabel('Price')).toBeHidden()
-  await expect(page.getByRole('button', { name: 'Own cutting' })).toBeHidden()
-  // But nothing typed before the parent was picked is overwritten.
-  await expect(page.getByLabel('Cultivar')).toHaveValue('Thai Constellation')
+  // And it is not a wish: a cutting is in your hand.
+  await expect(page.getByRole('radio', { name: 'A wish' })).toHaveCount(0)
+})
 
-  // Changing your mind takes back only what the parent put there.
+test('a plant is given its parent from its own Family card', async ({ page }) => {
+  await addPlant(page, 'Monstera deliciosa', 'Fluweel', 'Kitchen')
+  const child = await addPlant(page, 'Monstera deliciosa', 'Kaas', 'Kitchen')
+
+  await page.goto(`#p=${child}`)
+  await page.getByRole('button', { name: 'Edit family' }).click()
   await page.getByLabel('Propagated from').click()
-  await page.getByRole('option', { name: 'Not propagated from one of yours' }).click()
-  await expect(page.getByLabel('Genus')).toHaveValue('')
-  await expect(page.getByLabel('Name', { exact: true })).toHaveValue('')
-  await expect(page.getByLabel('Cultivar')).toHaveValue('Thai Constellation')
-  await expect(page.getByRole('button', { name: 'Nursery' })).toBeVisible()
+  await page.getByRole('option', { name: /Fluweel/ }).click()
+  await page.getByRole('radio', { name: 'Division' }).click()
+  await page.getByRole('button', { name: 'Save' }).click()
 
-  // Arriving from the parent's own page fills it in the same way.
-  await page.goto(`#new/from/${parent}`)
-  await expect(page.getByLabel('Name', { exact: true })).toHaveValue('Fluweel II')
-  await expect(page.getByLabel('Genus')).toHaveValue('Monstera')
+  await expect(main(page).getByRole('link', { name: /Fluweel/ })).toBeVisible()
+  await expect(main(page).getByText(/division off Fluweel/)).toBeVisible()
 })
 
 test('a plant page propagates from the log sheet and from its family', async ({ page }) => {
@@ -404,8 +393,8 @@ test('a repot can move the plant into another system', async ({ page }) => {
   await expect(main(page).getByText('Hydro → Soil').first()).toBeVisible()
 
   // The plant itself is in soil now, not just the entry that says so.
-  await page.goto(`#edit/${code}`)
-  await expect(page.getByRole('radio', { name: 'Soil' })).toBeChecked()
+  await page.goto(`#edit/${code}/lives`)
+  await expect(page.getByRole('dialog').getByRole('radio', { name: 'Soil' })).toBeChecked()
 })
 
 test('off soil into semi-hydro, the weeks of water from the top are ticked for you', async ({
@@ -462,31 +451,29 @@ test('genus, species and cultivar are offered back off the collection', async ({
   expect(await offered('Species')).toEqual(['deliciosa'])
 })
 
-test('the hybrid switch comes back on for a plant that has a cross', async ({ page }) => {
+test('a cross is read back as a cross, and taking the × out makes it a species', async ({ page }) => {
   await page.goto('#new')
   await page.getByLabel('Genus').fill('Anthurium')
-  await page.getByRole('switch', { name: 'This is a hybrid' }).click()
-  await page.getByLabel('Cross').fill('warocqueanum × papillilaminum')
+  await page.getByLabel('Species', { exact: true }).fill('warocqueanum × papillilaminum')
   await page.getByLabel('Name', { exact: true }).fill('Koningin')
   await page.getByLabel('Place').fill('Living room')
+  await page.getByLabel('Place', { exact: true }).press('Tab')
   await page.getByRole('button', { name: 'Add to the collection' }).click()
   await expect(page.getByRole('heading', { name: 'Koningin' })).toBeVisible()
 
   const code = new URL(page.url()).hash.replace('#p=', '')
   await page.goto(`#edit/${code}`)
 
-  // Nothing stores the switch — it is read back off the cross itself.
-  await expect(page.getByRole('switch', { name: 'This is a hybrid' })).toHaveAttribute(
-    'aria-checked',
-    'true',
-  )
-  await expect(page.getByLabel('Cross')).toHaveValue('warocqueanum × papillilaminum')
+  // Nothing stores whether it is a cross — the line is read back off the record.
+  const line = page.getByLabel('Cross', { exact: true })
+  await expect(line).toHaveValue('warocqueanum × papillilaminum')
 
-  // Turning it off drops the cross rather than hiding it while still set.
-  await page.getByRole('switch', { name: 'This is a hybrid' }).click()
+  // Without a × it is a species, and the cross is gone rather than hidden.
+  await line.fill('warocqueanum')
   await page.getByRole('button', { name: 'Save' }).click()
   await expect(page.getByRole('heading', { name: 'Koningin' })).toBeVisible()
-  await expect(page.getByText('warocqueanum')).toBeHidden()
+  await expect(page.getByText('Anthurium warocqueanum').first()).toBeVisible()
+  await expect(page.getByText('papillilaminum')).toHaveCount(0)
 })
 
 test('promoting a wish keeps its code and its history', async ({ page }) => {
@@ -521,7 +508,7 @@ test('promoting a wish keeps its code and its history', async ({ page }) => {
   const nameField = page.getByLabel('Name', { exact: true })
   await expect(nameField).toHaveValue('Philodendron spiritus-sancti')
   await nameField.fill('Ranker')
-  await page.getByRole('button', { name: 'Save' }).click()
+  await page.getByRole('button', { name: 'Add to the collection' }).click()
 
   // Wait for the save to land before reading the URL, or you are asserting on
   // the form you were still standing on.
@@ -529,8 +516,26 @@ test('promoting a wish keeps its code and its history', async ({ page }) => {
   await expect(main(page).getByText('Last watered')).toBeVisible()
 
   // Same record, same code: a promotion is one flag, not a new plant.
-  expect(new URL(page.url()).hash).toBe(`#p=${code}`)
+  await expect(page).toHaveURL(new RegExp(`#p=${code}$`))
   await expect(page.getByRole('heading', { name: 'Ranker' })).toBeVisible()
+})
+
+test('where it came from is written on the page, in its own sheet, once the plant exists', async ({ page }) => {
+  const code = await addPlant(page, 'Monstera deliciosa', 'Gruyère')
+  await page.goto(`#p=${code}`)
+
+  // New asked only for what a plant needs to exist; the page says what is not
+  // written down yet, where it will be read.
+  await page.getByRole('button', { name: 'Add where it came from' }).click()
+  const from = page.getByLabel('From whom', { exact: true })
+  await from.fill('Anna')
+  await from.press('Tab')
+  // Trade and gift are said; bought is what choosing nothing means.
+  await page.getByRole('radio', { name: 'Gift' }).click()
+  await page.getByRole('button', { name: 'Save' }).click()
+
+  await expect(main(page).getByText('Gift · Anna')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Add where it came from' })).toHaveCount(0)
 })
 
 test('a place typed once is offered the next time', async ({ page }) => {
@@ -901,7 +906,7 @@ test('an archived plant is out of the way but still findable', async ({ page }) 
   const code = await addPlant(page, 'Calathea orbifolia', 'Wolk', 'Bedroom')
 
   await page.goto(`#edit/${code}`)
-  await page.getByLabel('Status').selectOption('died')
+  await page.getByRole('radio', { name: 'Died' }).click()
   await page.getByRole('button', { name: 'Save' }).click()
   await expect(main(page).getByText('Last watered')).toBeVisible()
 
@@ -925,7 +930,7 @@ test('a dormant plant stays on the shelf, asleep rather than archived', async ({
   const code = await addPlant(page, 'Caladium bicolor', 'Winter', 'Bedroom')
 
   await page.goto(`#edit/${code}`)
-  await page.getByLabel('Status').selectOption('dormant')
+  await page.getByRole('radio', { name: 'Dormant' }).click()
   await page.getByRole('button', { name: 'Save' }).click()
 
   // The plant page says it is asleep without saying it is gone.
@@ -1192,7 +1197,7 @@ test('a photo on a second watering follows the entry it folds into', async ({ pa
   await expect(page.getByRole('img', { name: /Gruyère, photographed/ })).toBeVisible()
 })
 
-test('the picture that stands for the plant can be chosen in the edit form', async ({ page }) => {
+test("the picture that stands for the plant is chosen from the photograph's corner", async ({ page }) => {
   const code = await addPlant(page, 'Monstera deliciosa', 'Gruyère')
   await page.goto(`#p=${code}`)
 
@@ -1208,7 +1213,7 @@ test('the picture that stands for the plant can be chosen in the edit form', asy
   // The newest wins on its own, with nothing chosen.
   await expect.poll(heroWidth).toBe(800)
 
-  await page.goto(`#edit/${code}`)
+  await page.getByRole('button', { name: "Choose the plant's photo" }).filter({ visible: true }).click()
   const choices = page.getByRole('radiogroup', { name: "The plant's photo" }).getByRole('radio')
   await expect(choices).toHaveCount(3) // "Newest", then the two photographs
 

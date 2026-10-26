@@ -35,11 +35,11 @@ import {
   photoEventsFor,
   vocabName,
 } from '~/data/selectors'
-import { describeEvent, logEvent, removeEvent, useStore, type State } from '~/data/store'
+import { deletePlantForever, describeEvent, logEvent, removeEvent, useStore, type State } from '~/data/store'
 import type { EventPhoto, Plant, PlantEvent } from '~/data/types'
 import { formatDate, formatDayMonth, formatMonthYear } from '~/lib/date'
 import { formatPotSize, formatPrice, formatSpecies, label, plural } from '~/lib/format'
-import { navigate, plantUrl, routes } from '~/lib/router'
+import { canGoBack, navigate, plantUrl, redirect, routes, type SheetPart } from '~/lib/router'
 import { cn } from '~/lib/cn'
 import { nextInLine } from '~/lib/nameGenerator'
 import { Dozing } from '~/ui/Dozing'
@@ -56,16 +56,31 @@ import { QrCodeBox } from '~/ui/QrCode'
 import { RowActions, SwipeRow } from '~/ui/SwipeRow'
 import { MilestoneCard } from '~/ui/MilestoneCard'
 import { SettlingCards } from '~/ui/Settling'
+import { useConfirm } from '~/ui/ConfirmDialog'
 import { LogSheet, type LogIntent } from './LogSheet'
+import { CameFromSheet, FamilySheet, HaveSheet, LivesSheet, PhotoSheet, WhatItIsSheet } from './PlantSheets'
 
 type Tab = 'care' | 'history'
 
-export function PlantScreen({ code }: { code: string }) {
+export function PlantScreen({ code, part }: { code: string; part?: SheetPart }) {
   const state = useStore()
   const plant = findPlant(state, code)
   const [tab, setTab] = useState<Tab>('care')
   const [intent, setIntent] = useState<LogIntent | null>(null)
   const [showQr, setShowQr] = useState(false)
+  /** The part of the plant open in a sheet. There is no edit screen: each part
+   *  of this page is written in a sheet of its own — see `PlantSheets`. */
+  const [sheet, setSheet] = useState<SheetPart | null>(part ?? null)
+
+  // A sheet that a link opened (`#edit/…`, `#have/…`) closes back to wherever
+  // the link was followed from; one opened from this page just closes.
+  const closeSheet = (opened: SheetPart) => {
+    setSheet(null)
+    if (part === opened) {
+      if (canGoBack()) window.history.back()
+      else redirect(routes.plant(code))
+    }
+  }
 
   // The tab bar's Log asks for the sheet; this page is the one that has it.
   useEffect(() => onLogRequest(() => setIntent({ kind: 'new' })), [])
@@ -107,6 +122,9 @@ export function PlantScreen({ code }: { code: string }) {
   /* From `md` the page's way into the log sheet, on the photograph. A wish
      takes no entries, so it has none. */
   const onLog = plant.wish ? null : () => setIntent({ kind: 'new' })
+  /* The chip on the photograph chooses which photograph stands for the plant
+     — only once there is a choice to make. */
+  const onPhoto = photoEventsFor(state, plant.code).length >= 2 ? () => setSheet('photo') : null
 
   return (
     <div className="relative -mx-4 -mt-6 md:mx-0 md:mt-0">
@@ -122,6 +140,7 @@ export function PlantScreen({ code }: { code: string }) {
           onHideQr={() => setShowQr(false)}
           onAddPhoto={() => setIntent({ kind: 'new' })}
           onLog={onLog}
+          onPhoto={onPhoto}
         />
       </div>
 
@@ -192,15 +211,20 @@ export function PlantScreen({ code }: { code: string }) {
                   <p className="text-[1.0625rem] leading-6 text-ink-muted">{formatSpecies(plant)}</p>
                 ) : null}
               </div>
-              {plant.wish ? null : (
-                <IconButton
-                  icon="link"
-                  label="Copy the tag link"
-                  variant="quiet"
-                  className="md:hidden"
-                  onClick={() => void copyLink()}
-                />
-              )}
+              <div className="flex shrink-0 items-center">
+                {plant.wish ? null : (
+                  <IconButton
+                    icon="link"
+                    label="Copy the tag link"
+                    variant="quiet"
+                    className="md:hidden"
+                    onClick={() => void copyLink()}
+                  />
+                )}
+                {/* What it is, what it is called and its status — everything
+                    this line says, in one sheet. */}
+                <IconButton icon="edit" label="Edit what it is" variant="quiet" onClick={() => setSheet('what')} />
+              </div>
             </div>
 
             {plant.wish ? null : <TagLine plant={plant} />}
@@ -209,7 +233,8 @@ export function PlantScreen({ code }: { code: string }) {
           {plant.wish ? (
             <>
               <div className="lg:col-start-1 lg:row-start-2">
-                <WishActions plant={plant} />
+                <WishActions plant={plant} onHave={() => setSheet('have')} />
+                <DeleteRow plant={plant} />
               </div>
               <div className="hidden lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:block">
                 <Specimen
@@ -217,6 +242,7 @@ export function PlantScreen({ code }: { code: string }) {
                   showQr={showQr}
                   onHideQr={() => setShowQr(false)}
                   onAddPhoto={() => setIntent({ kind: 'new' })}
+                  onPhoto={onPhoto}
                 />
               </div>
             </>
@@ -236,13 +262,15 @@ export function PlantScreen({ code }: { code: string }) {
                     onHideQr={() => setShowQr(false)}
                     onAddPhoto={() => setIntent({ kind: 'new' })}
                     onLog={onLog}
+                    onPhoto={onPhoto}
                   />
                 </div>
                 <Care plant={plant} />
                 <SettlingCards code={plant.code} />
-                <Details plant={plant} />
-                <Family plant={plant} />
+                <Record plant={plant} onEdit={setSheet} />
+                <Family plant={plant} onEdit={() => setSheet('family')} />
                 <Milestones plant={plant} />
+                <DeleteRow plant={plant} />
               </div>
               <div
                 className={cn(
@@ -260,6 +288,38 @@ export function PlantScreen({ code }: { code: string }) {
       {plant.wish ? null : (
         <WaterDrop onWater={water} />
       )}
+
+      {sheet === 'what' ? <WhatItIsSheet plant={plant} onClose={() => closeSheet('what')} /> : null}
+      {sheet === 'lives' ? (
+        <LivesSheet
+          plant={plant}
+          onClose={() => closeSheet('lives')}
+          // A new pot is a repot: the log sheet's own form, with Back to here.
+          onRepot={() => {
+            setSheet(null)
+            setIntent({
+              kind: 'repot',
+              back: () => {
+                setIntent(null)
+                setSheet('lives')
+              },
+            })
+          }}
+        />
+      ) : null}
+      {sheet === 'came' ? <CameFromSheet plant={plant} onClose={() => closeSheet('came')} /> : null}
+      {sheet === 'family' ? <FamilySheet plant={plant} onClose={() => closeSheet('family')} /> : null}
+      {sheet === 'photo' ? <PhotoSheet plant={plant} onClose={() => closeSheet('photo')} /> : null}
+      {sheet === 'have' && plant.wish ? (
+        <HaveSheet
+          plant={plant}
+          onClose={() => closeSheet('have')}
+          onDone={(arrived) => {
+            setSheet(null)
+            redirect(routes.plant(arrived))
+          }}
+        />
+      ) : null}
 
       {/* A new entry lands you where it is: the record. The drop's watering
           stays put, because Care is where "today" answers it. */}
@@ -358,6 +418,7 @@ function Hero({
   onHideQr,
   onAddPhoto,
   onLog,
+  onPhoto,
 }: {
   plant: Plant
   showQr: boolean
@@ -366,6 +427,8 @@ function Hero({
   onAddPhoto: () => void
   /** Opens the log sheet, from `md`; absent on a wish. */
   onLog: (() => void) | null
+  /** Chooses the plant's photograph; absent until there are two to choose from. */
+  onPhoto: (() => void) | null
 }) {
   const state = useStore()
   const photoEvent = currentPhotoEvent(state, plant.code)
@@ -490,7 +553,7 @@ function Hero({
               <Icon name="plus" size={20} />
             </button>
           ) : null}
-          <EditLink plant={plant} />
+          {onPhoto ? <PhotoChip onClick={onPhoto} /> : null}
         </div>
       </div>
 
@@ -577,6 +640,7 @@ function Specimen({
   onHideQr,
   onAddPhoto,
   onLog = null,
+  onPhoto,
 }: {
   plant: Plant
   showQr: boolean
@@ -584,6 +648,7 @@ function Specimen({
   onAddPhoto: () => void
   /** Opens the log sheet; absent on a wish, which takes no entries. */
   onLog?: (() => void) | null
+  onPhoto: (() => void) | null
 }) {
   const state = useStore()
   const photoEvent = currentPhotoEvent(state, plant.code)
@@ -627,9 +692,11 @@ function Specimen({
           the band's own controls sit at. Outside the frame rather than in
           it: the frame clips, and a menu opening from here would be cut off
           at the bottom of a landscape photograph. */}
-      <div className="absolute top-4 right-4 z-10">
-        <EditLink plant={plant} />
-      </div>
+      {onPhoto ? (
+        <div className="absolute top-4 right-4 z-10">
+          <PhotoChip onClick={onPhoto} />
+        </div>
+      ) : null}
 
       {shownPhoto ? (
         <figcaption
@@ -697,15 +764,19 @@ function AddPhotoButton({ onClick }: { onClick: () => void }) {
   )
 }
 
-function EditLink({ plant }: { plant: Plant }) {
+/** Which photograph stands for the plant. It was Edit; with no edit screen
+ *  left, the photograph's own corner chooses the photograph. */
+function PhotoChip({ onClick }: { onClick: () => void }) {
   return (
-    <a
-      href={routes.edit(plant.code)}
-      aria-label="Edit this plant"
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label="Choose the plant's photo"
+      title="Choose the plant's photo"
       className="lift flex size-10 items-center justify-center rounded-full bg-floating text-ink shadow-md active:opacity-70 hover:bg-surface hover:shadow-lg"
     >
-      <Icon name="edit" size={19} />
-    </a>
+      <Icon name="image" size={19} />
+    </button>
   )
 }
 
@@ -785,6 +856,14 @@ function Care({ plant }: { plant: Plant }) {
   const days = daysSinceWater(state, plant.code)
   const water = lastWaterAt(state, plant.code)
   const repot = lastRepot(state, plant.code)
+  const leaves = countThisYear(state, plant.code, 'leaf')
+  const blooms = countThisYear(state, plant.code, 'bloom')
+  const grown = [
+    leaves > 0 ? plural(leaves, 'leaf', 'leaves') : null,
+    blooms > 0 ? plural(blooms, 'bloom') : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
 
   return (
     <Card className="mt-2 px-4 lg:mt-6">
@@ -801,8 +880,9 @@ function Care({ plant }: { plant: Plant }) {
         label="Last repot"
         detail={repot?.toSize ? `${repot.fromSize ?? '?'} → ${repot.toSize} cm` : null}
         value={repot ? formatDate(repot.date) : 'never'}
-        last
+        last={!grown}
       />
+      {grown ? <CareRow icon="leaf" tone="leaf" label="This year" value={grown} last /> : null}
     </Card>
   )
 }
@@ -853,74 +933,168 @@ function CareRow({
   )
 }
 
-// --- details ----------------------------------------------------------------
+// --- the record -------------------------------------------------------------
 
 /**
- * Everything about the plant that is not its state.
+ * Where it lives and where it came from, each under its own pen.
  *
- * Desktop only, deliberately. On a phone you are stood in front of the plant
- * and want to know one thing; this is the reading you do at a desk, which is
- * also where you would change any of it.
+ * On every width now: there is no edit screen to do this from, so the page is
+ * where these are read and where they are changed. What has not been written
+ * down yet says so, in the place it will be read, and opens the same sheet.
  */
-function Details({ plant }: { plant: Plant }) {
+function Record({ plant, onEdit }: { plant: Plant; onEdit: (part: 'lives' | 'came') => void }) {
   const state = useStore()
-  const leaves = countThisYear(state, plant.code, 'leaf')
-  const blooms = countThisYear(state, plant.code, 'bloom')
+  const place = vocabName(state, plant.locationId)
   const medium = vocabName(state, plant.mediumId)
-  const origin = [plant.origin.type ? label(plant.origin.type) : null, plant.origin.from]
+  const known = (value: string) => value !== '' && value !== '—'
+
+  const lives: ReactNode[] = [
+    <RecordRow key="place" icon="place">
+      {[known(place) ? place : null, label(plant.system)].filter(Boolean).join(' · ')}
+    </RecordRow>,
+    plant.potSize !== null || known(medium) ? (
+      <RecordRow key="pot" icon="ruler">
+        {[formatPotSize(plant.potSize), known(medium) ? medium : null]
+          .filter((part) => part && part !== '—')
+          .join(' · ')}
+      </RecordRow>
+    ) : (
+      <AddRow key="pot" onClick={() => onEdit('lives')}>
+        Add pot size and medium
+      </AddRow>
+    ),
+  ]
+
+  // Trade and gift are said; bought is what saying nothing means, and an older
+  // record's "nursery" or "shop" only repeated the name beside it.
+  const how = plant.origin.type === 'trade' || plant.origin.type === 'gift' ? label(plant.origin.type) : null
+  const source = [how, plant.origin.from || null, plant.origin.price === null ? null : formatPrice(plant.origin.price)]
     .filter(Boolean)
     .join(' · ')
-
-  const rows: { icon: IconName; value: ReactNode }[] = []
-  if (medium && medium !== '—') rows.push({ icon: 'medium', value: medium })
-  rows.push({
-    icon: 'ruler',
-    value: [formatPotSize(plant.potSize), label(plant.system)].filter((part) => part && part !== '—').join(' · '),
-  })
-  if (leaves + blooms > 0) {
-    rows.push({
-      icon: 'leaf',
-      value: [
-        leaves > 0 ? plural(leaves, 'leaf', 'leaves') : null,
-        blooms > 0 ? plural(blooms, 'bloom') : null,
-      ]
-        .filter(Boolean)
-        .join(' and ') + ' this year',
-    })
-  }
-  if (origin || plant.origin.price !== null) {
-    rows.push({
-      icon: 'receipt',
-      value: [origin, plant.origin.price === null ? null : formatPrice(plant.origin.price)]
-        .filter(Boolean)
-        .join(' · '),
-    })
+  const came: ReactNode[] = [
+    source ? (
+      <RecordRow key="source" icon="receipt">
+        {source}
+      </RecordRow>
+    ) : (
+      <AddRow key="source" onClick={() => onEdit('came')}>
+        Add where it came from
+      </AddRow>
+    ),
+  ]
+  if (plant.origin.date) {
+    came.push(
+      <RecordRow key="since" icon="calendar">
+        In the collection since <span className="font-mono">{formatDate(plant.origin.date)}</span>
+      </RecordRow>,
+    )
   }
   // The flask is lucide's own, which is what a lab jar is drawn as.
-  if (plant.tissueCulture) rows.push({ icon: 'fertilizer', value: 'From tissue culture' })
-  // The arrival date used to sit here. It is the first line of Milestones now,
-  // where it is the start of something rather than a fact on its own.
-
-  if (rows.length === 0) return null
+  if (plant.tissueCulture) {
+    came.push(
+      <RecordRow key="tc" icon="fertilizer">
+        From tissue culture
+      </RecordRow>,
+    )
+  }
 
   return (
-    <section className="mt-8 hidden md:block">
-      <GroupLabel>Details</GroupLabel>
-      <Card className="mt-2 px-4">
-        {rows.map((row, index) => (
-          <div
-            key={row.icon}
-            className={cn(
-              'flex items-center gap-3 py-3',
-              index === rows.length - 1 ? '' : 'border-b border-line',
-            )}
-          >
-            <Icon name={row.icon} size={19} className="text-ink-faint" />
-            <span className="text-[0.9375rem] leading-5">{row.value}</span>
-          </div>
-        ))}
-      </Card>
+    <>
+      <RecordPart title="Where it lives" onEdit={() => onEdit('lives')}>
+        {lives}
+      </RecordPart>
+      <RecordPart title="Where it came from" onEdit={() => onEdit('came')}>
+        {came}
+      </RecordPart>
+    </>
+  )
+}
+
+/** A part of the record: its name, the pen that opens its sheet, its rows. */
+function RecordPart({ title, onEdit, children }: { title: string; onEdit: () => void; children: ReactNode[] }) {
+  return (
+    <section className="mt-8">
+      <PartHead title={title} onEdit={onEdit} />
+      <Card className="mt-1 px-4 [&>*+*]:border-t [&>*+*]:border-line">{children}</Card>
     </section>
+  )
+}
+
+function PartHead({ title, onEdit, aside }: { title: string; onEdit: () => void; aside?: ReactNode }) {
+  return (
+    <div className="flex min-h-touch items-center justify-between gap-3">
+      <GroupLabel>{title}</GroupLabel>
+      <div className="flex items-center gap-2">
+        {aside}
+        <button
+          type="button"
+          onClick={onEdit}
+          aria-label={`Edit ${title.toLowerCase()}`}
+          title={`Edit ${title.toLowerCase()}`}
+          className="warm -mr-3 flex size-touch items-center justify-center rounded-full text-ink-faint hover:bg-sunk hover:text-ink"
+        >
+          <Icon name="edit" size={17} />
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function RecordRow({ icon, children }: { icon: IconName; children: ReactNode }) {
+  return (
+    <div className="flex min-h-touch items-center gap-3 py-3">
+      <Icon name={icon} size={19} className="shrink-0 text-ink-faint" />
+      <span className="text-[0.9375rem] leading-5">{children}</span>
+    </div>
+  )
+}
+
+function AddRow({ onClick, children }: { onClick: () => void; children: ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="warm flex min-h-touch w-full items-center gap-3 py-3 text-left text-[0.9375rem] leading-5 font-semibold text-leaf hover:text-leaf-deep"
+    >
+      <Icon name="plus" size={19} className="shrink-0" />
+      {children}
+    </button>
+  )
+}
+
+/**
+ * The way out that is almost never the right one, on its own at the foot of
+ * the page. It sat under Save in the old form, one slip from it; here there is
+ * nothing to press near it. Died and given away keep the record and its whole
+ * history, under the status; this is for a record that should never have
+ * existed, and it still asks.
+ */
+function DeleteRow({ plant }: { plant: Plant }) {
+  const { confirm, dialog } = useConfirm()
+
+  const remove = async () => {
+    const confirmed = await confirm({
+      title: `Delete ${plant.name}?`,
+      message: plant.wish
+        ? 'The wish and its note go for good.'
+        : 'Its whole history goes with it — every watering, photo and note. This cannot be undone.',
+      confirmLabel: 'Delete',
+      danger: true,
+    })
+    if (!confirmed) return
+    const name = plant.name
+    await deletePlantForever(plant.code)
+    showToast(`${name} deleted`)
+    redirect(plant.wish ? routes.wishlist() : routes.collection())
+  }
+
+  return (
+    <div className="mt-12 border-t border-line pt-3">
+      <Button variant="danger-quiet" icon="trash" onClick={() => void remove()} className="-ml-4">
+        {plant.wish ? 'Delete this wish' : 'Delete this plant for good'}
+      </Button>
+      {dialog}
+    </div>
   )
 }
 
@@ -1215,7 +1389,7 @@ export function detailOf(event: PlantEvent, state: ReturnType<typeof useStore>):
  * small and grey. And a branch below a cutting rolls up to one row until you
  * open it, because "three more off Terra" is the whole answer most of the time.
  */
-function Family({ plant }: { plant: Plant }) {
+function Family({ plant, onEdit }: { plant: Plant; onEdit: () => void }) {
   const state = useStore()
   const { ancestors, descendants, plants, generations } = lineageOf(state, plant.code)
   const siblings = plant.parent
@@ -1286,17 +1460,20 @@ function Family({ plant }: { plant: Plant }) {
 
   return (
     <section className="mt-8">
-      <div className="flex items-baseline justify-between gap-3">
-        <GroupLabel>Family</GroupLabel>
-        {alone ? null : (
-          <span className="text-[0.8125rem] text-ink-faint">
-            {plants + siblings.length > generations ? `${plants + siblings.length} plants · ` : ''}
-            {plural(generations, 'generation')}
-          </span>
-        )}
-      </div>
+      <PartHead
+        title="Family"
+        onEdit={onEdit}
+        aside={
+          alone ? null : (
+            <span className="text-[0.8125rem] text-ink-faint">
+              {plants + siblings.length > generations ? `${plants + siblings.length} plants · ` : ''}
+              {plural(generations, 'generation')}
+            </span>
+          )
+        }
+      />
 
-      <Card className="mt-2 p-4">
+      <Card className="mt-1 p-4">
         <Rail className="ml-4">{rail}</Rail>
       </Card>
     </section>
@@ -1487,9 +1664,12 @@ function describeParent(state: State, plant: Plant): string {
 /** Where a line starts: not a cutting of anything, so how it arrived instead. */
 function describeRoot(plant: Plant): string {
   const year = (plant.origin.date ?? plant.createdAt).slice(0, 4)
-  return [plant.origin.type ? label(plant.origin.type).toLowerCase() : null, year]
-    .filter(Boolean)
-    .join(' · ')
+  // A trade or a gift is worth saying; otherwise who it came from says it.
+  const how =
+    plant.origin.type === 'trade' || plant.origin.type === 'gift'
+      ? label(plant.origin.type).toLowerCase()
+      : plant.origin.from || null
+  return [how, year].filter(Boolean).join(' · ')
 }
 
 /** The same fact from above, where the parent's name is the row you are under. */
@@ -1499,12 +1679,12 @@ function describeCutting(plant: Plant): string {
 
 // --- wishlist ---------------------------------------------------------------
 
-function WishActions({ plant }: { plant: Plant }) {
+function WishActions({ plant, onHave }: { plant: Plant; onHave: () => void }) {
   return (
     <Card className="mt-6 flex flex-col gap-3 p-4">
       <GroupLabel>On the wishlist</GroupLabel>
       {plant.wishNote ? <p className="text-[0.9375rem] text-ink">{plant.wishNote}</p> : null}
-      <Button variant="accent" onClick={() => navigate(routes.have(plant.code))}>
+      <Button variant="accent" onClick={onHave}>
         I have this now
       </Button>
     </Card>

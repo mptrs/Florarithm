@@ -1,0 +1,411 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+  <style>
+    :root{
+      --paper:oklch(0.968 0.008 85); --surface:oklch(0.995 0.003 85);
+      --sunk:oklch(0.944 0.010 85); --line:oklch(0.886 0.010 80);
+      --line-strong:oklch(0.800 0.012 80); --ink:oklch(0.255 0.014 65);
+      --ink-muted:oklch(0.510 0.014 68); --ink-faint:oklch(0.655 0.012 72);
+      --leaf:oklch(0.455 0.098 152); --leaf-tint:oklch(0.944 0.026 152);
+      --water:oklch(0.455 0.104 236); --water-tint:oklch(0.944 0.028 236);
+      --ember:oklch(0.520 0.130 47); --ember-tint:oklch(0.948 0.034 47);
+      --on-accent:oklch(0.985 0.004 85);
+      --scrim:oklch(0.255 0.014 65 / 0.45);
+      --display:'Newsreader',Georgia,'Times New Roman',serif;
+      --ui:system-ui,-apple-system,'Segoe UI',sans-serif;
+      --mono:'IBM Plex Mono',ui-monospace,'SF Mono',Menlo,monospace;
+    }
+
+    *{box-sizing:border-box;}
+    body{margin:0;font-family:var(--ui);-webkit-font-smoothing:antialiased;}
+    .mono{font-family:var(--mono);font-variant-numeric:tabular-nums;}
+    svg.i{flex-shrink:0;fill:none;stroke:currentColor;stroke-width:1.8;
+          stroke-linecap:round;stroke-linejoin:round;}
+    .plate{display:block;width:100%;height:100%;}
+
+    /* the window and its rail */
+    .app{display:flex;width:1440px;height:900px;overflow:hidden;position:relative;
+         background:var(--paper);color:var(--ink);}
+    .rail{width:80px;flex-shrink:0;height:100%;background:var(--surface);
+          border-right:1px solid var(--line);display:flex;flex-direction:column;
+          align-items:center;padding-top:24px;}
+    .mark{font-family:var(--display);font-size:26px;line-height:32px;font-weight:500;padding-bottom:24px;}
+    .nv{width:64px;height:56px;display:flex;flex-direction:column;align-items:center;
+        justify-content:center;gap:4px;color:var(--ink-faint);font-size:11px;line-height:14px;font-weight:500;}
+    .nv.on{color:var(--leaf);font-weight:600;}
+    .disc{width:40px;height:40px;border-radius:999px;background:var(--leaf);
+          color:var(--on-accent);display:flex;align-items:center;justify-content:center;}
+    .nv.plain .disc{background:transparent;color:var(--ink-faint);}
+    main{flex:1;min-width:0;height:100%;overflow:hidden;padding:32px 48px 0;position:relative;}
+
+    h1{margin:0;font-family:var(--display);font-size:32px;line-height:36px;font-weight:500;letter-spacing:-0.015em;}
+    .back{width:44px;height:44px;margin-left:-12px;display:flex;align-items:center;justify-content:center;color:var(--ink-muted);}
+    .label{font-size:12px;line-height:16px;font-weight:600;letter-spacing:0.09em;text-transform:uppercase;color:var(--ink-muted);}
+    .faint{color:var(--ink-faint);}
+    .muted{color:var(--ink-muted);}
+    .hint{font-size:13px;line-height:20px;color:var(--ink-muted);}
+
+    /* the app's own boxed field */
+    .f{display:flex;flex-direction:column;gap:8px;min-width:0;}
+    .c{height:48px;border:1px solid var(--line-strong);border-radius:4px;background:var(--surface);
+       padding:0 14px 0 16px;display:flex;align-items:center;gap:10px;font-size:16px;white-space:nowrap;overflow:hidden;}
+    .c .v{flex:1;overflow:hidden;text-overflow:ellipsis;}
+    .c .ph{flex:1;color:var(--ink-faint);overflow:hidden;text-overflow:ellipsis;}
+    .c .u{color:var(--ink-faint);font-size:14px;}
+    .c svg{color:var(--ink-muted);}
+    .c.focus{border-color:var(--leaf);box-shadow:0 0 0 1px var(--leaf);}
+    .row{display:flex;gap:12px;}
+    .stack{display:flex;flex-direction:column;gap:24px;}
+
+    .seg{display:flex;height:48px;border:1px solid var(--line-strong);border-radius:4px;overflow:hidden;}
+    .seg span{flex:1;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:500;
+              color:var(--ink-muted);border-left:1px solid var(--line-strong);}
+    .seg span:first-child{border-left:0;}
+    .seg span.on{background:var(--ink);color:var(--paper);font-weight:600;}
+    .chip{height:44px;padding:0 16px;border-radius:999px;display:inline-flex;align-items:center;
+          font-size:15px;font-weight:500;color:var(--ink-muted);border:1px solid var(--line-strong);}
+    .chip.on{background:var(--water);color:var(--on-accent);border-color:var(--water);font-weight:600;}
+    .chips{display:flex;gap:8px;flex-wrap:wrap;}
+    .tog{min-height:48px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:16px;}
+    .sw{width:52px;height:32px;border-radius:999px;background:var(--line-strong);padding:4px;display:flex;flex-shrink:0;}
+    .sw i{width:24px;height:24px;border-radius:999px;background:var(--surface);}
+    .sw.on{background:var(--leaf);} .sw.on i{transform:translateX(20px);}
+    .check{height:44px;display:flex;align-items:center;gap:12px;font-size:16px;}
+    .box{width:22px;height:22px;border-radius:4px;border:1.5px solid var(--line-strong);background:var(--surface);flex-shrink:0;}
+    .dice{width:48px;height:48px;flex-shrink:0;border-radius:6px;border:1px solid var(--line-strong);
+          display:flex;align-items:center;justify-content:center;color:var(--leaf);}
+
+    .btn{height:48px;padding:0 18px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;
+         gap:8px;font-size:16px;font-weight:500;white-space:nowrap;}
+    .btn.accent{background:var(--leaf);color:var(--on-accent);}
+    .btn.outline{border:1px solid var(--line-strong);color:var(--ink);}
+    .btn.quiet{color:var(--ink-muted);padding:0 12px;}
+    .danger{display:inline-flex;align-items:center;gap:8px;font-size:15px;font-weight:500;color:var(--ember);}
+
+    .sh{display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line);padding-bottom:8px;color:var(--ink-faint);}
+    .sh h2{margin:0;font-family:var(--display);font-size:21px;line-height:28px;font-weight:500;color:var(--ink);}
+
+    /* ── 1 · the label ─────────────────────────────────────────────── */
+    .sheet{background:var(--surface);border:1px solid var(--line-strong);border-radius:3px;padding:7px;}
+    .sheet-in{border:1px solid var(--line);border-radius:1px;padding:28px 36px 30px;}
+    .stamp{font-family:var(--mono);font-size:15px;font-weight:500;letter-spacing:0.1em;}
+    .stamp b{font-weight:500;color:var(--ink-faint);}
+    .mount{border:1px solid var(--line);background:var(--sunk);border-radius:2px;overflow:hidden;}
+    /* a blank on the label: a line to write on, not a box */
+    .ln{display:flex;align-items:flex-end;gap:8px;border-bottom:1px solid var(--line-strong);
+        padding:0 2px 7px;min-width:0;white-space:nowrap;overflow:hidden;}
+    .ln .v{flex:1;overflow:hidden;text-overflow:ellipsis;}
+    .ln .ph{flex:1;color:var(--ink-faint);overflow:hidden;text-overflow:ellipsis;}
+    .ln svg{color:var(--ink-faint);margin-bottom:2px;}
+    .ln.big{font-family:var(--display);font-size:34px;line-height:40px;font-weight:500;letter-spacing:-0.015em;padding-bottom:6px;}
+    .ln.mid{font-family:var(--display);font-size:22px;line-height:28px;font-weight:500;}
+    .ln.sm{font-size:16px;line-height:22px;}
+    .ln.focus{border-bottom:2px solid var(--leaf);padding-bottom:6px;}
+    .cap{font-size:11px;line-height:14px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-faint);}
+    .ltab{display:grid;grid-template-columns:118px minmax(0,1fr);column-gap:20px;row-gap:22px;align-items:end;}
+    .ltab .k{font-size:11px;line-height:14px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;
+             color:var(--ink-faint);padding-bottom:9px;}
+    .opt{font-size:14px;color:var(--ink-muted);display:inline-flex;align-items:center;gap:6px;padding-bottom:8px;}
+    .opt .dot{width:14px;height:14px;border-radius:999px;border:1.5px solid var(--line-strong);}
+    .opt.on{color:var(--ink);font-weight:600;}
+    .opt.on .dot{border:4px solid var(--ink);}
+
+    /* ── 2 · the page ──────────────────────────────────────────────── */
+    .scrim{position:absolute;inset:0;background:var(--scrim);}
+    .panel{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:600px;
+           background:var(--surface);border-radius:16px;box-shadow:0 24px 64px oklch(0.2 0.02 65 / 0.28);
+           padding:28px 32px 28px;}
+    .panel h3{margin:0;font-family:var(--display);font-size:26px;line-height:32px;font-weight:500;}
+    .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;}
+    .pen{width:32px;height:32px;border-radius:999px;display:flex;align-items:center;justify-content:center;color:var(--ink-faint);}
+    .drow{display:flex;align-items:center;gap:12px;min-height:44px;font-size:15px;line-height:20px;}
+    .drow svg{color:var(--ink-faint);}
+    .drow.add{color:var(--leaf);font-weight:500;}
+    .drow.add svg{color:var(--leaf);}
+    .hrow{display:flex;align-items:center;gap:16px;height:56px;border-bottom:1px solid var(--line);font-size:15px;}
+    .logdisc{position:absolute;left:50%;bottom:-26px;transform:translateX(-50%);width:56px;height:56px;border-radius:999px;
+             background:var(--ink);color:var(--paper);display:flex;align-items:center;justify-content:center;
+             box-shadow:0 0 0 6px var(--paper);}
+    .edchip{position:absolute;right:12px;top:12px;height:36px;padding:0 12px;border-radius:999px;background:oklch(0.995 0.003 85 / 0.9);
+            display:flex;align-items:center;gap:6px;font-size:14px;font-weight:600;color:var(--ink);}
+    .tile{background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden;}
+
+    /* ── 2, further: the page's sheets in the label's hand ─────────── */
+    .lpanel{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:680px;
+            background:var(--surface);border-radius:16px;box-shadow:0 24px 64px oklch(0.2 0.02 65 / 0.28);padding:8px;}
+    .lpanel .in{border:1px solid var(--line);border-radius:10px;padding:22px 30px 26px;}
+    .lhead{display:flex;justify-content:space-between;align-items:baseline;padding-bottom:12px;
+           border-bottom:1px solid var(--line);margin-bottom:22px;}
+    .lhead h3{margin:0;font-family:var(--display);font-size:24px;line-height:30px;font-weight:500;display:flex;align-items:center;gap:10px;}
+    .lhead h3 svg{color:var(--ink-faint);}
+    .lf{display:flex;flex-direction:column;gap:6px;min-width:0;}
+    .lfoot{margin-top:28px;display:flex;align-items:center;gap:12px;}
+    .thumbs{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;}
+    .th{aspect-ratio:1;border-radius:10px;overflow:hidden;border:2px solid transparent;background:var(--sunk);
+        display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:500;color:var(--ink-muted);}
+    .th.on{border-color:var(--leaf);}
+    .th svg{display:block;width:100%;height:100%;}
+
+    /* the app's Sheet from md */
+    .scrim.blur{backdrop-filter:blur(4px);}
+    .sheetp{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:512px;max-height:792px;
+            background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 24px 24px;}
+    .shd{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:12px 0 8px;}
+    .shd h2{margin:0;font-family:var(--display);font-size:26px;line-height:32px;font-weight:500;}
+    .shb{width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--ink-muted);}
+    .shb:first-child{margin-left:-12px;} .shb:last-child{margin-right:-12px;}
+    .btn.solid{background:var(--ink);color:var(--paper);}
+    .codeline{display:flex;align-items:baseline;gap:8px;margin-bottom:14px;}
+    .swap{margin-top:20px;display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;
+          background:var(--sunk);font-size:14px;line-height:20px;color:var(--ink-muted);}
+    .swap svg{color:var(--ink-faint);}
+    .datechip{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px;border-radius:999px;
+              border:1px solid var(--line-strong);font-size:14px;font-weight:500;color:var(--ink);}
+
+    /* the suggest list, hung from a line exactly as it hangs from a box */
+    .pop{position:absolute;left:0;top:calc(100% + 4px);z-index:5;width:420px;background:var(--surface);
+         border:1px solid var(--line);border-radius:12px;padding:4px 0;box-shadow:0 12px 32px oklch(0.2 0.02 65 / 0.16);}
+    .pg{padding:12px 16px 4px;font-size:11px;line-height:16px;font-weight:600;letter-spacing:0.09em;
+        text-transform:uppercase;color:var(--ink-faint);}
+    .po{display:flex;align-items:center;gap:12px;padding:8px 16px;min-height:48px;}
+    .po.on{background:var(--sunk);}
+    .po .pv{font-family:var(--display);font-size:18px;line-height:22px;font-weight:500;}
+    .po .pv.it{font-style:italic;}
+    .po .pv b{font-weight:600;}
+    .po .pd{font-size:13px;line-height:18px;color:var(--ink-muted);}
+    .po .pm{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--ink-faint);flex-shrink:0;}
+    .po .thumb{width:36px;height:36px;border-radius:8px;overflow:hidden;flex-shrink:0;}
+    .psep{height:1px;background:var(--line);margin:4px 0;}
+
+    /* ── 3 · the index ─────────────────────────────────────────────── */
+    .idx{display:flex;flex-direction:column;}
+    .ir{display:flex;gap:14px;padding:16px 18px;border-radius:12px;align-items:flex-start;}
+    .ir svg{color:var(--ink-faint);margin-top:4px;}
+    .ir .t{font-family:var(--display);font-size:20px;line-height:26px;font-weight:500;}
+    .ir .s{margin-top:2px;font-size:14px;line-height:20px;color:var(--ink-muted);}
+    .ir .s.none{color:var(--ink-faint);font-style:italic;font-family:var(--display);font-size:15px;}
+    .ir.on{background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);}
+    .ir.on svg{color:var(--leaf);}
+    .ir .tick{margin-left:auto;color:var(--leaf);}
+  </style>
+</helmet>
+<!-- The plates, lifted whole from design/collection-by-genus so every canvas
+     draws the same fictional collection the same way. -->
+<svg width="0" height="0" aria-hidden="true" style="position:absolute">
+  <defs>
+    <path id="lf" d="M0 0C7-13 24-15 32-6 26 5 9 9 0 0Z" />
+    <path id="hr" d="M0 0C-10-6-16-16-12-24-8-31-2-30 0-26 2-30 8-31 12-24 16-16 10-6 0 0Z" />
+    <path id="ar" d="M0 0-8-11-5-27 0-33 5-27 8-11Z" />
+    <path id="ov" d="M0 0C-9-5-11-16-8-24-5-31 5-31 8-24 11-16 9-5 0 0Z" />
+    <path id="bl" d="M0 0C3-14 3-30 0-42-3-30-3-14 0 0Z" />
+    <path id="pot" d="M38 54h24l-3.2 17a3 3 0 0 1-3 2.6H44.2a3 3 0 0 1-3-2.6Z" />
+    <rect id="rim" x="35.2" y="49" width="29.6" height="6.2" rx="2" />
+
+    <symbol id="pl-monstera" viewBox="0 0 100 76">
+      <rect width="100" height="76" fill="oklch(0.928 0.016 96)" />
+      <rect y="60" width="100" height="16" fill="oklch(0.878 0.020 88)" />
+      <g stroke="oklch(0.478 0.052 142)" stroke-width="1.4" fill="none" stroke-linecap="round">
+        <path d="M50 54C46 40 38 30 26 22" /><path d="M50 54C54 38 62 28 74 20" />
+        <path d="M50 54C50 40 49 28 49 16" /><path d="M50 54C44 44 34 38 22 38" />
+      </g>
+      <use href="#lf" transform="translate(26 22) rotate(196) scale(0.82)" fill="oklch(0.415 0.072 152)" />
+      <use href="#lf" transform="translate(74 20) rotate(-28) scale(0.80)" fill="oklch(0.545 0.090 148)" />
+      <use href="#lf" transform="translate(49 16) rotate(-84) scale(0.74)" fill="oklch(0.462 0.082 150)" />
+      <use href="#lf" transform="translate(22 38) rotate(170) scale(0.66)" fill="oklch(0.585 0.086 146)" />
+      <use href="#pot" fill="oklch(0.648 0.090 47)" /><use href="#rim" fill="oklch(0.714 0.080 47)" />
+    </symbol>
+
+    <symbol id="pl-anthurium" viewBox="0 0 100 76">
+      <rect width="100" height="76" fill="oklch(0.905 0.020 74)" />
+      <rect y="62" width="100" height="14" fill="oklch(0.852 0.024 68)" />
+      <g stroke="oklch(0.430 0.048 148)" stroke-width="1.3" fill="none" stroke-linecap="round">
+        <path d="M50 54C44 46 38 40 32 34" /><path d="M50 54C56 46 62 40 68 34" /><path d="M50 54 50 30" />
+      </g>
+      <use href="#hr" transform="translate(32 34) rotate(-24) scale(0.92)" fill="oklch(0.352 0.058 154)" />
+      <use href="#hr" transform="translate(68 34) rotate(22) scale(0.88)" fill="oklch(0.405 0.062 152)" />
+      <use href="#hr" transform="translate(50 30) scale(1.0)" fill="oklch(0.318 0.052 156)" />
+      <use href="#pot" fill="oklch(0.800 0.012 80)" /><use href="#rim" fill="oklch(0.856 0.010 82)" />
+    </symbol>
+
+    <symbol id="pl-alocasia" viewBox="0 0 100 76">
+      <rect width="100" height="76" fill="oklch(0.938 0.012 108)" />
+      <rect y="58" width="100" height="18" fill="oklch(0.888 0.016 100)" />
+      <g stroke="oklch(0.560 0.060 140)" stroke-width="1.6" fill="none" stroke-linecap="round">
+        <path d="M50 54C44 42 40 32 36 24" /><path d="M50 54C56 42 60 32 64 22" /><path d="M50 54 50 18" />
+      </g>
+      <use href="#ar" transform="translate(36 24) rotate(-18) scale(0.95)" fill="oklch(0.372 0.062 150)" />
+      <use href="#ar" transform="translate(64 22) rotate(16) scale(0.92)" fill="oklch(0.448 0.072 148)" />
+      <use href="#ar" transform="translate(50 18) scale(1.02)" fill="oklch(0.402 0.066 152)" />
+      <use href="#pot" fill="oklch(0.452 0.014 70)" /><use href="#rim" fill="oklch(0.520 0.014 72)" />
+    </symbol>
+
+    <symbol id="pl-ficus" viewBox="0 0 100 76">
+      <rect width="100" height="76" fill="oklch(0.912 0.018 84)" />
+      <rect y="61" width="100" height="15" fill="oklch(0.862 0.022 78)" />
+      <path d="M50 54 50 14" stroke="oklch(0.560 0.038 92)" stroke-width="2.2" fill="none" stroke-linecap="round" />
+      <use href="#ov" transform="translate(50 46) rotate(-42) scale(0.92)" fill="oklch(0.398 0.070 152)" />
+      <use href="#ov" transform="translate(50 40) rotate(40) scale(0.88)" fill="oklch(0.505 0.080 148)" />
+      <use href="#ov" transform="translate(50 30) rotate(-22) scale(1.0)" fill="oklch(0.352 0.062 154)" />
+      <use href="#ov" transform="translate(50 22) rotate(26) scale(0.90)" fill="oklch(0.468 0.078 150)" />
+      <use href="#ov" transform="translate(50 14) rotate(-4) scale(0.78)" fill="oklch(0.412 0.072 151)" />
+      <use href="#pot" fill="oklch(0.880 0.020 92)" /><use href="#rim" fill="oklch(0.925 0.016 92)" />
+    </symbol>
+
+    <symbol id="pl-peperomia" viewBox="0 0 100 76">
+      <rect width="100" height="76" fill="oklch(0.945 0.010 92)" />
+      <rect y="60" width="100" height="16" fill="oklch(0.895 0.014 86)" />
+      <g stroke="oklch(0.520 0.056 146)" stroke-width="1.2" fill="none" stroke-linecap="round">
+        <path d="M50 54 34 40" /><path d="M50 54 66 40" /><path d="M50 54 44 32" /><path d="M50 54 58 30" /><path d="M50 54 50 42" />
+      </g>
+      <circle cx="34" cy="40" r="7.4" fill="oklch(0.442 0.066 152)" />
+      <circle cx="66" cy="40" r="7.0" fill="oklch(0.512 0.072 148)" />
+      <circle cx="44" cy="31" r="6.6" fill="oklch(0.382 0.058 154)" />
+      <circle cx="59" cy="29" r="6.2" fill="oklch(0.562 0.070 146)" />
+      <circle cx="50" cy="43" r="6.0" fill="oklch(0.472 0.068 150)" />
+      <use href="#pot" fill="oklch(0.648 0.090 47)" /><use href="#rim" fill="oklch(0.714 0.080 47)" />
+    </symbol>
+
+    <symbol id="pl-begonia" viewBox="0 0 100 76">
+      <rect width="100" height="76" fill="oklch(0.900 0.022 62)" />
+      <rect y="62" width="100" height="14" fill="oklch(0.848 0.026 58)" />
+      <g stroke="oklch(0.470 0.050 146)" stroke-width="1.3" fill="none" stroke-linecap="round">
+        <path d="M50 54 34 36" /><path d="M50 54 68 34" /><path d="M50 54 46 24" />
+      </g>
+      <use href="#lf" transform="translate(34 36) rotate(188) scale(0.78)" fill="oklch(0.352 0.052 156)" />
+      <use href="#lf" transform="translate(68 34) rotate(-14) scale(0.74)" fill="oklch(0.402 0.058 152)" />
+      <use href="#lf" transform="translate(46 24) rotate(-76) scale(0.68)" fill="oklch(0.318 0.046 158)" />
+      <g fill="oklch(0.960 0.010 96)">
+        <circle cx="20" cy="33" r="1.1" /><circle cx="27" cy="37" r="1.1" /><circle cx="24" cy="28" r="1" />
+        <circle cx="78" cy="31" r="1.1" /><circle cx="84" cy="36" r="1" /><circle cx="76" cy="38" r="1" />
+        <circle cx="42" cy="13" r="1.1" /><circle cx="48" cy="17" r="1" />
+      </g>
+      <use href="#pot" fill="oklch(0.800 0.012 80)" /><use href="#rim" fill="oklch(0.856 0.010 82)" />
+    </symbol>
+
+    <symbol id="pl-pothos" viewBox="0 0 100 76">
+      <rect width="100" height="76" fill="oklch(0.932 0.014 88)" />
+      <rect y="48" width="100" height="5" fill="oklch(0.848 0.022 84)" />
+      <g stroke="oklch(0.478 0.060 148)" stroke-width="1.3" fill="none" stroke-linecap="round">
+        <path d="M40 44C32 52 30 62 32 74" /><path d="M60 44C68 54 70 64 68 76" />
+      </g>
+      <g fill="oklch(0.452 0.070 150)">
+        <ellipse cx="31" cy="54" rx="5" ry="3.6" transform="rotate(-24 31 54)" />
+        <ellipse cx="30" cy="65" rx="4.6" ry="3.4" transform="rotate(-12 30 65)" />
+        <ellipse cx="70" cy="56" rx="5" ry="3.6" transform="rotate(22 70 56)" />
+        <ellipse cx="71" cy="68" rx="4.4" ry="3.2" transform="rotate(14 71 68)" />
+      </g>
+      <g fill="oklch(0.560 0.078 146)">
+        <ellipse cx="37" cy="48" rx="4.4" ry="3.2" transform="rotate(-40 37 48)" />
+        <ellipse cx="64" cy="49" rx="4.4" ry="3.2" transform="rotate(38 64 49)" />
+      </g>
+      <path d="M40 26h20l-2.6 14a3 3 0 0 1-3 2.6H45.6a3 3 0 0 1-3-2.6Z" fill="oklch(0.880 0.020 92)" />
+      <rect x="37.6" y="22" width="24.8" height="5.4" rx="2" fill="oklch(0.925 0.016 92)" />
+      <g fill="oklch(0.402 0.062 152)">
+        <ellipse cx="42" cy="17" rx="5.4" ry="4" transform="rotate(-30 42 17)" />
+        <ellipse cx="58" cy="16" rx="5.4" ry="4" transform="rotate(28 58 16)" />
+        <ellipse cx="50" cy="12" rx="5" ry="3.8" />
+      </g>
+    </symbol>
+
+    <symbol id="pl-sansevieria" viewBox="0 0 100 76">
+      <rect width="100" height="76" fill="oklch(0.918 0.016 80)" />
+      <rect y="60" width="100" height="16" fill="oklch(0.868 0.020 74)" />
+      <use href="#bl" transform="translate(42 56) rotate(-9) scale(1.02)" fill="oklch(0.402 0.058 148)" />
+      <use href="#bl" transform="translate(50 56) rotate(2) scale(1.18)" fill="oklch(0.332 0.048 152)" />
+      <use href="#bl" transform="translate(58 56) rotate(11) scale(0.96)" fill="oklch(0.452 0.062 146)" />
+      <use href="#bl" transform="translate(36 56) rotate(-19) scale(0.78)" fill="oklch(0.492 0.066 144)" />
+      <use href="#bl" transform="translate(64 56) rotate(20) scale(0.72)" fill="oklch(0.372 0.054 150)" />
+      <use href="#pot" fill="oklch(0.452 0.014 70)" /><use href="#rim" fill="oklch(0.520 0.014 72)" />
+    </symbol>
+
+    <symbol id="pl-fern" viewBox="0 0 100 76">
+      <rect width="100" height="76" fill="oklch(0.940 0.012 100)" />
+      <rect y="59" width="100" height="17" fill="oklch(0.890 0.016 94)" />
+      <g stroke="oklch(0.452 0.066 150)" stroke-width="2.6" fill="none" stroke-linecap="round">
+        <path d="M50 54C40 46 30 38 22 26" /><path d="M50 54C60 46 70 38 78 26" />
+        <path d="M50 54C46 42 42 30 40 16" /><path d="M50 54C54 42 58 30 60 16" /><path d="M50 54 50 12" />
+      </g>
+      <g stroke="oklch(0.560 0.074 146)" stroke-width="2" fill="none" stroke-linecap="round">
+        <path d="M50 54C42 48 32 44 24 40" /><path d="M50 54C58 48 68 44 76 40" />
+      </g>
+      <use href="#pot" fill="oklch(0.648 0.090 47)" /><use href="#rim" fill="oklch(0.714 0.080 47)" />
+    </symbol>
+
+    <symbol id="pl-dracaena" viewBox="0 0 100 76">
+      <rect width="100" height="76" fill="oklch(0.908 0.018 70)" />
+      <rect y="61" width="100" height="15" fill="oklch(0.858 0.022 64)" />
+      <path d="M47 54 44 26" stroke="oklch(0.548 0.040 66)" stroke-width="2.6" fill="none" stroke-linecap="round" />
+      <path d="M53 54 57 34" stroke="oklch(0.548 0.040 66)" stroke-width="2.4" fill="none" stroke-linecap="round" />
+      <g stroke="oklch(0.392 0.060 150)" stroke-width="1.8" fill="none" stroke-linecap="round">
+        <path d="M44 26 32 12" /><path d="M44 26 40 8" /><path d="M44 26 50 10" /><path d="M44 26 56 16" /><path d="M44 26 33 22" />
+      </g>
+      <g stroke="oklch(0.500 0.070 146)" stroke-width="1.6" fill="none" stroke-linecap="round">
+        <path d="M57 34 68 22" /><path d="M57 34 62 18" /><path d="M57 34 71 32" />
+      </g>
+      <use href="#pot" fill="oklch(0.800 0.012 80)" /><use href="#rim" fill="oklch(0.856 0.010 82)" />
+    </symbol>
+
+    <symbol id="pl-euphorbia" viewBox="0 0 100 76">
+      <rect width="100" height="76" fill="oklch(0.936 0.014 92)" />
+      <rect y="60" width="100" height="16" fill="oklch(0.886 0.018 86)" />
+      <rect x="44" y="10" width="12" height="46" rx="6" fill="oklch(0.472 0.070 150)" />
+      <rect x="33" y="26" width="9.5" height="30" rx="4.75" fill="oklch(0.412 0.062 152)" />
+      <rect x="57.5" y="22" width="9" height="34" rx="4.5" fill="oklch(0.532 0.074 148)" />
+      <g stroke="oklch(0.352 0.050 154)" stroke-width="0.9" opacity="0.5">
+        <path d="M50 12 50 54" /><path d="M37.7 28 37.7 54" /><path d="M62 24 62 54" />
+      </g>
+      <use href="#pot" fill="oklch(0.880 0.020 92)" /><use href="#rim" fill="oklch(0.925 0.016 92)" />
+    </symbol>
+
+    <symbol id="pl-rhaphidophora" viewBox="0 0 100 76">
+      <rect width="100" height="76" fill="oklch(0.924 0.016 86)" />
+      <rect y="60" width="100" height="16" fill="oklch(0.874 0.020 80)" />
+      <rect x="47" y="8" width="6" height="46" rx="3" fill="oklch(0.560 0.040 66)" />
+      <g stroke="oklch(0.478 0.058 148)" stroke-width="1.2" fill="none" stroke-linecap="round">
+        <path d="M50 46 38 42" /><path d="M50 36 64 32" /><path d="M50 26 36 22" /><path d="M50 16 64 13" />
+      </g>
+      <g fill="oklch(0.412 0.066 152)">
+        <path d="M38 42c-6-3-10-1-12 2 3 4 9 5 13 2Z" /><path d="M36 22c-6-3-10-1-12 2 3 4 9 5 13 2Z" />
+      </g>
+      <g fill="oklch(0.512 0.074 148)">
+        <path d="M64 32c6-3 10-1 12 2-3 4-9 5-13 2Z" /><path d="M64 13c6-3 10-1 12 2-3 4-9 5-13 2Z" />
+      </g>
+      <use href="#pot" fill="oklch(0.452 0.014 70)" /><use href="#rim" fill="oklch(0.520 0.014 72)" />
+    </symbol>
+
+    <symbol id="pl-none" viewBox="0 0 100 76">
+      <rect width="100" height="76" fill="oklch(0.944 0.010 85)" />
+      <g fill="none" stroke="oklch(0.800 0.012 80)" stroke-width="1.1" stroke-linecap="round">
+        <path d="M50 68c-11 0-19-9-19-22 0-14 9-26 19-35 10 9 19 21 19 35 0 13-8 22-19 22Z" />
+        <path d="M50 68V13" /><path d="M50 29c-4-3-8-4-13-5M50 29c4-3 8-4 13-5" />
+        <path d="M50 43c-5-3-11-5-17-5M50 43c5-3 11-5 17-5" />
+        <path d="M50 57c-5-2-9-4-14-4M50 57c5-2 9-4 14-4" />
+      </g>
+    </symbol>
+
+    <symbol id="pl-philodendron" viewBox="0 0 100 76">
+      <rect width="100" height="76" fill="oklch(0.912 0.018 82)" />
+      <rect y="61" width="100" height="15" fill="oklch(0.862 0.022 76)" />
+      <g stroke="oklch(0.442 0.050 146)" stroke-width="1.3" fill="none" stroke-linecap="round">
+        <path d="M50 54C42 46 36 39 30 32" /><path d="M50 54C58 47 65 41 71 35" /><path d="M50 54 50 28" />
+      </g>
+      <use href="#ar" transform="translate(30 32) rotate(-38) scale(0.95)" fill="oklch(0.372 0.060 150)" />
+      <use href="#ar" transform="translate(71 35) rotate(34) scale(0.90)" fill="oklch(0.468 0.068 148)" />
+      <use href="#ar" transform="translate(50 28) scale(1.05)" fill="oklch(0.322 0.054 152)" />
+      <use href="#pot" fill="oklch(0.700 0.030 60)" /><use href="#rim" fill="oklch(0.760 0.026 62)" />
+    </symbol>
+
+  </defs>
+</svg>
+<div class="app"><aside class="rail"><span class="mark">F</span><div class="nv"><svg class="i" width="22" height="22" viewBox="0 0 24 24" style=""><path d="M12 3s6 6.2 6 10a6 6 0 0 1-12 0c0-3.8 6-10 6-10Z"/></svg><span>Today</span></div><div class="nv on"><svg class="i" width="22" height="22" viewBox="0 0 24 24" style=""><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/></svg><span>Collection</span></div><div style="height:6px"></div><div class="nv plain"><span class="disc"><svg class="i" width="20" height="20" viewBox="0 0 24 24" style=""><path d="M5 12h14"/><path d="M12 5v14"/></svg></span><span>New</span></div><div style="height:6px"></div><div class="nv"><svg class="i" width="22" height="22" viewBox="0 0 24 24" style=""><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg><span>Wishlist</span></div><div class="nv"><svg class="i" width="22" height="22" viewBox="0 0 24 24" style=""><path d="M21 4h-7M10 4H3M21 12h-9M8 12H3M21 20h-5M12 20H3M14 2v4M8 10v4M16 18v4"/></svg><span>Settings</span></div></aside><main><div style="display:grid;grid-template-columns:minmax(0,1fr) 336px;gap:32px;align-items:start"><div><span class="back"><svg class="i" width="22" height="22" viewBox="0 0 24 24" style=""><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></span><div style="display:flex;align-items:flex-start;gap:10px;margin-top:6px"><div style="flex:1"><div style="font-family:var(--display);font-size:40px;line-height:43px;font-weight:500;letter-spacing:-0.025em">Fluister</div><div style="font-size:17px;line-height:24px" class="muted">Anthurium (papillilaminum × crystallinum) × warocqueanum</div><div class="hint" style="margin-top:8px;display:flex;gap:14px"><span class="mono" style="letter-spacing:0.08em">ANT-41D0</span><span>Study</span><span>Semi-hydro</span></div></div><span class="pen" style="margin-top:6px"><svg class="i" width="16" height="16" viewBox="0 0 24 24" style=""><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/></svg></span></div><div class="sh" style="margin-top:36px"><h2>History</h2></div><div style="margin-top:20px"><div class="hrow"><svg class="i" width="18" height="18" viewBox="0 0 24 24" style="color:var(--ink-faint)"><path d="M12 3s6 6.2 6 10a6 6 0 0 1-12 0c0-3.8 6-10 6-10Z"/></svg><span style="flex:1">Watered<span class="muted"> 2 days ago</span></span><span class="mono muted" style="font-size:13px">Thu 23 Oct</span></div><div class="hrow"><svg class="i" width="18" height="18" viewBox="0 0 24 24" style="color:var(--ink-faint)"><path d="M12 3s6 6.2 6 10a6 6 0 0 1-12 0c0-3.8 6-10 6-10Z"/></svg><span style="flex:1">Watered<span class="muted"> </span></span><span class="mono muted" style="font-size:13px">Fri 17 Oct</span></div><div class="hrow"><svg class="i" width="18" height="18" viewBox="0 0 24 24" style="color:var(--ink-faint)"><path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-10"/><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"/><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"/></svg><span style="flex:1">New leaf<span class="muted"> the fourth this year</span></span><span class="mono muted" style="font-size:13px">Mon 13 Oct</span></div><div class="hrow"><svg class="i" width="18" height="18" viewBox="0 0 24 24" style="color:var(--ink-faint)"><path d="M12 3s6 6.2 6 10a6 6 0 0 1-12 0c0-3.8 6-10 6-10Z"/></svg><span style="flex:1">Watered<span class="muted"> </span></span><span class="mono muted" style="font-size:13px">Sat 11 Oct</span></div><div class="hrow"><svg class="i" width="18" height="18" viewBox="0 0 24 24" style="color:var(--ink-faint)"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg><span style="flex:1">Photo<span class="muted"> </span></span><span class="mono muted" style="font-size:13px">Sat 11 Oct</span></div><div class="hrow"><svg class="i" width="18" height="18" viewBox="0 0 24 24" style="color:var(--ink-faint)"><path d="M12 3s6 6.2 6 10a6 6 0 0 1-12 0c0-3.8 6-10 6-10Z"/></svg><span style="flex:1">Watered<span class="muted"> </span></span><span class="mono muted" style="font-size:13px">Sun 5 Oct</span></div><div class="hrow"><svg class="i" width="18" height="18" viewBox="0 0 24 24" style="color:var(--ink-faint)"><path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></svg><span style="flex:1">Repotted<span class="muted"> into 21 cm, pon</span></span><span class="mono muted" style="font-size:13px">Wed 1 Oct</span></div></div></div><div><div style="position:relative;height:268px;border-radius:16px;overflow:hidden" class="card"><svg class="plate" viewBox="0 0 100 76" preserveAspectRatio="xMidYMid slice"><use href="#pl-anthurium" width="100" height="76"/></svg><span class="edchip"><svg class="i" width="14" height="14" viewBox="0 0 24 24" style=""><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>Photo</span></div><div style="position:relative;height:0"><span class="logdisc" style="bottom:-28px"><svg class="i" width="24" height="24" viewBox="0 0 24 24" style=""><path d="M5 12h14"/><path d="M12 5v14"/></svg></span></div><div class="card" style="margin-top:44px;padding:6px 18px"><div class="drow"><svg class="i" width="18" height="18" viewBox="0 0 24 24" style=""><path d="M12 3s6 6.2 6 10a6 6 0 0 1-12 0c0-3.8 6-10 6-10Z"/></svg><span>Watered 2 days ago · usually every 6</span></div></div><div style="margin-top:22px"><div style="display:flex;align-items:center;justify-content:space-between"><span class="label">Where it lives</span><span class="pen"><svg class="i" width="15" height="15" viewBox="0 0 24 24" style=""><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/></svg></span></div><div style="margin-top:4px"><div class="drow"><svg class="i" width="18" height="18" viewBox="0 0 24 24" style=""><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg><span>Study · Semi-hydro</span></div><div class="drow"><svg class="i" width="18" height="18" viewBox="0 0 24 24" style=""><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z"/><path d="m14.5 12.5 2-2"/><path d="m11.5 9.5 2-2"/><path d="m8.5 6.5 2-2"/><path d="m17.5 15.5 2-2"/></svg><span>12 cm · Pon</span></div></div></div><div style="margin-top:22px"><div style="display:flex;align-items:center;justify-content:space-between"><span class="label">Where it came from</span><span class="pen"><svg class="i" width="15" height="15" viewBox="0 0 24 24" style=""><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/></svg></span></div><div style="margin-top:4px"><div class="drow"><svg class="i" width="18" height="18" viewBox="0 0 24 24" style=""><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/></svg><span>Plantje.nl · <span class="mono">€65,00</span></span></div><div class="drow"><svg class="i" width="18" height="18" viewBox="0 0 24 24" style=""><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg><span>Since <span class="mono">3 Mar 2024</span></span></div></div></div><div style="margin-top:36px;padding-top:16px;border-top:1px solid var(--line)"><span class="danger" style="font-size:14px"><svg class="i" width="16" height="16" viewBox="0 0 24 24" style=""><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>Delete this plant for good</span></div></div></div><div class="scrim blur"></div><div class="sheetp"><div class="shd"><span class="shb"></span><h2>What it is</h2><span class="shb"><svg class="i" width="22" height="22" viewBox="0 0 24 24" style=""><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></span></div><div class="codeline"><span class="cap">No.</span><span class="stamp">ANT-41D0</span><span class="hint faint">on the sticker</span></div><div style="position:relative"><div class="lf"><div class="ln big" style=""><span class="v">Anthurium</span><svg class="i" width="16" height="16" viewBox="0 0 24 24" style=""><path d="m6 9 6 6 6-6"/></svg></div><span class="cap">Genus</span></div></div><div style="margin-top:16px"><div class="lf"><div class="ln big" style="font-size:24px;line-height:30px;white-space:normal"><span class="v" style="white-space:normal">(papillilaminum × crystallinum) × warocqueanum</span></div><span class="cap">Cross · parents joined by ×</span></div></div><div style="display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,0.65fr);gap:16px;margin-top:16px"><div class="lf"><div class="ln mid" style=""><span class="ph">cultivar</span><svg class="i" width="16" height="16" viewBox="0 0 24 24" style=""><path d="m6 9 6 6 6-6"/></svg></div><span class="cap">Cultivar</span></div><div class="lf"><div class="ln mid" style=""><span class="v">None</span><svg class="i" width="16" height="16" viewBox="0 0 24 24" style=""><path d="m6 9 6 6 6-6"/></svg></div><span class="cap">Variegation</span></div></div><div style="margin-top:16px"><div class="lf"><div style="display:flex;gap:10px;align-items:flex-end"><div class="ln mid" style="flex:1"><span class="v">Fluister</span></div><span style="color:var(--leaf);padding-bottom:8px"><svg class="i" width="20" height="20" viewBox="0 0 24 24" style=""><rect width="12" height="12" x="2" y="10" rx="2" ry="2"/><path d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6"/><path d="M6 18h.01"/><path d="M10 14h.01"/><path d="M15 6h.01"/><path d="M18 9h.01"/></svg></span></div><span class="cap">Called</span></div></div><div style="margin-top:20px"><span class="cap">Status</span><div style="margin-top:6px"><div style="display:flex;gap:18px"><span class="opt on"><span class="dot"></span>Active</span><span class="opt"><span class="dot"></span>Dormant</span><span class="opt"><span class="dot"></span>Died</span><span class="opt"><span class="dot"></span>Given away</span></div></div></div><div style="margin-top:22px"><span class="btn accent" style="width:100%"><svg class="i" width="19" height="19" viewBox="0 0 24 24" style=""><path d="M20 6 9 17l-5-5"/></svg>Save</span></div></div></main></div>
+</x-dc>
+</body>
+</html>

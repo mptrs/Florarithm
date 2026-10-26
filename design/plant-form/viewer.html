@@ -1,0 +1,50 @@
+<title>Plant form, afresh</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  /* Florarithm's own tokens; a column of windows, each with its note beside it. */
+  :root{
+    --paper:oklch(0.968 0.008 85); --surface:oklch(0.995 0.003 85); --line:oklch(0.886 0.010 80);
+    --ink:oklch(0.255 0.014 65); --muted:oklch(0.510 0.014 68); --faint:oklch(0.655 0.012 72);
+    --leaf:oklch(0.455 0.098 152); --sunk:oklch(0.944 0.010 85);
+    --display:'Newsreader',Georgia,'Times New Roman',serif;
+    --ui:system-ui,-apple-system,'Segoe UI',sans-serif;
+    --mono:'IBM Plex Mono',ui-monospace,'SF Mono',Menlo,monospace;
+  }
+  @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+    --paper:oklch(0.190 0.008 80); --surface:oklch(0.238 0.009 80); --line:oklch(0.322 0.010 80);
+    --ink:oklch(0.945 0.008 85); --muted:oklch(0.735 0.012 80); --faint:oklch(0.575 0.012 78);
+    --leaf:oklch(0.760 0.110 152); --sunk:oklch(0.155 0.008 80); color-scheme:dark;}}
+  :root[data-theme="dark"]{
+    --paper:oklch(0.190 0.008 80); --surface:oklch(0.238 0.009 80); --line:oklch(0.322 0.010 80);
+    --ink:oklch(0.945 0.008 85); --muted:oklch(0.735 0.012 80); --faint:oklch(0.575 0.012 78);
+    --leaf:oklch(0.760 0.110 152); --sunk:oklch(0.155 0.008 80); color-scheme:dark;}
+  body{background:var(--paper);color:var(--ink);font-family:var(--ui);font-size:15px;line-height:1.55;}
+  .wrap{max-width:1500px;margin:0 auto;padding:40px 24px 80px;}
+  header{max-width:70ch;}
+  h1{font-family:var(--display);font-weight:500;font-size:2.4rem;line-height:1.1;letter-spacing:-0.015em;margin:0;text-wrap:balance;}
+  .intro{margin-top:16px;}
+  .intro p{margin:0 0 10px;}
+  h2{font-family:var(--display);font-weight:500;font-size:1.6rem;margin:56px 0 0;padding-bottom:10px;border-bottom:1px solid var(--line);text-wrap:balance;}
+  .board{margin:32px 0 0;display:grid;grid-template-columns:minmax(0,1fr) 34ch;gap:12px 32px;align-items:start;}
+  figcaption{grid-column:1/-1;font-size:12px;font-weight:600;letter-spacing:0.09em;text-transform:uppercase;color:var(--muted);}
+  .frame{position:relative;aspect-ratio:1440/900;max-width:100%;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--sunk);}
+  .frame iframe{position:absolute;top:0;left:0;width:1440px;height:900px;border:0;transform-origin:0 0;}
+  .note{min-width:0;}
+  .note p{margin:0 0 10px;}
+  code{font-family:var(--mono);font-size:0.86em;color:var(--muted);}
+  @media (max-width:900px){.board{grid-template-columns:minmax(0,1fr);}}
+</style>
+<div class="wrap">
+  <header>
+    <h1>Adding and editing a plant</h1>
+    <div class="intro">{{INTRO}}</div>
+  </header>
+  {{SECTIONS}}
+</div>
+<script>
+  // Each artboard is a real 1440px window, scaled to the column it sits in.
+  const fit = () => document.querySelectorAll('.frame').forEach((f) => {
+    f.firstElementChild.style.transform = `scale(${f.clientWidth / 1440})`
+  })
+  addEventListener('resize', fit); fit()
+</script>
