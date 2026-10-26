@@ -1,92 +1,59 @@
 # Florarithm
 
 A plant logbook you open by tapping the tag on the pot. Stick an NFC tag on a
-plant, hold your phone against it, and the app opens on that plant with a drop
-in the corner that never scrolls away.
+plant, hold your phone against it, and the app opens on that plant, ready to
+log a watering.
 
 Live at **https://mptrs.github.io/Florarithm/**
 
-Everything is stored on your own device. There is no account, no server and no
-database — and from M2 on, a private GitHub repository keeps two devices in
-step without either of those things.
+Everything lives on your own device. There is no account, no server and no
+database; a private GitHub repository can keep a copy in sync if you want one.
+
+<p>
+  <img src="docs/screenshots/phone-today-light.png" alt="Today on a phone" width="240">
+  <img src="docs/screenshots/phone-plant-light.png" alt="A plant page on a phone" width="240">
+  <img src="docs/screenshots/phone-collection-light.png" alt="The collection on a phone" width="240">
+</p>
+
+<img src="docs/screenshots/desktop-today-light.png" alt="Today on a desktop" width="760">
 
 ## What it does
 
+- **Today.** Every plant comes onto Today a day before its own usual gap
+  between waterings runs out, grouped by room and ordered by need. The days
+  figure is the watering button. Chores sit above it as tiles: cachepots to
+  empty the day after a soil plant was watered, plants settling in, and the
+  predatory-mite sachets.
 - **A tag opens the plant.** The sticker carries `…/Florarithm/#p=MON-8F3A`,
-  which lands on that plant with the actions already in view.
-- **The drop logs a watering.** On a phone it sits in the corner a thumb rests
-  in and never scrolls away; tapping it fans out three things: watered, watered
-  with fertilizer, and everything else. No confirmation step — the water splashes
-  and the entry is in. A desktop has no thumb: there the photograph carries Log
-  as a disc hung from its foot, and watering is one of the log
-  sheet's circles — a desktop waters from Today.
-- Also logged: repotting (which updates the pot and medium of the plant
-  itself), new leaves, blooming, and free notes — each of them datable, so the
-  watering you forgot on Tuesday can still be recorded on Thursday.
-- **No edit screen.** A plant is changed where it is read: each part of its page —
-  what it is, where it lives, where it came from, its family, its photograph —
-  has a pen that opens that part alone in a sheet. New is a short sheet too,
-  asking only what a plant needs to be found again (what it is, its name, its
-  room); its page then says what is still missing. The fields are written on a
-  line with the name printed small underneath, the way a herbarium label is. A
-  cross needs no switch: a × on the species line is what makes it one. Delete
-  sits on its own at the foot of the page, never under a Save.
-- **A wrong entry is dragged away.** Pull a row left to delete it, right to
-  edit it. There is no undo bar: the record is right there, so a correction
-  happens where you can see it.
-- **The collection reads by genus.** The search is the only control: a name
-  is typed, and a place, a genus or a system is picked from its suggestions and
-  sits in the field as a tag. Whatever the list is grouped by never repeats
-  itself inside a row: the second line drops the genus and reads `papillilaminum × crystallinum` the way the bench label does.
-  Inside a genus the epithet leads rather than the name you gave the plant, so
-  a cross and the cultivar selected out of it land next to each other. Two of a
-  genus is a run; everything you own one of goes into a single drawer at the
-  foot, where the genus goes back into the line because the label above it is
-  no longer saying it.
-- **Wishlist.** Plants you want, in the same table as plants you have. "I have
-  this now" flips one flag and keeps the code, the name and the date.
-- **Family.** Cuttings and corms point at their parent, and the name generator
-  continues the line — Fluweel, Fluweel II, Fluweel III — so the family tree
-  reads without a diagram.
-- **Photographs, as entries in the log.** A picture belongs to the thing that
-  prompted it — the new leaf, the note, the day it was repotted — so it is a
-  field on an event rather than a gallery of its own. The plant's picture is
-  the newest one unless you pick another from the photograph's corner; a plant without any
-  gets a small drawn portrait of its genus instead — eight are drawn, and every
-  other genus gets a plant in a pot and no claim about which. The timeline is the history filtered to the entries
-  that have one.
-- **The sachets.** Predatory mites hang through the whole collection against
-  thrips and stop releasing after four weeks, so the one thing in the app that
-  belongs to no plant is a single record — the week printed on the packet and
-  the day it went up. Today counts down (`12 days left`), asks you to order
-  the next ones five working days before they run out — a week's notice, with
-  no shipping at the weekend and no post on Sunday — and turns to the alarm
-  colour once they have. Hanging the next batch overwrites the record, because
-  nothing is ever asked of the batch that came down.
-- **Settling in.** A few weeks of different care, on a fixed schedule, with
-  "two weeks longer" for a plant that is not ready. Three kinds. *Hardening
-  off* a plant from tissue culture: four weeks of the lid off a little longer
-  each week (an hour, three hours, by day, for good), started with one press
-  at its first leaf or good roots; Today asks six weeks after it arrived if
-  nobody has. *Into pon*, ticked on the repot sheet: six weeks of water from
-  the top every third day with the reservoir empty, the drop doing the
-  watering. *Quarantine*: a place ticked as one in Settings, with its number of
-  weeks; a plant standing there is counted from the day it came in, Today says
-  when it can come down, and moving it ends it. Only the start, any extra
-  weeks and the ticks are stored — the week, the day and what it asks for are
-  read off the date. "From tissue culture" itself is a fact on the plant, not
-  a stage.
-- **Backup.** One JSON file with everything, through the iOS share sheet into
-  Files and so into iCloud Drive.
-- **QR fallback.** Every plant page carries a QR code alongside its written
-  code, for the day the NFC sticker gives up.
+  which lands on that plant with the drop in reach. One tap waters it, with
+  fertiliser, because that is how every watering goes. Every plant page also
+  carries a QR code for the day the sticker gives up.
+- **A log, not a form.** Watering, repotting (which updates the pot, medium
+  and system of the plant itself), new leaves, blooming, notes and
+  photographs, each of them datable. A wrong entry is dragged left to delete
+  it or right to edit it.
+- **No edit screen.** Each part of a plant's page has a pen that opens just
+  that part in a sheet, and New asks only what it is, its name and its room.
+  The fields are written on a line, the way a herbarium label is.
+- **The collection reads by genus.** Search is the only control: type a name,
+  or pick a place, genus or system as a tag. Inside a genus the epithet leads,
+  so a cross and the cultivar selected out of it land next to each other.
+- **Family.** Cuttings and divisions point at their parent, and names continue
+  the line: Fluweel, Fluweel II, Fluweel III.
+- **Settling in.** A few weeks of different care on a fixed schedule:
+  hardening off a plant from tissue culture, the first weeks in pon, or a
+  stay in quarantine.
+- **Wishlist and milestones.** Plants you want sit in the same table as plants
+  you have; "I have this now" flips one flag. Milestones are read straight out
+  of the log, with nothing to unlock.
+- **Sync and backup.** A private GitHub repository, reached with a
+  fine-grained token, keeps the data and photographs. A single JSON export goes
+  through the share sheet into Files.
 
-What it deliberately does **not** do is predict when a plant needs water. You
-water on fixed days, so every measured gap lands on 7 or 14 and the app would be
-predicting your calendar back at you. It shows the average with its spread,
-looking backwards, and stops there. Today's "in 3" is the same thing said the
-other way round — the days left to your own usual gap — not a guess at what
-the plant wants.
+What it deliberately does **not** do is predict when a plant needs water. It
+shows each plant's own rhythm, looking backwards, and stops there.
+
+<img src="docs/screenshots/desktop-plant-light.png" alt="A plant page on a desktop" width="760">
 
 ## Running it
 
@@ -103,112 +70,41 @@ Pushing to `main` runs the tests and, if they pass, deploys to GitHub Pages.
 
 ```
 src/
-  lib/         no dependencies on anything else here
-    plantCode  the code algorithm, straight from the Shortcut
-    router     hash routing, because that is what a tag can carry
-    image      downscaling a phone photo to something worth keeping
-    date, format, nameGenerator, cn, id
-  data/        the model and everything that touches storage
-    types      the whole data model, in one file
-    db         IndexedDB, one record at a time
-    store      the in-memory snapshot and every mutation
-    selectors  everything derived, computed and never stored
-    photos     the photographs, read on demand and cached by event
-    backup     export and import
+  lib/         pure helpers: plant codes, hash routing, dates, images, names
+  data/        the model, IndexedDB, the store, selectors, sync and backup
   ui/          the design system as components (see DESIGN.md)
-  layout/      the shell: tab bar on a phone, the same stops as a rail on a desktop
+  layout/      the shell: tab bar on a phone, a rail on a desktop
   screens/     one file per screen
 ```
 
-The dependency direction is one-way: `screens` use `ui`, `data` and `lib`;
-`ui` uses `lib`; `lib` uses nothing. Four runtime dependencies — React,
-ReactDOM, `idb` and `qrcode-generator` — and no others. (`@mlc-ai/web-llm`
-is a fifth in `package.json`, but it is only ever loaded through a dynamic
-`import()`, so a build that never touches the AI name suggester never fetches
-it.)
+Dependencies run one way: `screens` use `ui`, `data` and `lib`; `ui` uses
+`lib`; `lib` uses nothing. Runtime dependencies are React, `idb` and
+`qrcode-generator`. `@mlc-ai/web-llm` is only loaded through a dynamic
+`import()` for the optional AI name suggester.
 
-### Conventions worth knowing before you change something
+### Conventions
 
-**Never store a derived value.** Days since water, average rhythm, leaves this
-year, collection value: all of it lives in `selectors.ts` and is computed at
-render time. The moment one is written back into a record it can disagree with
-the event log, and then there are two answers and no way to tell which is true.
-
-**Events are append-only.** Deleting one sets `deleted: true` rather than
-removing the row, because the sync in M2 merges by union and a forgotten row
-comes straight back. The two flags an event can gain after the fact —
-`deleted` and `photo` — both only ever go one way, which is what lets the merge
-resolve them without a timestamp.
-
-**A photograph is written before the entry that claims it.** The bytes go into
-IndexedDB under an id drawn in advance, and only then is the event logged with
-that id. The other order leaves a row promising a picture that never loads if
-the write fails; this one leaves bytes nobody points at, which nobody can see.
-
-**Every mutation a person could regret is reversible where it is visible.**
-Nothing in `store.ts` hands back an undo closure: an entry is corrected or
-removed from the row it is written on, which survives a reload in a way a
-three-second bar does not — and, unlike a hard delete behind an undo bar, a
-tombstone merges correctly with another device. What is left of the toast is a
-confirmation for actions that navigate away before you can see the result.
-
-**Colour, type, spacing and motion come from tokens.** `src/styles.css` clears
-Tailwind's stock palette, so `bg-red-500` does not exist — every colour has to
-be a token like `bg-water` or `text-ink-muted`. Each one carries both themes in
-a single `light-dark()` declaration read against the root's `color-scheme`, so
-there is no second copy of the palette to forget and no component knows which
-theme is on. Hover has its own tokens (`-deep`) and its own two utilities
-(`lift` for anything pressable, `warm` for a row), both on the app's one curve,
-`--ease-grow`. `DESIGN.md` is the full system.
-
-**Components choose their look with variant props, never with passed-in
-utilities.** `className` is for placement only — margin, width, `hidden md:block`.
-Utility conflicts are resolved by CSS order rather than class order, so a
-passthrough could not reliably override anything anyway. See `lib/cn.ts`.
-
-**One markup, two layouts.** Phone and desktop differ by breakpoint, not by a
-JavaScript viewport check: columns appear at `lg`, the rail replaces the tab
-bar at `md`. Nothing to keep in sync and no flash of the wrong layout.
-
-**Anything that writes data is at least 44px tall.** Filter chips are the single
-documented exception at 36, because a mis-tap there changes a filter rather than
-a record. Inputs never go below 16px, or Safari zooms the page in on focus and
-never zooms back out.
-
-**Nothing resting on paper casts a shadow.** Cards, sheets, banners, rows,
-inputs and both navigations are flat. A shadow means the thing is over a
-photograph, over the page, or under a pointer — see Elevation in `DESIGN.md`.
+- **Never store a derived value.** Days since water, rhythm, leaves this year:
+  all of it is computed in `selectors.ts` at render time.
+- **Events are append-only.** Deleting one sets `deleted: true`, so a sync
+  merge cannot bring it back.
+- **Colour, type, spacing and motion come from tokens.** `src/styles.css`
+  clears Tailwind's stock palette; every colour is a token like `bg-water`,
+  carrying both themes through `light-dark()`. `DESIGN.md` is the full system.
+- **Components choose their look with variant props.** `className` is for
+  placement only. See `lib/cn.ts`.
+- **One markup, two layouts.** Phone and desktop differ by breakpoint, never by
+  a JavaScript viewport check.
+- **Anything that writes data is at least 44px tall**, and inputs never go
+  below 16px, or Safari zooms in on focus.
 
 ## Writing a tag
 
 1. Add the plant. It gets a code like `MON-8F3A`.
-2. On the plant page, tap the code in the top corner to copy its link.
+2. On the plant page, tap the link icon to copy its address.
 3. Paste it into NFC Tools and write the sticker.
 4. Write the code on the pot in marker too, and print the QR code alongside
-   it — both outlast the sticker.
+   it. Both outlast the sticker.
 
-The app cannot write tags itself: that needs the Web NFC API, which only exists
-in Chrome on Android. Reading works everywhere, because the tag just holds a URL.
-
-## Where this is going
-
-- **M1 — done.** Everything above, on one device.
-- **M2 — done.** A private repository holding `plants.json`, one
-  `events/YYYY-MM.json` per month and `meta.json`, merged with a pure function
-  and pushed with a fine-grained token. Sync doubles as the backup.
-- **M3 — done.** A QR code on the plant page as a fallback for a dead sticker,
-  in the log sheet on a desktop, at the foot of the photograph on a phone. Photographs attached to log entries, capped at a
-  1600px JPEG on the way in, kept in their own IndexedDB store and synced to
-  the same private repository as `photos/YYYY-MM/<event id>.jpg` — one file
-  each, next to the log that describes them. They are still out of the backup
-  file, which stays a single readable JSON.
-- **M4 — under way.** The family tree over several generations is done: the
-  Family card on the plant page is a rail carrying the line above the plant and
-  everything propagated off it, however deep, built from the `parent` edge that
-  was already there — no schema change. The first piece of pest work is done
-  too, and deliberately the smallest one: a reminder for the predatory-mite
-  sachets, which is a single collection-wide record rather than a log.
-  Achievements landed as milestones rather than badges: a card on each plant
-  and a page behind Collection's counts, every line read out of the log, with
-  nothing to unlock and nothing stored. Still to come: pests on a plant with
-  repeat treatments.
+The app cannot write tags itself: that needs Web NFC, which only exists in
+Chrome on Android. Reading works everywhere, because the tag just holds a URL.
