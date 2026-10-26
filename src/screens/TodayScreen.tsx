@@ -3,9 +3,10 @@
  *
  * The whole collection on one line, measured against each plant's own rhythm:
  * Late, Due and Tomorrow are the water owed, Later is everything else with how
- * many days it has to go. Late is half as long again as the usual gap, the
- * point where "late" stops being a matter of a day; Tomorrow is a day short,
- * the evening before a round being when you look to see what is coming.
+ * many days it has to go. Late is a third longer than the usual gap — on a
+ * six-day rhythm, day eight, when two days over is already more than a slip;
+ * Tomorrow is a day short, the evening before a round being when you look to
+ * see what is coming.
  * Only a plant with a rhythm can be late: late is a claim about a habit, and
  * one watered once or never has none yet, so however long it has gone it is
  * Due.
@@ -134,8 +135,10 @@ function standing(state: State, plant: Plant, fallback: number): Standing {
   const until = gap - days
 
   if (rhythm !== null) {
+    // Times three rather than divided by it, so day eight of six is late
+    // exactly and not a rounding away from it.
     const column =
-      days >= rhythm * 1.5 ? 'late' : days >= rhythm ? 'due' : days >= rhythm - 1 ? 'soon' : 'later'
+      days * 3 >= rhythm * 4 ? 'late' : days >= rhythm ? 'due' : days >= rhythm - 1 ? 'soon' : 'later'
     return { ...base, need, column, until }
   }
   // No rhythm yet: on once the days set in Settings are up, and never late —
