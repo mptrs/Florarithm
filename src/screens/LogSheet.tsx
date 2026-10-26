@@ -38,7 +38,7 @@ import { Button } from '~/ui/Button'
 import { Icon, type IconName } from '~/ui/Icon'
 import { DateChip, DatePicker } from '~/ui/DatePicker'
 import { label, parseDecimal } from '~/lib/format'
-import { CheckField, NumberField, SegmentedField, TextAreaField, TextField } from '~/ui/fields'
+import { LineCheck, LineInput, LineOptions, LineTextArea } from '~/ui/lines'
 import { SuggestField, usageGroups } from '~/ui/suggest'
 import { Sheet } from '~/ui/Sheet'
 import { type ChipTone } from '~/ui/Card'
@@ -91,7 +91,12 @@ const FILL: Record<ChipTone, string> = {
 type Mode = 'actions' | 'date' | 'water' | 'leaf' | 'bloom' | 'note' | 'repot' | 'photo' | 'propagate'
 
 /** What the sheet was opened to do: pick an action, or fix an existing entry. */
-export type LogIntent = { kind: 'new' } | { kind: 'edit'; event: PlantEvent }
+export type LogIntent =
+  | { kind: 'new' }
+  | { kind: 'edit'; event: PlantEvent }
+  /** Straight into a new repot, from the plant's Where it lives sheet: a new
+   *  pot is a repot, not a correction. `back` returns to that sheet. */
+  | { kind: 'repot'; back?: () => void }
 
 /**
  * A photograph picked before the entry it belongs to exists.
@@ -146,6 +151,9 @@ export function LogSheet({
     if (intent.kind === 'edit') {
       setDate(intent.event.date)
       setMode(intent.event.type === 'repot' ? 'repot' : 'note')
+    } else if (intent.kind === 'repot') {
+      setDate(nowISO())
+      setMode('repot')
     } else {
       setDate(nowISO())
       setMode('actions')
@@ -238,7 +246,13 @@ export function LogSheet({
       // Only the date is a detour with somewhere to go back to. A new note or
       // repot opens in place; an entry being edited has no actions view
       // behind it, so a back arrow there would lead somewhere it never was.
-      onBack={mode === 'date' ? () => setMode(returnTo) : undefined}
+      onBack={
+        mode === 'date'
+          ? () => setMode(returnTo)
+          : intent.kind === 'repot' && mode === 'repot'
+            ? intent.back
+            : undefined
+      }
     >
       <input
         ref={picker}
@@ -509,7 +523,7 @@ function NoteForm({
   return (
     <div>
       {onPickDate ? <DateChip value={date} onClick={onPickDate} /> : null}
-      <TextAreaField
+      <LineTextArea
         aria-label="Note"
         value={text}
         autoFocus={!editing}
@@ -518,7 +532,8 @@ function NoteForm({
         fieldClassName={onPickDate ? 'mt-6' : ''}
       />
       <Button
-        variant="solid"
+        variant="accent"
+        icon="check"
         block
         disabled={!text.trim()}
         onClick={() => void save()}
@@ -604,11 +619,12 @@ function RepotForm({
         become the plant&rsquo;s.
       </p>
 
-      <SegmentedField
-        label="System"
+      <LineOptions
+        caption="System"
         options={SYSTEMS.map((value) => ({ value, label: label(value) }))}
         value={system}
         onChange={(next) => {
+          if (!next) return
           setSystem(next)
           // Off soil into semi-hydro is the move into pon, so the weeks of
           // water from the top are ticked for you — and unticked if the
@@ -617,17 +633,20 @@ function RepotForm({
         }}
       />
 
-      <div className="flex gap-3">
-        <NumberField
-          label="From"
+      <div className="flex gap-6">
+        <LineInput
+          caption="From"
           unit="cm"
+          mono
           value={editing?.fromSize ?? plant.potSize ?? ''}
           readOnly
           fieldClassName="w-28"
+          className="text-ink-muted"
         />
-        <NumberField
-          label="To"
+        <LineInput
+          caption="To"
           unit="cm"
+          mono
           inputMode="numeric"
           value={toSize}
           onChange={(event) => setToSize(event.target.value)}
@@ -636,16 +655,17 @@ function RepotForm({
       </div>
 
       <SuggestField
+        face="line"
         label="Medium"
         value={medium}
         onChange={setMedium}
         groups={usageGroups(mediumUsage.all, mediumUsage.recent, medium, 'All mediums')}
         addLabel="Add as a new medium"
-        placeholder="Pick one, or type a new medium"
+        placeholder="medium"
       />
 
-      <TextField
-        label="Why"
+      <LineInput
+        caption="Why"
         value={reason}
         onChange={(event) => setReason(event.target.value)}
         placeholder="Roots through the bottom"
@@ -656,8 +676,8 @@ function RepotForm({
           that "Pon" means pon. Only on a new repot — correcting an old one is
           not the day it moved. */}
       {editing ? null : (
-        <div className="-mt-2 border-t border-line pt-2">
-          <CheckField label="Settle into pon" checked={intoPon} onChange={setIntoPon} />
+        <div className="-mt-2">
+          <LineCheck label="Settle into pon" checked={intoPon} onChange={setIntoPon} />
           <p className="-mt-1 text-[0.8125rem] leading-5 text-ink-faint text-pretty">
             Water from the top every {PON_EVERY_DAYS} days for {PON_DAYS / 7} weeks, the
             reservoir empty till then.
@@ -665,7 +685,7 @@ function RepotForm({
         </div>
       )}
 
-      <Button variant="solid" block onClick={() => void save()}>
+      <Button variant="accent" icon="check" block onClick={() => void save()}>
         {editing ? 'Save changes' : 'Log repot'}
       </Button>
     </div>

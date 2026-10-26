@@ -1,0 +1,325 @@
+{
+  "pages": [
+    {
+      "id": "further",
+      "name": "2, taken further: the page, in the label's hand"
+    },
+    {
+      "id": "label",
+      "name": "1 · The label"
+    },
+    {
+      "id": "page",
+      "name": "2 · The page"
+    },
+    {
+      "id": "index",
+      "name": "3 · The index"
+    }
+  ],
+  "artboards": [
+    {
+      "file": "FurtherNew.dc.html",
+      "title": "New — in the sheet that already exists",
+      "page": "further",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 900
+    },
+    {
+      "file": "PageAdded2.dc.html",
+      "title": "Straight after Add",
+      "page": "further",
+      "x": 1540,
+      "y": 0,
+      "w": 1440,
+      "h": 900
+    },
+    {
+      "file": "FurtherSuggest.dc.html",
+      "title": "The suggest list, on a line",
+      "page": "further",
+      "x": 3080,
+      "y": 0,
+      "w": 1440,
+      "h": 900
+    },
+    {
+      "file": "FurtherWhat.dc.html",
+      "title": "Edit — the pen beside the name",
+      "page": "further",
+      "x": 4620,
+      "y": 0,
+      "w": 1440,
+      "h": 900
+    },
+    {
+      "file": "FurtherPage.dc.html",
+      "title": "Delete, at the foot of the page",
+      "page": "further",
+      "x": 6160,
+      "y": 0,
+      "w": 1440,
+      "h": 900
+    },
+    {
+      "file": "FurtherCross.dc.html",
+      "title": "A cross",
+      "page": "further",
+      "x": 7700,
+      "y": 0,
+      "w": 1440,
+      "h": 900
+    },
+    {
+      "file": "FurtherLives.dc.html",
+      "title": "Edit — Where it lives",
+      "page": "further",
+      "x": 9240,
+      "y": 0,
+      "w": 1440,
+      "h": 900
+    },
+    {
+      "file": "FurtherRepot.dc.html",
+      "title": "Repot, reached from Where it lives",
+      "page": "further",
+      "x": 10780,
+      "y": 0,
+      "w": 1440,
+      "h": 900
+    },
+    {
+      "file": "FurtherCame.dc.html",
+      "title": "Edit — Where it came from",
+      "page": "further",
+      "x": 12320,
+      "y": 0,
+      "w": 1440,
+      "h": 900
+    },
+    {
+      "file": "FurtherPhoto.dc.html",
+      "title": "Edit — the chip on the photograph",
+      "page": "further",
+      "x": 13860,
+      "y": 0,
+      "w": 1440,
+      "h": 900
+    },
+    {
+      "file": "LabelNew.dc.html",
+      "title": "1 · The label — New",
+      "page": "label",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 900
+    },
+    {
+      "file": "LabelEdit.dc.html",
+      "title": "1 · The label — Edit",
+      "page": "label",
+      "x": 1540,
+      "y": 0,
+      "w": 1440,
+      "h": 900
+    },
+    {
+      "file": "PageNew.dc.html",
+      "title": "2 · The page — New",
+      "page": "page",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 900
+    },
+    {
+      "file": "PageAdded.dc.html",
+      "title": "2 · The page — straight after Add",
+      "page": "page",
+      "x": 1540,
+      "y": 0,
+      "w": 1440,
+      "h": 900
+    },
+    {
+      "file": "PageEdit.dc.html",
+      "title": "2 · The page — Edit",
+      "page": "page",
+      "x": 3080,
+      "y": 0,
+      "w": 1440,
+      "h": 900
+    },
+    {
+      "file": "IndexNew.dc.html",
+      "title": "3 · The index — New",
+      "page": "index",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 900
+    },
+    {
+      "file": "IndexEdit.dc.html",
+      "title": "3 · The index — Edit",
+      "page": "index",
+      "x": 1540,
+      "y": 0,
+      "w": 1440,
+      "h": 900
+    }
+  ],
+  "annotations": [
+    {
+      "id": "furthernew",
+      "page": "further",
+      "x": 0,
+      "y": 960,
+      "w": 560,
+      "text": "The app's own sheet, unchanged: 512px, the title centred between ✕ and nothing, the scrim blurred behind it, no Cancel because ✕, Esc and the scrim already close it. Only its contents change: lines to write on with their captions printed small, instead of boxes.\n\nGenus and species stack. Side by side they did not fit a 464px sheet at the label's size, and a cross never would. The one button at the foot is leaf green in every one of these sheets."
+    },
+    {
+      "id": "pageadded2",
+      "page": "further",
+      "x": 1540,
+      "y": 960,
+      "w": 560,
+      "text": "The page says what is still missing, where it will be read. Each Add opens the same sheet its pen does."
+    },
+    {
+      "id": "furthersuggest",
+      "page": "further",
+      "x": 3080,
+      "y": 960,
+      "w": 560,
+      "text": "Every line that has a list today keeps it. It is the same `SuggestField` with a line for a face, and the list hangs from it as it hangs from a box, the sheet's own width."
+    },
+    {
+      "id": "furtherwhat",
+      "page": "further",
+      "x": 4620,
+      "y": 960,
+      "w": 560,
+      "text": "What it is, its name and its status. The code sits at the top as a line you can read and not change. Save is leaf green. Delete is not here at all: under a Save it is one slip away, so it went to the foot of the page."
+    },
+    {
+      "id": "furtherpage",
+      "page": "further",
+      "x": 6160,
+      "y": 960,
+      "w": 560,
+      "text": "Delete for good is the last line under the record, after Where it came from, with a hairline above it and nothing to press near it. It still opens the confirmation the app has now, and it says what goes with it: every watering, photograph and note. Died and Given away stay in the status, because those keep the history; this is for a record that should never have existed."
+    },
+    {
+      "id": "furthercross",
+      "page": "further",
+      "x": 7700,
+      "y": 960,
+      "w": 560,
+      "text": "No hybrid switch. A × in the epithet line makes it a cross, and a lone x becomes × as you type. Stacked, a cross needs no layout of its own: it takes the same line, one size down, and wraps when the parentage is longer than the sheet. The data keeps `species` and `cross` as two fields."
+    },
+    {
+      "id": "furtherlives",
+      "page": "further",
+      "x": 9240,
+      "y": 960,
+      "w": 560,
+      "text": "Room, system, pot and medium, for setting them right. A new pot is not a correction: Repot already changes these on the plant and keeps the day in the history. So the sheet says so, and its Repot swaps the sheet over to the existing Repot form, the way the log sheet swaps a form in."
+    },
+    {
+      "id": "furtherrepot",
+      "page": "further",
+      "x": 10780,
+      "y": 960,
+      "w": 560,
+      "text": "The Repot form that already exists, with Back to Where it lives. Drawn in the same hand to show the cost of this direction: if the plant's sheets are written on lines, the log sheet's forms should be too, or the same pot size looks two ways depending on which pen you pressed. Its Log repot turns green with the rest: Log repot and Save note are black today."
+    },
+    {
+      "id": "furthercame",
+      "page": "further",
+      "x": 12320,
+      "y": 960,
+      "w": 560,
+      "text": "From whom and the price on one line, Trade and Gift as a choice you can leave empty."
+    },
+    {
+      "id": "furtherphoto",
+      "page": "further",
+      "x": 13860,
+      "y": 960,
+      "w": 560,
+      "text": "The chip on the photograph was Edit; with no edit screen left it says Photo and opens this."
+    },
+    {
+      "id": "labelnew",
+      "page": "label",
+      "x": 0,
+      "y": 960,
+      "w": 560,
+      "text": "One sheet, written the way a herbarium label is written: the name of the plant set large across the top, the facts below it as lines to write on, each with its small printed caption. The genus plate is mounted where the specimen would be, and the sheet number in the corner is the code, its three letters following the genus as you type.\n\nEverything is on one sheet and the sheet fits the window, so Add sits beside the title and never scrolls away. The choices that have three or four answers are printed options to tick, not controls, and Trade and Gift sit at the end of the From line: an empty choice means it was bought."
+    },
+    {
+      "id": "labeledit",
+      "page": "label",
+      "x": 1540,
+      "y": 960,
+      "w": 560,
+      "text": "The same sheet with the plant on it. Editing is reading the label and writing over the line that is wrong; nothing moves between New and Edit except that the lines are filled. The real code is in the corner, the photograph is mounted, Choose another sits under it, and Status and Delete go under the sheet, because they are about the record, not written on it.\n\nThe aesthetic risk: underlined blanks on a sheet instead of the app's boxed fields. Inputs on paper rather than boxes on paper, which is what the no-card-around-inputs rule was protecting."
+    },
+    {
+      "id": "pagenew",
+      "page": "page",
+      "x": 0,
+      "y": 960,
+      "w": 560,
+      "text": "New stops being a screen. It is a sheet over whatever you were looking at, asking for the four things a plant needs before it can be found among 64: what it is, its name, and the room it stands in. Add takes you to its page."
+    },
+    {
+      "id": "pageadded",
+      "page": "page",
+      "x": 1540,
+      "y": 960,
+      "w": 560,
+      "text": "The plant exists and its page says what is missing, in the place it will be read: Add pot size and medium, Add where it came from. Fill them in now, or the day the receipt turns up."
+    },
+    {
+      "id": "pageedit",
+      "page": "page",
+      "x": 3080,
+      "y": 960,
+      "w": 560,
+      "text": "There is no edit screen. Each part of the plant page carries a pen, and the pen opens that part alone in a sheet: here Where it lives, to change the medium after a repot. The pen beside the name opens what it is, its name, status and Delete.\n\nIt is the app's own rule followed all the way: work opens in a sheet. The cost is that a record is never seen whole while it is being written."
+    },
+    {
+      "id": "indexnew",
+      "page": "index",
+      "x": 0,
+      "y": 960,
+      "w": 560,
+      "text": "The record's parts as a list, each with what it holds so far, and the open part's fields beside it. The list is the overview: What it is is ticked and reads back Philodendron gloriosum · Vilt; the parts below say Nothing yet. Next walks down the list, Add is under it the whole time, and no part ever needs a scroll."
+    },
+    {
+      "id": "indexedit",
+      "page": "index",
+      "x": 1540,
+      "y": 960,
+      "w": 560,
+      "text": "Edit opens on the same list, with every part's current value in it, so you find the wrong fact by reading, and click it. Photo and Status are parts like the others. Save is under the part you changed. The plant itself stays small at the right, so the screen always says whose record it is."
+    },
+    {
+      "id": "intro",
+      "page": "further",
+      "x": -640,
+      "y": 0,
+      "w": 560,
+      "text": "Taken further: direction 2, the page, which there is no edit screen in. Each part of the plant page is edited in its own sheet, and New is a short sheet that lands on the page. The sheets borrow the look of direction 1: lines to write on, small printed captions, the code as a sheet number. The three original directions follow below it.\n\nA fresh start on adding a plant and editing one, on a 1440 × 900 window. The three directions disagree about what this form is: a label written in one go, the plant page edited where it is read, or an index of the record with one part open.\n\nHeld over from before: Where it came from has no Nursery or Shop any more, since From whom already names the shop. Trade and Gift stay as an optional choice. Vilt is a new plant, half typed in; Gruyère has been in the collection since March 2024. Photographs are the genus plate, standing in."
+    }
+  ],
+  "launch": {
+    "view": "canvas",
+    "page": "further"
+  }
+}

@@ -17,12 +17,20 @@ step without either of those things.
 - **The drop logs a watering.** On a phone it sits in the corner a thumb rests
   in and never scrolls away; tapping it fans out three things: watered, watered
   with fertilizer, and everything else. No confirmation step — the water splashes
-  and the entry is in. A desktop has no thumb: there the photograph carries Edit in its
-  corner and Log as a disc hung from its foot, and watering is one of the log
+  and the entry is in. A desktop has no thumb: there the photograph carries Log
+  as a disc hung from its foot, and watering is one of the log
   sheet's circles — a desktop waters from Today.
 - Also logged: repotting (which updates the pot and medium of the plant
   itself), new leaves, blooming, and free notes — each of them datable, so the
   watering you forgot on Tuesday can still be recorded on Thursday.
+- **No edit screen.** A plant is changed where it is read: each part of its page —
+  what it is, where it lives, where it came from, its family, its photograph —
+  has a pen that opens that part alone in a sheet. New is a short sheet too,
+  asking only what a plant needs to be found again (what it is, its name, its
+  room); its page then says what is still missing. The fields are written on a
+  line with the name printed small underneath, the way a herbarium label is. A
+  cross needs no switch: a × on the species line is what makes it one. Delete
+  sits on its own at the foot of the page, never under a Save.
 - **A wrong entry is dragged away.** Pull a row left to delete it, right to
   edit it. There is no undo bar: the record is right there, so a correction
   happens where you can see it.
@@ -43,7 +51,7 @@ step without either of those things.
 - **Photographs, as entries in the log.** A picture belongs to the thing that
   prompted it — the new leaf, the note, the day it was repotted — so it is a
   field on an event rather than a gallery of its own. The plant's picture is
-  the newest one unless you pick another in the edit form; a plant without any
+  the newest one unless you pick another from the photograph's corner; a plant without any
   gets a small drawn portrait of its genus instead — eight are drawn, and every
   other genus gets a plant in a pot and no claim about which. The timeline is the history filtered to the entries
   that have one.

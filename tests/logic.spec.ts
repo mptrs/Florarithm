@@ -389,16 +389,11 @@ test.describe('routing', () => {
     expect(parseRoute('#collection/wishlist')).toEqual({ name: 'collection', filter: 'wishlist' })
     expect(parseRoute('#collection/nonsense')).toEqual({ name: 'collection', filter: 'all' })
     expect(parseRoute('#new/wish')).toEqual({ name: 'new', wish: true, parentCode: null })
-    expect(parseRoute('#have/MON-8F3A')).toEqual({
-      name: 'edit',
-      code: 'MON-8F3A',
-      promote: true,
-    })
-    expect(parseRoute('#edit/MON-8F3A')).toEqual({
-      name: 'edit',
-      code: 'MON-8F3A',
-      promote: false,
-    })
+    // There is no edit screen: these open a sheet over the plant's page.
+    expect(parseRoute('#have/MON-8F3A')).toEqual({ name: 'edit', code: 'MON-8F3A', part: 'have' })
+    expect(parseRoute('#edit/MON-8F3A')).toEqual({ name: 'edit', code: 'MON-8F3A', part: 'what' })
+    expect(parseRoute('#edit/MON-8F3A/lives')).toEqual({ name: 'edit', code: 'MON-8F3A', part: 'lives' })
+    expect(parseRoute('#edit/MON-8F3A/nonsense')).toEqual({ name: 'edit', code: 'MON-8F3A', part: 'what' })
     expect(parseRoute('')).toEqual({ name: 'today' })
     expect(parseRoute('#whatever')).toEqual({ name: 'today' })
   })

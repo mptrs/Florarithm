@@ -23,6 +23,7 @@ import { useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'rea
 import { cn } from '~/lib/cn'
 import { Field } from './fields'
 import { Icon } from './Icon'
+import { LINE_FACE, LINE_TYPE, LineField, type LineSize } from './lines'
 
 export type Suggestion = {
   key: string
@@ -86,6 +87,11 @@ type Props = {
   /** The list opened: for rows that are worth fetching only once looked for. */
   onOpen?: () => void
   fieldClassName?: string
+  /** `line`: written on a hairline with the label printed small under it, as
+   *  the plant's own sheets are — see `lines.tsx`. The list is the same. */
+  face?: 'box' | 'line'
+  /** The type a `line` is written in. */
+  size?: LineSize
 }
 
 type Row =
@@ -109,7 +115,10 @@ export function SuggestField({
   onQuery,
   onOpen,
   fieldClassName,
+  face = 'box',
+  size = 'body',
 }: Props) {
+  const line = face === 'line'
   const id = useId()
   const listId = `${id}-list`
   const input = useRef<HTMLInputElement>(null)
@@ -216,14 +225,18 @@ export function SuggestField({
   const control = (
     <div
       className={cn(
-        'relative flex h-control w-full items-center gap-2 rounded-sm border bg-surface px-4',
-        'warm',
-        disabled
-          ? 'cursor-not-allowed border-line bg-transparent'
-          : open
-            ? 'border-leaf'
-            : 'border-line-strong hover:border-ink-faint focus-within:border-leaf',
-        leading ? 'pl-3' : '',
+        line
+          ? cn(LINE_FACE, open && 'border-leaf shadow-[0_1px_0_var(--color-leaf)]')
+          : cn(
+              'relative flex h-control w-full items-center gap-2 rounded-sm border bg-surface px-4',
+              'warm',
+              disabled
+                ? 'cursor-not-allowed border-line bg-transparent'
+                : open
+                  ? 'border-leaf'
+                  : 'border-line-strong hover:border-ink-faint focus-within:border-leaf',
+              leading ? 'pl-3' : '',
+            ),
       )}
       onClick={() => {
         if (document.activeElement !== input.current) input.current?.focus()
@@ -258,15 +271,18 @@ export function SuggestField({
         }}
         onKeyDown={onKeyDown}
         className={cn(
-          'h-full min-w-0 flex-1 bg-transparent text-body text-ink outline-none',
+          'min-w-0 flex-1 bg-transparent text-ink outline-none',
+          line ? LINE_TYPE[size] : 'h-full text-body',
           'placeholder:text-ink-faint disabled:cursor-not-allowed disabled:text-ink-faint',
         )}
       />
       {browse ? (
         <Icon
           name="chevronDown"
+          size={line ? 16 : undefined}
           className={cn(
-            'pointer-events-none shrink-0 text-ink-muted transition-transform duration-200 ease-grow',
+            'pointer-events-none shrink-0 transition-transform duration-200 ease-grow',
+            line ? 'mb-2 text-ink-faint' : 'text-ink-muted',
             visible && 'rotate-180',
           )}
         />
@@ -360,6 +376,14 @@ export function SuggestField({
       ) : null}
     </div>
   )
+
+  if (line) {
+    return (
+      <LineField caption={label} hint={hint} htmlFor={id} className={fieldClassName}>
+        {control}
+      </LineField>
+    )
+  }
 
   return (
     // `min-w-0`: an input has a width of its own (twenty characters) that a

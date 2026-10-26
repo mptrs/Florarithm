@@ -36,7 +36,9 @@ export function Sheet({ open, onClose, title, onBack, children }: SheetProps) {
     if (!open) return
 
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose()
+      // A list open inside the sheet closes first: Escape there is taken, and
+      // the sheet — with everything typed into it — stays.
+      if (event.key === 'Escape' && !event.defaultPrevented) onClose()
     }
 
     // Stop the page behind from scrolling while the sheet is up.

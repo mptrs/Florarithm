@@ -446,7 +446,7 @@ function SettlingRow({ item }: { item: Settling }) {
           type="button"
           aria-label={`${name}: move out of ${item.place.name}`}
           title="Move"
-          onClick={() => navigate(routes.edit(item.plant.code))}
+          onClick={() => navigate(routes.edit(item.plant.code, 'lives'))}
           className={cn(
             'lift flex size-touch shrink-0 items-center justify-center rounded-full active:opacity-70',
             'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-leaf',

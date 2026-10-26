@@ -21,6 +21,10 @@ export const COLLECTION_FILTERS: readonly CollectionFilter[] = [
   'archive',
 ]
 
+/** A part of a plant that opens in a sheet over its page — see `PlantSheets`. */
+export type SheetPart = 'what' | 'lives' | 'came' | 'family' | 'photo' | 'have'
+const SHEET_PARTS: readonly SheetPart[] = ['what', 'lives', 'came', 'family', 'photo', 'have']
+
 export type Route =
   | { name: 'today' }
   | { name: 'plant'; code: string }
@@ -28,7 +32,9 @@ export type Route =
   | { name: 'collection'; filter: CollectionFilter }
   | { name: 'milestones' }
   | { name: 'new'; wish: boolean; parentCode: string | null }
-  | { name: 'edit'; code: string; promote: boolean }
+  /** The plant's page with one of its sheets open. There is no edit screen;
+   *  these hashes stay so a link written before that still lands somewhere. */
+  | { name: 'edit'; code: string; part: SheetPart }
   | { name: 'settings' }
 
 export const routes = {
@@ -47,8 +53,8 @@ export const routes = {
   new: () => '#new',
   newWish: () => '#new/wish',
   newFrom: (parentCode: string) => `#new/from/${parentCode}`,
-  edit: (code: string) => `#edit/${code}`,
-  /** Promote a wish: the form opens with the wish flag already off. */
+  edit: (code: string, part: SheetPart = 'what') => (part === 'what' ? `#edit/${code}` : `#edit/${code}/${part}`),
+  /** A wish arriving: its page, with I have this now open. */
   have: (code: string) => `#have/${code}`,
   settings: () => '#settings',
 } as const
@@ -81,10 +87,15 @@ export function parseRoute(hash: string): Route {
       return { name: 'new', wish: false, parentCode: null }
     }
     case 'edit':
-    case 'have':
-      return rest[0]
-        ? { name: 'edit', code: rest[0].toUpperCase(), promote: head === 'have' }
-        : { name: 'today' }
+    case 'have': {
+      if (!rest[0]) return { name: 'today' }
+      const part = head === 'have' ? 'have' : (rest[1] as SheetPart | undefined)
+      return {
+        name: 'edit',
+        code: rest[0].toUpperCase(),
+        part: part && SHEET_PARTS.includes(part) ? part : 'what',
+      }
+    }
     case 'settings':
       return { name: 'settings' }
     case 'photos':
@@ -230,8 +241,16 @@ if (typeof window !== 'undefined') {
     currentHash = window.location.hash
     const forward = goingForward
     goingForward = false
+    // A sheet opens over the screen it was asked from, so the screen stays
+    // where it was under it.
+    if (isSheetHash(currentHash)) return
     restore(forward ? 0 : (scrollPositions.get(currentHash) ?? 0))
   })
+}
+
+/** The hashes that open a sheet over a screen rather than a screen. */
+function isSheetHash(hash: string): boolean {
+  return /^#(new|edit|have)(\/|$)/.test(hash)
 }
 
 /** Replace rather than push, so "back" does not walk through a redirect. */

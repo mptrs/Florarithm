@@ -23,6 +23,7 @@ import { Chip } from './Chip'
 import { CONTROL, Field } from './fields'
 import { Sheet } from './Sheet'
 import { Icon } from './Icon'
+import { LINE_FACE, LineField } from './lines'
 
 const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
 const MONTH_YEAR = new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric' })
@@ -150,7 +151,7 @@ export function DatePicker({
         })}
       </div>
 
-      <Button variant="solid" block onClick={onDone} className="mt-6">
+      <Button variant="accent" icon="check" block onClick={onDone} className="mt-6">
         Use this date
       </Button>
     </div>
@@ -209,7 +210,10 @@ export function DatePickerField({
   value,
   onChange,
   fieldClassName,
+  face = 'box',
 }: {
+  /** `line`: written on a hairline, as the plant's sheets are. */
+  face?: 'box' | 'line'
   label: string
   hint?: ReactNode
   /** `yyyy-mm-dd`. */
@@ -229,8 +233,14 @@ export function DatePickerField({
 
   const iso = inputValueToISO(value) ?? nowISO()
 
+  const line = face === 'line'
+  const Wrap = line ? LineField : Field
+  const wrapProps = line
+    ? { caption: label, captionId: labelId, hint, className: fieldClassName }
+    : { label, labelId, hint, className: fieldClassName }
+
   return (
-    <Field label={label} labelId={labelId} hint={hint} className={fieldClassName}>
+    <Wrap {...wrapProps}>
       <button
         id={id}
         type="button"
@@ -242,13 +252,14 @@ export function DatePickerField({
           setOpen(true)
         }}
         className={cn(
-          CONTROL,
-          'warm flex items-center gap-2 text-left font-mono active:opacity-70 hover:bg-sunk',
+          line
+            ? cn(LINE_FACE, 'min-h-8 items-center text-left font-mono text-body active:opacity-70')
+            : cn(CONTROL, 'warm flex items-center gap-2 text-left font-mono active:opacity-70 hover:bg-sunk'),
         )}
       >
-        <Icon name="calendar" size={17} className="shrink-0 text-ink-muted" />
+        {line ? null : <Icon name="calendar" size={17} className="shrink-0 text-ink-muted" />}
         <span className="flex-1">{dateLabel(iso)}</span>
-        <Icon name="chevronDown" size={17} className="shrink-0 text-ink-muted" />
+        <Icon name={line ? 'calendar' : 'chevronDown'} size={line ? 16 : 17} className="shrink-0 text-ink-faint" />
       </button>
 
       <Sheet open={open} onClose={() => setOpen(false)} title="When?">
@@ -261,6 +272,6 @@ export function DatePickerField({
           }}
         />
       </Sheet>
-    </Field>
+    </Wrap>
   )
 }
