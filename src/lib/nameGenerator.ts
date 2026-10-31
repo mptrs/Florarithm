@@ -1,14 +1,12 @@
 /**
- * The lineage rule behind the dice button next to the name field.
+ * The lineage rule behind the name a new plant from a parent starts with.
  *
  * A cutting inherits its parent's stem. Take a cutting off Fluweel and the
  * next suggestion is Fluweel II, then Fluweel III. That makes the family
  * tree readable without opening a diagram, which is the whole reason the
  * rule exists.
  *
- * This is bookkeeping, not a creative task, so it stays deterministic —
- * unlike the genus-fitting part of the suggestion, which is `aiNameGenerator.ts`'s
- * job.
+ * This is bookkeeping, not a creative task, so it stays deterministic.
  */
 
 import { fromRoman, toRoman } from './format'
