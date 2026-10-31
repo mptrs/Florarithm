@@ -336,7 +336,7 @@ test('a cutting starts as what its parent is, under the next name in the line', 
   const parent = await addPlant(page, 'Monstera deliciosa', 'Fluweel', 'Kitchen')
 
   await page.goto(`#new/from/${parent}`)
-  // What it is and the next name in the line — no dice needed.
+  // What it is and the next name in the line, filled in already.
   await expect(page.getByLabel('Genus')).toHaveValue('Monstera')
   await expect(page.getByLabel('Species', { exact: true })).toHaveValue('deliciosa')
   await expect(page.getByLabel('Name', { exact: true })).toHaveValue('Fluweel II')
