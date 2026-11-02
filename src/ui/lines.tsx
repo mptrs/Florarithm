@@ -18,24 +18,24 @@ import {
   type ReactNode,
   type SelectHTMLAttributes,
   type TextareaHTMLAttributes,
-} from 'react'
-import { cn } from '~/lib/cn'
-import { Icon } from './Icon'
+} from "react";
+import { cn } from "~/lib/cn";
+import { Icon } from "./Icon";
 
-export type LineSize = 'big' | 'mid' | 'body'
+export type LineSize = "big" | "mid" | "body";
 
 /** The type a line is written in, by size. The name of the plant is `big`. */
 export const LINE_TYPE: Record<LineSize, string> = {
-  big: 'font-display text-[1.875rem] leading-10 font-medium tracking-[-0.015em]',
-  mid: 'font-display text-[1.3125rem] leading-7 font-medium',
-  body: 'text-body',
-}
+  big: "font-display text-[1.875rem] leading-10 font-medium tracking-[-0.015em]",
+  mid: "font-display text-[1.3125rem] leading-7 font-medium",
+  body: "text-body",
+};
 
 /** The hairline and what it does on hover and focus — one rule for every line. */
 export const LINE_FACE = cn(
-  'relative flex w-full items-end gap-2 border-b border-line-strong bg-transparent pb-2',
-  'warm hover:border-ink-faint focus-within:border-leaf focus-within:shadow-[0_1px_0_var(--color-leaf)]',
-)
+  "relative flex w-full items-end gap-2 border-b border-line-strong bg-transparent pb-2",
+  "warm hover:border-ink-faint focus-within:border-leaf focus-within:shadow-[0_1px_0_var(--color-leaf)]",
+);
 
 /** The small printed caption under a line. */
 export function Caption({
@@ -43,11 +43,12 @@ export function Caption({
   htmlFor,
   id,
 }: {
-  children: ReactNode
-  htmlFor?: string
-  id?: string
+  children: ReactNode;
+  htmlFor?: string;
+  id?: string;
 }) {
-  const className = 'text-[0.6875rem] leading-4 font-semibold tracking-[0.1em] text-ink-faint uppercase'
+  const className =
+    "text-[0.6875rem] leading-4 font-semibold tracking-[0.1em] text-ink-faint uppercase";
   // A label only where there is a control to name; a set of options is named
   // by `aria-labelledby` pointing here instead.
   return htmlFor ? (
@@ -58,7 +59,7 @@ export function Caption({
     <span id={id} className={className}>
       {children}
     </span>
-  )
+  );
 }
 
 /** A line and its caption, and a hint under both when a rule needs saying. */
@@ -70,74 +71,83 @@ export function LineField({
   className,
   children,
 }: {
-  caption?: string
-  htmlFor?: string
-  captionId?: string
-  hint?: ReactNode
-  className?: string
-  children: ReactNode
+  caption?: string;
+  htmlFor?: string;
+  captionId?: string;
+  hint?: ReactNode;
+  className?: string;
+  children: ReactNode;
 }) {
   return (
-    <div className={cn('flex min-w-0 flex-col gap-2', className)}>
+    <div className={cn("flex min-w-0 flex-col gap-2", className)}>
       {children}
       {caption ? (
         <Caption htmlFor={htmlFor} id={captionId}>
           {caption}
         </Caption>
       ) : null}
-      {hint ? <p className="text-[0.8125rem] leading-5 text-ink-muted text-pretty">{hint}</p> : null}
+      {hint ? (
+        <p className="text-[0.8125rem] leading-5 text-ink-muted text-pretty">
+          {hint}
+        </p>
+      ) : null}
     </div>
-  )
+  );
 }
 
-type LineInputProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> & {
-  caption?: string
-  hint?: ReactNode
-  size?: LineSize
+type LineInputProps = Omit<InputHTMLAttributes<HTMLInputElement>, "size"> & {
+  caption?: string;
+  hint?: ReactNode;
+  size?: LineSize;
   /** `cm`, `€`: after the value, in the caption's grey. */
-  unit?: string
+  unit?: string;
   /** Figures: a pot size, a price. */
-  mono?: boolean
-  /** After the line — the dice beside a name. */
-  after?: ReactNode
-  invalid?: boolean
-  fieldClassName?: string
-}
+  mono?: boolean;
+  invalid?: boolean;
+  fieldClassName?: string;
+};
 
 export function LineInput({
   caption,
   hint,
-  size = 'body',
+  size = "body",
   unit,
   mono = false,
-  after,
   invalid = false,
   fieldClassName,
   className,
   ...rest
 }: LineInputProps) {
-  const id = useId()
+  const id = useId();
   return (
-    <LineField caption={caption} htmlFor={id} hint={hint} className={fieldClassName}>
-      <div className="flex items-end gap-2">
-        <div className={cn(LINE_FACE, invalid && 'border-ember hover:border-ember')}>
-          <input
-            id={id}
-            aria-invalid={invalid || undefined}
-            className={cn(
-              'min-w-0 flex-1 bg-transparent text-ink outline-none placeholder:text-ink-faint',
-              LINE_TYPE[size],
-              mono && 'font-mono text-body',
-              className,
-            )}
-            {...rest}
-          />
-          {unit ? <span className="shrink-0 text-[0.875rem] text-ink-faint">{unit}</span> : null}
-        </div>
-        {after}
+    <LineField
+      caption={caption}
+      htmlFor={id}
+      hint={hint}
+      className={fieldClassName}
+    >
+      <div
+        className={cn(LINE_FACE, invalid && "border-ember hover:border-ember")}
+      >
+        <input
+          id={id}
+          aria-invalid={invalid || undefined}
+          className={cn(
+            "min-w-0 flex-1 bg-transparent text-ink outline-none placeholder:text-ink-faint",
+            LINE_TYPE[size],
+            mono && "font-mono text-body",
+            className,
+          )}
+          {...rest}
+        />
+        {unit ? (
+          <span className="shrink-0 text-[0.875rem] text-ink-faint">
+            {unit}
+          </span>
+        ) : null}
       </div>
     </LineField>
-  )
+  );
 }
 
 /** A few lines of prose — a note — written on ruled paper rather than in a box. */
@@ -146,8 +156,11 @@ export function LineTextArea({
   fieldClassName,
   className,
   ...rest
-}: TextareaHTMLAttributes<HTMLTextAreaElement> & { caption?: string; fieldClassName?: string }) {
-  const id = useId()
+}: TextareaHTMLAttributes<HTMLTextAreaElement> & {
+  caption?: string;
+  fieldClassName?: string;
+}) {
+  const id = useId();
   return (
     <LineField caption={caption} htmlFor={id} className={fieldClassName}>
       <div className={LINE_FACE}>
@@ -155,31 +168,38 @@ export function LineTextArea({
           id={id}
           rows={3}
           className={cn(
-            'min-w-0 flex-1 resize-none bg-transparent text-body leading-6 text-ink outline-none placeholder:text-ink-faint',
+            "min-w-0 flex-1 resize-none bg-transparent text-body leading-6 text-ink outline-none placeholder:text-ink-faint",
             className,
           )}
           {...rest}
         />
       </div>
     </LineField>
-  )
+  );
 }
 
-type LineSelectProps = Omit<SelectHTMLAttributes<HTMLSelectElement>, 'size'> & {
-  caption: string
-  size?: LineSize
-  fieldClassName?: string
-}
+type LineSelectProps = Omit<SelectHTMLAttributes<HTMLSelectElement>, "size"> & {
+  caption: string;
+  size?: LineSize;
+  fieldClassName?: string;
+};
 
-export function LineSelect({ caption, size = 'body', fieldClassName, className, children, ...rest }: LineSelectProps) {
-  const id = useId()
+export function LineSelect({
+  caption,
+  size = "body",
+  fieldClassName,
+  className,
+  children,
+  ...rest
+}: LineSelectProps) {
+  const id = useId();
   return (
     <LineField caption={caption} htmlFor={id} className={fieldClassName}>
       <div className={LINE_FACE}>
         <select
           id={id}
           className={cn(
-            'min-w-0 flex-1 appearance-none bg-transparent pr-6 text-ink outline-none',
+            "min-w-0 flex-1 appearance-none bg-transparent pr-6 text-ink outline-none",
             LINE_TYPE[size],
             className,
           )}
@@ -194,7 +214,7 @@ export function LineSelect({ caption, size = 'body', fieldClassName, className, 
         />
       </div>
     </LineField>
-  )
+  );
 }
 
 /**
@@ -212,19 +232,23 @@ export function LineOptions<T extends string>({
   clearable = false,
   className,
 }: {
-  caption?: string
-  options: readonly { value: T; label: string }[]
-  value: T | null
-  onChange: (value: T | null) => void
-  clearable?: boolean
-  className?: string
+  caption?: string;
+  options: readonly { value: T; label: string }[];
+  value: T | null;
+  onChange: (value: T | null) => void;
+  clearable?: boolean;
+  className?: string;
 }) {
-  const id = useId()
+  const id = useId();
   return (
-    <div className={cn('flex flex-col gap-2', className)}>
-      <div role="radiogroup" aria-labelledby={caption ? id : undefined} className="flex flex-wrap gap-x-6 gap-y-1">
+    <div className={cn("flex flex-col gap-2", className)}>
+      <div
+        role="radiogroup"
+        aria-labelledby={caption ? id : undefined}
+        className="flex flex-wrap gap-x-6 gap-y-1"
+      >
         {options.map((option) => {
-          const on = option.value === value
+          const on = option.value === value;
           return (
             <button
               key={option.value}
@@ -233,25 +257,27 @@ export function LineOptions<T extends string>({
               aria-checked={on}
               onClick={() => onChange(on && clearable ? null : option.value)}
               className={cn(
-                'warm group flex min-h-touch items-center gap-2 text-[0.9375rem]',
-                on ? 'font-semibold text-ink' : 'text-ink-muted hover:text-ink',
+                "warm group flex min-h-touch items-center gap-2 text-[0.9375rem]",
+                on ? "font-semibold text-ink" : "text-ink-muted hover:text-ink",
               )}
             >
               <span
                 aria-hidden
                 className={cn(
-                  'size-4 shrink-0 rounded-full transition-[border-width] duration-150',
-                  on ? 'border-[5px] border-ink' : 'border-[1.5px] border-line-strong group-hover:border-ink-faint',
+                  "size-4 shrink-0 rounded-full transition-[border-width] duration-150",
+                  on
+                    ? "border-[5px] border-ink"
+                    : "border-[1.5px] border-line-strong group-hover:border-ink-faint",
                 )}
               />
               {option.label}
             </button>
-          )
+          );
         })}
       </div>
       {caption ? <Caption id={id}>{caption}</Caption> : null}
     </div>
-  )
+  );
 }
 
 /** A fact that is simply true or not: from tissue culture. */
@@ -260,9 +286,9 @@ export function LineCheck({
   checked,
   onChange,
 }: {
-  label: string
-  checked: boolean
-  onChange: (checked: boolean) => void
+  label: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
 }) {
   return (
     <button
@@ -275,15 +301,19 @@ export function LineCheck({
       <span
         aria-hidden
         className={cn(
-          'flex size-[1.125rem] shrink-0 items-center justify-center rounded-sm border-[1.5px]',
-          checked ? 'border-leaf bg-leaf text-on-accent' : 'border-line-strong bg-surface group-hover:border-ink-faint',
+          "flex size-[1.125rem] shrink-0 items-center justify-center rounded-sm border-[1.5px]",
+          checked
+            ? "border-leaf bg-leaf text-on-accent"
+            : "border-line-strong bg-surface group-hover:border-ink-faint",
         )}
       >
-        {checked ? <Icon name="check" size={13} className="stroke-[3]" /> : null}
+        {checked ? (
+          <Icon name="check" size={13} className="stroke-[3]" />
+        ) : null}
       </span>
       {label}
     </button>
-  )
+  );
 }
 
 /**
@@ -294,17 +324,19 @@ export function LineCheck({
 export function CodeLine({ code, prefix }: { code?: string; prefix?: string }) {
   return (
     <div className="flex items-baseline gap-2">
-      <span className="text-[0.6875rem] font-semibold tracking-[0.1em] text-ink-faint uppercase">No.</span>
+      <span className="text-[0.6875rem] font-semibold tracking-[0.1em] text-ink-faint uppercase">
+        No.
+      </span>
       <span className="font-mono text-[0.9375rem] font-medium tracking-[0.1em] text-ink">
         {code ?? (
           <>
-            {prefix || '···'}-<span className="text-ink-faint">····</span>
+            {prefix || "···"}-<span className="text-ink-faint">····</span>
           </>
         )}
       </span>
       <span className="text-[0.8125rem] text-ink-faint">
-        {code ? 'on the sticker' : 'drawn when you add it'}
+        {code ? "on the sticker" : "drawn when you add it"}
       </span>
     </div>
-  )
+  );
 }

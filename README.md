@@ -79,8 +79,7 @@ src/
 
 Dependencies run one way: `screens` use `ui`, `data` and `lib`; `ui` uses
 `lib`; `lib` uses nothing. Runtime dependencies are React, `idb` and
-`qrcode-generator`. `@mlc-ai/web-llm` is only loaded through a dynamic
-`import()` for the optional AI name suggester.
+`qrcode-generator`.
 
 ### Conventions
 
