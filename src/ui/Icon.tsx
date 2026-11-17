@@ -206,6 +206,25 @@ export const PATHS = {
       <path d="m15 5 4 4" />
     </>
   ),
+  /** lucide grip-vertical */
+  grip: (
+    <>
+      <circle cx="9" cy="12" r="1" />
+      <circle cx="9" cy="5" r="1" />
+      <circle cx="9" cy="19" r="1" />
+      <circle cx="15" cy="12" r="1" />
+      <circle cx="15" cy="5" r="1" />
+      <circle cx="15" cy="19" r="1" />
+    </>
+  ),
+  /** lucide arrow-up-to-line */
+  toTop: (
+    <>
+      <path d="M5 3h14" />
+      <path d="m18 13-6-6-6 6" />
+      <path d="M12 7v14" />
+    </>
+  ),
   /** lucide ellipsis */
   more: (
     <>

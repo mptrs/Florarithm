@@ -15,6 +15,7 @@ import { formatEpithet, formatSpecies, normalizeCross, plural } from '~/lib/form
 import type { CollectionFilter } from '~/lib/router'
 import { hardeningOf, settledMilestones } from './settling'
 import type { State } from './store'
+import { compareWishes } from './wishOrder'
 import type {
   DrainEvent,
   EventType,
@@ -902,7 +903,7 @@ export function ownedPlants(state: State): Plant[] {
 export function wishlist(state: State): Plant[] {
   return livePlants(state)
     .filter((plant) => plant.wish)
-    .sort((a, b) => (formatSpecies(a) || a.name).localeCompare(formatSpecies(b) || b.name))
+    .sort(compareWishes)
 }
 
 export function countOf(state: State, filter: CollectionFilter): number {
