@@ -17,6 +17,8 @@ import { isoToInputValue, nowISO } from '~/lib/date'
 import { newId } from '~/lib/id'
 import { generatePlantCode } from '~/lib/plantCode'
 import * as db from './db'
+import { wishlist } from './selectors'
+import { rankForNewWish, ranksForMove } from './wishOrder'
 import { migrateEvents, migratePlant, migrateVocab, needsMigration, tidyEvent, tidyPlant } from './migrate'
 import { dropPhotos, refilePhoto } from './photos'
 import { monthKeyOf } from './remoteFormat'
@@ -193,8 +195,17 @@ export async function savePlant(typed: PlantDraft): Promise<Plant> {
       new Set(state.plants.map((plant) => plant.code)),
     ))
 
+  // A wish keeps its place on the list through every edit; a new one goes to
+  // the bottom; a plant that has arrived has no place on it at all.
+  const wishRank = draft.wish
+    ? existing?.wish
+      ? existing.wishRank
+      : rankForNewWish(state.plants.filter((plant) => plant.wish && !plant.deleted))
+    : undefined
+
   const plant: Plant = {
     ...draft,
+    ...(wishRank === undefined ? {} : { wishRank }),
     code,
     createdAt: existing?.createdAt ?? timestamp,
     updatedAt: timestamp,
@@ -226,6 +237,25 @@ export async function savePlant(typed: PlantDraft): Promise<Plant> {
   }
 
   return plant
+}
+
+/**
+ * Put a wish at `toIndex` on the wishlist, counted as the list stands now.
+ * Usually writes the one wish that moved — see `wishOrder.ts` for when it
+ * numbers them all. Not undoable: moving it back is the same gesture.
+ */
+export async function moveWish(code: string, toIndex: number): Promise<void> {
+  const ranks = ranksForMove(wishlist(state), code, toIndex)
+  if (ranks.size === 0) return
+
+  const timestamp = nowISO()
+  const changed = state.plants
+    .filter((plant) => ranks.has(plant.code))
+    .map((plant) => ({ ...plant, wishRank: ranks.get(plant.code)!, updatedAt: timestamp }))
+
+  await Promise.all(changed.map((plant) => db.putPlant(plant)))
+  const byCode = new Map(changed.map((plant) => [plant.code, plant]))
+  commit({ plants: state.plants.map((plant) => byCode.get(plant.code) ?? plant) })
 }
 
 function isQuarantinePlace(id: Id): boolean {

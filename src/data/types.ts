@@ -150,6 +150,17 @@ export type Plant = {
    *  code, its name and its history. */
   wish: boolean
   wishNote: string
+  /**
+   * Where this wish stands on the wishlist: lower comes first, so the one you
+   * want most is at the top. A number between its neighbours rather than a
+   * position, so moving one wish writes that one record and nothing else —
+   * see `wishOrder.ts`.
+   *
+   * Optional, and absent means "not placed yet": wishes written before the
+   * order existed sort by name until the first one is moved, and the first
+   * move writes the whole order down.
+   */
+  wishRank?: number
   createdAt: string
   /** Bumped on every write. Sync uses it to pick a winner between two devices. */
   updatedAt: string

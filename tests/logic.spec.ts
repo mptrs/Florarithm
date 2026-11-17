@@ -13,6 +13,7 @@ import { codePrefix, generatePlantCode, isPlantCode } from '../src/lib/plantCode
 import { nextInLine, splitLineage } from '../src/lib/nameGenerator'
 import { parseBackup, BackupParseError } from '../src/data/backup'
 import { migrateEvent, migratePlant, migrateVocab } from '../src/data/migrate'
+import { compareWishes, rankForNewWish, ranksForMove } from '../src/data/wishOrder'
 import { daysBetween, inputValueToISO, isoToInputValue, isoWeek } from '../src/lib/date'
 import { formatSpecies, normalizeCross, parseDecimal, priceInputValue, toRoman, fromRoman } from '../src/lib/format'
 import { parseRoute } from '../src/lib/router'
@@ -1381,5 +1382,57 @@ test.describe('cachepots and the lid', () => {
       lastBackupAt: null,
     }
     expect(potsToEmpty(state).map((pot) => pot.plant.code)).toEqual(['PLAIN'])
+  })
+})
+
+test.describe('the wishlist order', () => {
+  const at = '2026-01-01T00:00:00.000Z'
+  const wish = (code: string, genus: string, wishRank?: number): Plant => ({
+    code, name: '', genus, species: '', cross: '', cultivar: '', variegation: '',
+    locationId: null, system: 'soil', potSize: null, mediumId: null,
+    origin: { type: null, from: '', date: null, price: null }, parent: null,
+    status: 'active', wish: true, wishNote: '', createdAt: at, updatedAt: at,
+    ...(wishRank === undefined ? {} : { wishRank }),
+  })
+  const codes = (plants: Plant[]) => plants.map((plant) => plant.code)
+  const apply = (plants: Plant[], ranks: Map<string, number>) =>
+    plants
+      .map((plant) => (ranks.has(plant.code) ? { ...plant, wishRank: ranks.get(plant.code)! } : plant))
+      .sort(compareWishes)
+
+  test('wishes nobody has ordered yet stay in the order of their names', () => {
+    const list = [wish('C', 'Hoya'), wish('A', 'Anthurium'), wish('B', 'Begonia')].sort(compareWishes)
+    expect(codes(list)).toEqual(['A', 'B', 'C'])
+    expect(rankForNewWish(list)).toBeUndefined()
+  })
+
+  test('the first move writes the whole order down', () => {
+    const list = [wish('A', 'Anthurium'), wish('B', 'Begonia'), wish('C', 'Hoya')]
+    const ranks = ranksForMove(list, 'C', 0)
+    expect([...ranks.entries()]).toEqual([['C', 1], ['A', 2], ['B', 3]])
+    expect(codes(apply(list, ranks))).toEqual(['C', 'A', 'B'])
+  })
+
+  test('after that a move writes only the wish that moved', () => {
+    const list = [wish('A', 'Hoya', 1), wish('B', 'Hoya', 2), wish('C', 'Hoya', 3)]
+    expect([...ranksForMove(list, 'C', 1)]).toEqual([['C', 1.5]])
+    expect([...ranksForMove(list, 'C', 0)]).toEqual([['C', 0]])
+    expect([...ranksForMove(list, 'A', 2)]).toEqual([['A', 4]])
+    expect(ranksForMove(list, 'B', 1).size).toBe(0)
+  })
+
+  test('a new wish goes to the bottom once there is an order', () => {
+    expect(rankForNewWish([wish('A', 'Hoya', 1), wish('B', 'Hoya', 2.5)])).toBe(3.5)
+  })
+
+  test('a gap that has run out is numbered again rather than reused', () => {
+    let list = [wish('A', 'Hoya', 1), wish('B', 'Hoya', 2), wish('C', 'Hoya', 3)]
+    // Keep wedging the last wish in second place until the halving gives up.
+    for (let round = 0; round < 80; round += 1) {
+      const last = list[list.length - 1]!.code
+      list = apply(list, ranksForMove(list, last, 1))
+      const ranks = list.map((plant) => plant.wishRank!)
+      expect(new Set(ranks).size).toBe(ranks.length)
+    }
   })
 })
