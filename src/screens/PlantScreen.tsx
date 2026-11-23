@@ -53,7 +53,7 @@ import { WaterDrop } from '~/ui/Water'
 import { Plate } from '~/ui/Plate'
 import { EmptyState } from '~/ui/primitives'
 import { QrCodeBox } from '~/ui/QrCode'
-import { RowActions, SwipeRow } from '~/ui/SwipeRow'
+import { RowActions, SwipeRow, type SwipeAction } from '~/ui/SwipeRow'
 import { MilestoneCard } from '~/ui/MilestoneCard'
 import { SettlingCards } from '~/ui/Settling'
 import { useConfirm } from '~/ui/ConfirmDialog'
@@ -1143,6 +1143,7 @@ export const TONE: Record<PlantEvent['type'], ChipTone> = {
   drain: 'water',
   settle: 'leaf',
   aired: 'leaf',
+  wet: 'water',
 }
 
 export const GLYPH: Record<PlantEvent['type'], IconName> = {
@@ -1155,6 +1156,7 @@ export const GLYPH: Record<PlantEvent['type'], IconName> = {
   drain: 'drain',
   settle: 'settle',
   aired: 'air',
+  wet: 'hand',
 }
 
 function History({ plant, onEdit }: { plant: Plant; onEdit: (event: PlantEvent) => void }) {
@@ -1263,13 +1265,15 @@ function EntryRow({
   const remove = () => void removeEvent(event.id)
   const editLabel = `Change ${title.toLowerCase()} of ${formatDayMonth(event.date)}`
   const deleteLabel = `Delete ${title.toLowerCase()} of ${formatDayMonth(event.date)}`
+  const start: SwipeAction | undefined = edit
+    ? { label: 'Edit', ariaLabel: editLabel, icon: 'pencil', onPress: edit }
+    : undefined
+  const end: SwipeAction = { label: 'Delete', ariaLabel: deleteLabel, icon: 'trash', onPress: remove }
 
   return (
     <SwipeRow
-      onEdit={edit}
-      onDelete={remove}
-      editLabel={editLabel}
-      deleteLabel={deleteLabel}
+      start={start}
+      end={end}
       className={cn('group', last ? '' : 'border-b border-line')}
     >
       <div className="flex items-center gap-3 px-4 py-3">
@@ -1299,12 +1303,7 @@ function EntryRow({
             </span>
           </div>
           <div className="absolute inset-y-0 right-0 flex items-center">
-            <RowActions
-              onEdit={edit}
-              onDelete={remove}
-              editLabel={editLabel}
-              deleteLabel={deleteLabel}
-            />
+            <RowActions start={start} end={end} />
           </div>
         </div>
       </div>

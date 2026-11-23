@@ -179,6 +179,7 @@ export type EventType =
   | 'drain'
   | 'settle'
   | 'aired'
+  | 'wet'
 export const EVENT_TYPES: readonly EventType[] = [
   'water',
   'repot',
@@ -189,6 +190,7 @@ export const EVENT_TYPES: readonly EventType[] = [
   'drain',
   'settle',
   'aired',
+  'wet',
 ]
 
 /**
@@ -312,6 +314,19 @@ export type SettleEvent = EventBase & {
  */
 export type AiredEvent = EventBase & { type: 'aired' }
 
+/**
+ * Felt the soil and it was still wet: the plant was owed water by its rhythm,
+ * and did not need it. Nothing but the moment.
+ *
+ * Not a watering, so the rhythm never reads it — `waterRhythm` counts only
+ * water, and the longer gaps a winter brings pull the rhythm up on their own.
+ * What it changes is Today: a plant checked after its last watering waits
+ * half its rhythm from the check (see `RECHECK`), then is owed again. A
+ * chore rather than something that happened to the plant, so the history
+ * leaves it out, the way it does an emptied cachepot.
+ */
+export type WetEvent = EventBase & { type: 'wet' }
+
 export type PlantEvent =
   | WaterEvent
   | RepotEvent
@@ -322,6 +337,7 @@ export type PlantEvent =
   | DrainEvent
   | SettleEvent
   | AiredEvent
+  | WetEvent
 
 /**
  * The sachets of predatory mites hanging in the collection.

@@ -604,6 +604,26 @@ export async function airPlants(plantCodes: readonly string[]): Promise<void> {
 }
 
 /**
+ * Felt the soil, and it was still wet — see `WetEvent`. Once a day, like an
+ * airing: a plant already found wet today is left as it is, and the row's own
+ * undo takes the entry back out with `removeEvent`.
+ */
+export function foundWet(plantCode: string): Promise<PlantEvent | null> {
+  return serially(async () => {
+    const today = isoToInputValue(nowISO())
+    const already = state.events.some(
+      (event) =>
+        event.type === 'wet' &&
+        !event.deleted &&
+        event.plantCode === plantCode &&
+        isoToInputValue(event.date) === today,
+    )
+    if (already) return null
+    return writeEvent({ type: 'wet', plantCode })
+  })
+}
+
+/**
  * Which place is the quarantine, and for how many weeks — or `null` for none.
  * There is one: marking a place clears whichever was marked before, so two
  * attics can never disagree about how long a newcomer stays.
@@ -645,6 +665,8 @@ export function describeEvent(event: PlantEvent): string {
       return SETTLE_NAMES[event.kind]
     case 'aired':
       return 'Lid off'
+    case 'wet':
+      return 'Still wet'
   }
 }
 
