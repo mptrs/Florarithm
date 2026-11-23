@@ -38,6 +38,13 @@
  * and the rest of what is owed today, stay out of the water's way — see
  * `Chores`.
  *
+ * A plant whose soil is still wet is dragged right, as a history row is, and
+ * says so: it goes to Later at once and is owed again after half its rhythm.
+ * That writes a check, never a watering, so the rhythm is not moved by it —
+ * see `WetEvent`. From `md` the same action is a button on hover beside the
+ * figure. In Later the row says it was found wet today, and pressing it takes
+ * the check back.
+ *
  * A plant watered today keeps the column it was in this morning — its place
  * is read from the watering before today's — and sinks to the foot of it.
  * While you are on the screen the rows hold the order and the column they
@@ -46,14 +53,17 @@
  */
 
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react'
-import { logEvent, removeEvent, useStore, waterPlants, type State } from '~/data/store'
+import { foundWet, logEvent, removeEvent, useStore, waterPlants, type State } from '~/data/store'
 import {
   eventsFor,
   livePlants,
+  recheckAfter,
   todayList,
   vocabName,
   waterRhythm,
   wateringToday,
+  wetSinceWater,
+  wetToday,
 } from '~/data/selectors'
 import type { Plant } from '~/data/types'
 import { useSyncStatus } from '~/data/sync'
@@ -71,6 +81,7 @@ import { Icon } from '~/ui/Icon'
 import { PlantThumb } from '~/ui/plantPicture'
 import { EmptyState, ScreenHeader } from '~/ui/primitives'
 import { RowLink } from '~/ui/rows'
+import { RowActions, SwipeRow, type SwipeAction } from '~/ui/SwipeRow'
 import { SachetReminder } from '~/ui/Sachets'
 import { SyncStatusPill } from '~/ui/SyncStatusPill'
 import { WaterFigure } from '~/ui/Water'
@@ -109,6 +120,8 @@ type Standing = {
    *  the foot of its column; after that `useHeld` keeps every row where it
    *  opened, so a press does not move it. */
   wateredToday: boolean
+  /** Found still wet today: in Later at once, whatever column it opened in. */
+  wetToday: boolean
 }
 
 /** The day of the latest watering that was not today's. */
@@ -127,10 +140,23 @@ function standing(state: State, plant: Plant, fallback: number): Standing {
   const name = vocabName(state, plant.locationId)
   const room = name && name !== '—' ? name : NO_PLACE
   const wateredToday = wateringToday(state, plant.code) !== null
-  const base = { plant, room, days, rhythm, wateredToday }
+  const wetAt = wetSinceWater(state, plant.code)
+  const wet = wetAt !== null && isoToInputValue(wetAt) === todayInputValue()
+  const base = { plant, room, days, rhythm, wateredToday, wetToday: wet }
+  const gap = rhythm ?? fallback
+
+  // Found still wet since its last watering: Later until it is worth feeling
+  // again, then owed by its days as before.
+  if (wetAt !== null) {
+    const waited = daysSince(wetAt)
+    const recheck = recheckAfter(gap)
+    if (waited < recheck) {
+      const until = recheck - waited
+      return { ...base, need: days === null ? 0 : days / Math.max(gap, 1), column: 'later', until }
+    }
+  }
 
   if (days === null) return { ...base, need: Infinity, column: 'due', until: 0 }
-  const gap = rhythm ?? fallback
   const need = gap > 0 ? days / gap : days
   const until = gap - days
 
@@ -298,7 +324,7 @@ export function TodayScreen() {
                   >
                     <ColumnHead title={title} count={members.length} className={tone} />
                     {members.map((each) => (
-                      <TodayRow key={each.plant.code} standing={each} withRoom={picked === null} />
+                      <TodayRow key={each.plant.code} standing={each} withRoom={picked === null} fallback={fallback} />
                     ))}
                   </section>
                 )
@@ -567,14 +593,34 @@ function useWaterPress(plant: Plant) {
   return { watered: today !== null, water, takeBack }
 }
 
+/** Dragging a row right: the soil is still wet, so not today. */
+function stillWet(plant: Plant, recheck: number): SwipeAction {
+  return {
+    label: 'Still wet',
+    ariaLabel: `${plant.name}: still wet, look again in ${plural(recheck, 'day')}`,
+    icon: 'hand',
+    onPress: () => void foundWet(plant.code),
+  }
+}
+
 /**
  * One plant owed water: its picture, what it is, and the figure that waters it.
  *
  * After the figure, the plant's own rhythm, `17 /9`: the number means
  * nothing much until you know what it usually is.
  */
-function TodayRow({ standing: { plant, room, days, rhythm, column }, withRoom }: { standing: Standing; withRoom: boolean }) {
+function TodayRow({
+  standing: { plant, room, days, rhythm, column },
+  withRoom,
+  fallback,
+}: {
+  standing: Standing
+  withRoom: boolean
+  fallback: number
+}) {
   const { watered, water, takeBack } = useWaterPress(plant)
+  // Watered today, there is nothing left to say about the soil.
+  const wet = watered ? undefined : stillWet(plant, recheckAfter(rhythm ?? fallback))
   const species = speciesOf(plant)
   // The name you gave it is in the serif, like everywhere else a person named
   // something; the room after it is chrome. Without a species the name is
@@ -583,36 +629,41 @@ function TodayRow({ standing: { plant, room, days, rhythm, column }, withRoom }:
   const place = withRoom ? room : null
 
   return (
-    <RowLink
-      href={routes.plant(plant.code)}
-      trailing={
-        <WaterFigure
-          name={plant.name}
-          days={days}
-          rhythm={rhythm}
-          tone={column === 'later' ? 'soon' : column}
-          watered={watered}
-          onWater={water}
-          onTakeBack={takeBack}
-        />
-      }
-    >
-      <PlantThumb plant={plant} />
-      <div className="flex min-w-0 flex-1 flex-col">
-        {/* Two lines before it is cut: a column of the board is narrow, and a
-            cultivar is often what tells two of a species apart. */}
-        <span className="line-clamp-2 font-display text-[1.0625rem] leading-[1.375rem]">
-          <SpeciesName species={species} name={plant.name} />
-        </span>
-        {nickname || place ? (
-          <span className="truncate text-[0.8125rem] leading-[1.0625rem] text-ink-muted">
-            {nickname ? <span className="font-display text-[0.9375rem]">{nickname}</span> : null}
-            {nickname && place ? ' · ' : null}
-            {place}
+    <SwipeRow start={wet} surface="paper" className="group">
+      <RowLink
+        href={routes.plant(plant.code)}
+        trailing={
+          <>
+            <RowActions start={wet} />
+            <WaterFigure
+              name={plant.name}
+              days={days}
+              rhythm={rhythm}
+              tone={column === 'later' ? 'soon' : column}
+              watered={watered}
+              onWater={water}
+              onTakeBack={takeBack}
+            />
+          </>
+        }
+      >
+        <PlantThumb plant={plant} />
+        <div className="flex min-w-0 flex-1 flex-col">
+          {/* Two lines before it is cut: a column of the board is narrow, and a
+              cultivar is often what tells two of a species apart. */}
+          <span className="line-clamp-2 font-display text-[1.0625rem] leading-[1.375rem]">
+            <SpeciesName species={species} name={plant.name} />
           </span>
-        ) : null}
-      </div>
-    </RowLink>
+          {nickname || place ? (
+            <span className="truncate text-[0.8125rem] leading-[1.0625rem] text-ink-muted">
+              {nickname ? <span className="font-display text-[0.9375rem]">{nickname}</span> : null}
+              {nickname && place ? ' · ' : null}
+              {place}
+            </span>
+          ) : null}
+        </div>
+      </RowLink>
+    </SwipeRow>
   )
 }
 
@@ -623,8 +674,12 @@ function TodayRow({ standing: { plant, room, days, rhythm, column }, withRoom }:
  * because the rest of its room was is ticked here like any other. It writes
  * data, so it keeps the reach floor however quiet it looks.
  */
-function LaterRow({ standing: { plant, until } }: { standing: Standing }) {
+function LaterRow({ standing: { plant, until, wetToday: wet } }: { standing: Standing }) {
   const { watered, water, takeBack } = useWaterPress(plant)
+  const state = useStore()
+  // Found still wet today: the hand says why it is here, and a press takes
+  // the check back, the way a second press takes back a watering.
+  const check = wet ? wetToday(state, plant.code) : null
 
   return (
     <div className="warm flex break-inside-avoid items-center border-b border-line hover:bg-sunk">
@@ -639,10 +694,16 @@ function LaterRow({ standing: { plant, until } }: { standing: Standing }) {
       </a>
       <button
         type="button"
-        onClick={watered ? takeBack : water}
-        aria-pressed={watered}
-        aria-label={`${plant.name}: watered today`}
-        title={watered ? 'Watered today. Press to take it back' : 'Watered'}
+        onClick={check ? () => void removeEvent(check.id) : watered ? takeBack : water}
+        aria-pressed={check ? true : watered}
+        aria-label={check ? `${plant.name}: still wet today` : `${plant.name}: watered today`}
+        title={
+          check
+            ? 'Still wet today. Press to take it back'
+            : watered
+              ? 'Watered today. Press to take it back'
+              : 'Watered'
+        }
         className={cn(
           'flex min-h-touch min-w-14 shrink-0 items-center justify-end rounded-md px-3 font-mono text-micro',
           'hover:bg-line active:opacity-70',
@@ -650,7 +711,16 @@ function LaterRow({ standing: { plant, until } }: { standing: Standing }) {
           watered ? 'text-leaf' : 'text-ink-faint',
         )}
       >
-        {watered ? <Icon name="check" size={16} /> : `in ${until}`}
+        {watered ? (
+          <Icon name="check" size={16} />
+        ) : check ? (
+          <span className="flex items-center gap-1 text-ink-muted">
+            <Icon name="hand" size={14} />
+            {`in ${until}`}
+          </span>
+        ) : (
+          `in ${until}`
+        )}
       </button>
     </div>
   )
@@ -674,8 +744,20 @@ function useHeld(standings: readonly Standing[]): Standing[] {
     }
   }
   return standings
-    .map((each) => ({ ...each, column: held.current.get(each.plant.code)!.column }))
+    .map((each) => ({ ...each, column: heldColumn(each, held.current.get(each.plant.code)!.column) }))
     .sort((a, b) => held.current.get(a.plant.code)!.rank - held.current.get(b.plant.code)!.rank)
+}
+
+/**
+ * Still wet is the one press that moves a row. It says the plant is not owed,
+ * so the row goes to Later rather than staying in Late looking owed; and
+ * taking it back sends the row to wherever its days now put it, even when it
+ * opened in Later because of that same check.
+ */
+function heldColumn(each: Standing, opened: Column): Column {
+  if (each.wetToday) return 'later'
+  if (opened === 'later' && each.column !== 'later' && !each.wateredToday) return each.column
+  return opened
 }
 
 function BackupReminder({

@@ -901,6 +901,76 @@ test('Today holds each plant to its own rhythm, and says how long the rest have 
   await expect(figure('Emmentaler')).toContainText('in 3')
 })
 
+test('a late plant still wet is dragged right into Later, and taken back from there', async ({
+  page,
+}) => {
+  await page.goto('#today')
+  await page.evaluate(async () => {
+    const at = (days: number) => {
+      const date = new Date()
+      date.setDate(date.getDate() - days)
+      date.setHours(12, 0, 0, 0)
+      return date.toISOString()
+    }
+    const plant = {
+      code: 'MON-0001', name: 'Gruyère', genus: 'Monstera', species: '', cross: '', cultivar: '', variegation: '',
+      locationId: null, system: 'hydro', potSize: null, mediumId: null,
+      origin: { type: null, from: '', date: null, price: null }, parent: null,
+      status: 'active', wish: false, wishNote: '', createdAt: at(60), updatedAt: at(60),
+    }
+    // Weekly, last ten days ago: late, a third over its rhythm.
+    await new Promise<void>((resolve, reject) => {
+      const open = indexedDB.open('florarithm')
+      open.onsuccess = () => {
+        const transaction = open.result.transaction(['plants', 'events', 'meta'], 'readwrite')
+        transaction.objectStore('plants').put(plant)
+        for (const day of [10, 17, 24, 31]) {
+          transaction.objectStore('events').put({ id: `w-${day}`, plantCode: plant.code, type: 'water', date: at(day), fertilized: true })
+        }
+        transaction.objectStore('meta').put(new Date().toISOString(), 'lastBackupAt')
+        transaction.oncomplete = () => resolve()
+        transaction.onerror = () => reject(transaction.error)
+      }
+      open.onerror = () => reject(open.error)
+    })
+  })
+  await page.reload()
+
+  const column = (title: string) =>
+    main(page)
+      .locator('section')
+      .filter({ has: page.getByRole('heading', { name: title, exact: true }) })
+      .last()
+  await expect(column('Late')).toContainText('Gruyère')
+
+  // The same drag on a phone and a desktop: a mouse drags a row now too.
+  const row = main(page).locator('div.relative.bg-paper').filter({ hasText: 'Gruyère' }).first()
+  const box = await row.boundingBox()
+  if (!box) throw new Error('no row to drag')
+  const y = box.y + box.height / 2
+  await page.mouse.move(box.x + 60, y)
+  await page.mouse.down()
+  await page.mouse.move(box.x + 110, y)
+  await page.mouse.move(box.x + 180, y)
+  await page.mouse.up()
+  await page.getByRole('button', { name: /^Gruyère: still wet, look again in 4 days/ }).click()
+
+  // Out of Late at once, and the drag did not open the plant on its way.
+  // A phone drops an emptied column altogether, so it is the row's own figure
+  // that is looked for, not the column.
+  await expect(page).toHaveURL(/#today/)
+  await expect(main(page).getByRole('button', { name: 'Gruyère: watered today' })).toHaveCount(0)
+  const line = main(page).getByRole('button', { name: '1 for later' })
+  if (page.viewportSize()!.width < 1280) await line.click()
+  const check = main(page).getByRole('button', { name: 'Gruyère: still wet today' })
+  await expect(check).toContainText('in 4')
+
+  // Not a watering: the history has nothing new, and the days still count on.
+  await check.click()
+  await expect(column('Late')).toContainText('Gruyère')
+  await expect(main(page).getByRole('button', { name: 'Gruyère: watered today' })).toContainText('10')
+})
+
 test('an archived plant is out of the way but still findable', async ({ page }) => {
   await addPlant(page, 'Monstera deliciosa', 'Gruy\u00e8re', 'Living room')
   const code = await addPlant(page, 'Calathea orbifolia', 'Wolk', 'Bedroom')

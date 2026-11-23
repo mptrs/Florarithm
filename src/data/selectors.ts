@@ -171,11 +171,13 @@ export function eventsFor(state: State, code: string): PlantEvent[] {
 }
 
 /** What a plant's history shows, newest first: the log without the emptied
- *  cachepots and the days the lid was off, which are chores that follow from
- *  something else rather than things that happened to the plant — see
- *  `DrainEvent` and `AiredEvent`. */
+ *  cachepots, the days the lid was off and the soil that was still wet, which
+ *  are chores that follow from something else rather than things that
+ *  happened to the plant — see `DrainEvent`, `AiredEvent` and `WetEvent`. */
 export function historyFor(state: State, code: string): PlantEvent[] {
-  return eventsFor(state, code).filter((event) => event.type !== 'drain' && event.type !== 'aired')
+  return eventsFor(state, code).filter(
+    (event) => event.type !== 'drain' && event.type !== 'aired' && event.type !== 'wet',
+  )
 }
 
 /** Every entry with a picture, newest first — the timeline, which is just the
@@ -254,6 +256,35 @@ export function waterRhythm(state: State, code: string): number | null {
   const middle = Math.floor(gaps.length / 2)
   const median = gaps.length % 2 ? gaps[middle]! : (gaps[middle - 1]! + gaps[middle]!) / 2
   return Math.max(1, Math.round(median))
+}
+
+/** Today's "still wet" for this plant, if there is one: the entry a second
+ *  press takes back. */
+export function wetToday(state: State, code: string): PlantEvent | null {
+  const last = lastEventOf(state, code, 'wet')
+  return last && isoToInputValue(last.date) === todayInputValue() ? last : null
+}
+
+/**
+ * How long a plant found still wet waits before it is owed again: half its
+ * gap, and never less than two days.
+ *
+ * Half, because "still wet" means look again soon rather than skip a round —
+ * a plant checked on day twelve of eight is not dry on day twenty. Two at the
+ * least, so a plant on a short rhythm is not back the next morning.
+ */
+export function recheckAfter(gap: number): number {
+  return Math.max(2, Math.round(gap / 2))
+}
+
+/** The day this plant was last found still wet, if that was after its last
+ *  watering — a check from before a watering says nothing about the pot now. */
+export function wetSinceWater(state: State, code: string): string | null {
+  for (const event of eventsFor(state, code)) {
+    if (event.type === 'water') return null
+    if (event.type === 'wet') return event.date
+  }
+  return null
 }
 
 export function isThirsty(days: number | null): boolean {
