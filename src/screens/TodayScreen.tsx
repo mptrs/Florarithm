@@ -41,9 +41,8 @@
  * A plant whose soil is still wet is dragged right, as a history row is, and
  * says so: it goes to Later at once and is owed again after half its rhythm.
  * That writes a check, never a watering, so the rhythm is not moved by it —
- * see `WetEvent`. From `md` the same action is a button on hover beside the
- * figure. In Later the row says it was found wet today, and pressing it takes
- * the check back.
+ * see `WetEvent`. In Later the row shows the drops, and pressing it takes the
+ * check back.
  *
  * A plant watered today keeps the column it was in this morning — its place
  * is read from the watering before today's — and sinks to the foot of it.
@@ -596,9 +595,10 @@ function useWaterPress(plant: Plant) {
 /** Dragging a row right: the soil is still wet, so not today. */
 function stillWet(plant: Plant, recheck: number): SwipeAction {
   return {
-    label: 'Still wet',
-    ariaLabel: `${plant.name}: still wet, look again in ${plural(recheck, 'day')}`,
-    icon: 'hand',
+    label: 'Not yet',
+    ariaLabel: `${plant.name}: still moist, look again in ${plural(recheck, 'day')}`,
+    icon: 'droplets',
+    tone: 'water',
     onPress: () => void foundWet(plant.code),
   }
 }
@@ -677,7 +677,7 @@ function TodayRow({
 function LaterRow({ standing: { plant, until, wetToday: wet } }: { standing: Standing }) {
   const { watered, water, takeBack } = useWaterPress(plant)
   const state = useStore()
-  // Found still wet today: the hand says why it is here, and a press takes
+  // Found still moist today: the drops say why it is here, and a press takes
   // the check back, the way a second press takes back a watering.
   const check = wet ? wetToday(state, plant.code) : null
 
@@ -696,10 +696,10 @@ function LaterRow({ standing: { plant, until, wetToday: wet } }: { standing: Sta
         type="button"
         onClick={check ? () => void removeEvent(check.id) : watered ? takeBack : water}
         aria-pressed={check ? true : watered}
-        aria-label={check ? `${plant.name}: still wet today` : `${plant.name}: watered today`}
+        aria-label={check ? `${plant.name}: still moist today` : `${plant.name}: watered today`}
         title={
           check
-            ? 'Still wet today. Press to take it back'
+            ? 'Still moist today. Press to take it back'
             : watered
               ? 'Watered today. Press to take it back'
               : 'Watered'
@@ -715,7 +715,7 @@ function LaterRow({ standing: { plant, until, wetToday: wet } }: { standing: Sta
           <Icon name="check" size={16} />
         ) : check ? (
           <span className="flex items-center gap-1 text-ink-muted">
-            <Icon name="hand" size={14} />
+            <Icon name="droplets" size={14} />
             {`in ${until}`}
           </span>
         ) : (

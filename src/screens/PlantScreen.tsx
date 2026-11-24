@@ -1156,7 +1156,7 @@ export const GLYPH: Record<PlantEvent['type'], IconName> = {
   drain: 'drain',
   settle: 'settle',
   aired: 'air',
-  wet: 'hand',
+  wet: 'droplets',
 }
 
 function History({ plant, onEdit }: { plant: Plant; onEdit: (event: PlantEvent) => void }) {

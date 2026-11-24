@@ -666,7 +666,7 @@ export function describeEvent(event: PlantEvent): string {
     case 'aired':
       return 'Lid off'
     case 'wet':
-      return 'Still wet'
+      return 'Still moist'
   }
 }
 
