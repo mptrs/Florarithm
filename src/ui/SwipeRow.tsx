@@ -3,21 +3,23 @@
  *
  * Right reveals the action at its start, left the one at its end — the
  * gesture people already know from Mail. The start is always something
- * ordinary, set in ink (Edit, Still wet); the end is only ever removing, in
- * ember. So left means "take it away" wherever a row can be dragged.
+ * ordinary: Edit on a quiet ground, Not yet in water, since it is about the
+ * water in the pot. The end is only ever removing, in an ember tint. So left means
+ * "take it away" wherever a row can be dragged. No panel is ink: ink flips to
+ * near-white in dark mode, and a white slab is louder than any action here;
+ * a tint keeps the same weight in both.
  *
  * On every screen size, by every pointer: a finger, a mouse, and a trackpad's
  * two-finger swipe, which reaches the page as a sideways wheel rather than as
  * a pointer at all. Pointer events cover the first two in one code path; the
  * wheel is the third.
  *
- * A drag is not the only way in. `RowActions` shows the same actions on hover
- * or focus — the visible way for a pointer, and the only one for a keyboard,
- * since the revealed buttons leave the tab order while the row is closed:
- * ninety rows would otherwise be a hundred and eighty tab stops to get past.
- * While a row is dragged open its hover buttons step aside, so a row never
- * shows the same action twice. What is still missing is a keyboard route on a
- * phone; the usual answer is a long-press menu, which is not built.
+ * The drag is the one way in for a pointer: nothing shows on hover, so a row
+ * never offers the same action twice. `RowActions` is the keyboard's way in
+ * only — the revealed buttons leave the tab order while the row is closed,
+ * because ninety rows would otherwise be a hundred and eighty tab stops to
+ * get past. What is still missing is a keyboard route on a phone; the usual
+ * answer is a long-press menu, which is not built.
  */
 
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react'
@@ -40,6 +42,9 @@ export type SwipeAction = {
   /** What a screen reader hears, with the row's subject in it. */
   ariaLabel: string
   icon: IconName
+  /** The ground behind it when dragged open. Quiet unless the action is about
+   *  water. */
+  tone?: 'quiet' | 'water'
   onPress: () => void
 }
 
@@ -166,13 +171,36 @@ export function SwipeRow({
     }
   }, [])
 
+  // An open row closes when you press anywhere else, or on Escape. The press
+  // still does what it does: closing is not worth a click of its own.
+  const wrapper = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (open === null) return
+    const elsewhere = (event: PointerEvent) => {
+      if (!wrapper.current?.contains(event.target as Node)) settle(null)
+    }
+    const escape = (event: globalThis.KeyboardEvent) => {
+      if (event.key === 'Escape') settle(null)
+    }
+    document.addEventListener('pointerdown', elsewhere)
+    document.addEventListener('keydown', escape)
+    return () => {
+      document.removeEventListener('pointerdown', elsewhere)
+      document.removeEventListener('keydown', escape)
+    }
+  }, [open])
+
   const press = (action: SwipeAction) => {
     settle(null)
     action.onPress()
   }
 
   return (
-    <div data-open={open !== null || offset !== 0} className="group/swipe relative overflow-hidden">
+    <div
+      ref={wrapper}
+      data-open={open !== null || offset !== 0}
+      className="group/swipe relative overflow-hidden"
+    >
       {/* Both actions sit behind the row; the row slides off whichever one you
           are pulling towards. Hidden while it is closed — the row is on its own
           compositing layer because of the transform, and a layer edge over a
@@ -187,7 +215,10 @@ export function SwipeRow({
             onClick={() => press(start)}
             aria-label={start.ariaLabel}
             tabIndex={open === 'start' ? 0 : -1}
-            className="flex w-[5.5rem] shrink-0 flex-col items-center justify-center gap-1 bg-ink text-paper"
+            className={cn(
+              'flex w-[5.5rem] shrink-0 flex-col items-center justify-center gap-1',
+              start.tone === 'water' ? 'bg-water-tint text-water-deep' : 'bg-line text-ink',
+            )}
           >
             <Icon name={start.icon} size={20} />
             <span className="text-[0.6875rem] font-semibold">{start.label}</span>
@@ -200,7 +231,7 @@ export function SwipeRow({
             onClick={() => press(end)}
             aria-label={end.ariaLabel}
             tabIndex={open === 'end' ? 0 : -1}
-            className="flex w-[5.5rem] shrink-0 flex-col items-center justify-center gap-1 bg-ember text-on-accent"
+            className="flex w-[5.5rem] shrink-0 flex-col items-center justify-center gap-1 bg-ember-tint text-ember"
           >
             <Icon name={end.icon} size={20} />
             <span className="text-[0.6875rem] font-semibold">{end.label}</span>
@@ -239,10 +270,9 @@ export function SwipeRow({
 }
 
 /**
- * The same actions for a pointer, in plain sight: shown on hover and whenever
- * anything inside the row has focus, and out of the way while the row is
- * dragged open. From `md`, where there is a pointer to hover with; a phone
- * has only the drag.
+ * The same actions for a keyboard: unseen until one of them is tabbed to, and
+ * never on hover — a pointer drags the row. Out of the way while the row is
+ * dragged open. From `md`, where there is a keyboard to tab with.
  */
 export function RowActions({ start, end }: { start?: SwipeAction; end?: SwipeAction }) {
   return (
@@ -253,7 +283,7 @@ export function RowActions({ start, end }: { start?: SwipeAction; end?: SwipeAct
           onClick={start.onPress}
           aria-label={start.ariaLabel}
           title={start.label}
-          className="flex size-touch items-center justify-center rounded-lg text-ink-muted opacity-0 transition duration-200 ease-grow group-hover:opacity-100 focus-visible:opacity-100 hover:bg-sunk hover:text-ink"
+          className="flex size-touch items-center justify-center rounded-lg text-ink-muted opacity-0 transition duration-200 ease-grow focus-visible:opacity-100 hover:bg-sunk hover:text-ink"
         >
           <Icon name={start.icon} size={18} />
         </button>
@@ -264,7 +294,7 @@ export function RowActions({ start, end }: { start?: SwipeAction; end?: SwipeAct
           onClick={end.onPress}
           aria-label={end.ariaLabel}
           title={end.label}
-          className="flex size-touch items-center justify-center rounded-lg text-ember opacity-0 transition duration-200 ease-grow group-hover:opacity-100 focus-visible:opacity-100 hover:bg-ember-tint"
+          className="flex size-touch items-center justify-center rounded-lg text-ember opacity-0 transition duration-200 ease-grow focus-visible:opacity-100 hover:bg-ember-tint"
         >
           <Icon name={end.icon} size={18} />
         </button>

@@ -89,10 +89,10 @@ async function addPhoto(page: Page, buffer: Buffer, name = 'plant.png') {
 async function removeEntry(page: Page, title: string, deleteName: RegExp) {
   const row = main(page).locator('div.relative.bg-surface').filter({ hasText: title }).first()
 
-  // A phone drags the row open; a desktop reveals the same action on hover.
-  // Measured *after* the hover, because hovering scrolls the row into view and
-  // a box read before that is off by however far the page moved.
-  await row.hover()
+  // Dragged open on every screen. Scrolled to the middle first: a row at the
+  // foot of a phone is under the tab bar, and a box read before scrolling is
+  // off by however far the page then moves.
+  await row.evaluate((element) => element.scrollIntoView({ block: 'center' }))
   const box = await row.boundingBox()
   if (!box) throw new Error(`no row to drag for ${title}`)
   const y = box.y + box.height / 2
@@ -953,7 +953,7 @@ test('a late plant still wet is dragged right into Later, and taken back from th
   await page.mouse.move(box.x + 110, y)
   await page.mouse.move(box.x + 180, y)
   await page.mouse.up()
-  await page.getByRole('button', { name: /^Gruyère: still wet, look again in 4 days/ }).click()
+  await page.getByRole('button', { name: /^Gruyère: still moist, look again in 4 days/ }).click()
 
   // Out of Late at once, and the drag did not open the plant on its way.
   // A phone drops an emptied column altogether, so it is the row's own figure
@@ -962,7 +962,7 @@ test('a late plant still wet is dragged right into Later, and taken back from th
   await expect(main(page).getByRole('button', { name: 'Gruyère: watered today' })).toHaveCount(0)
   const line = main(page).getByRole('button', { name: '1 for later' })
   if (page.viewportSize()!.width < 1280) await line.click()
-  const check = main(page).getByRole('button', { name: 'Gruyère: still wet today' })
+  const check = main(page).getByRole('button', { name: 'Gruyère: still moist today' })
   await expect(check).toContainText('in 4')
 
   // Not a watering: the history has nothing new, and the days still count on.
